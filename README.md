@@ -1,13 +1,13 @@
-# GP Agent Portal — CRM
+# GP Advisor Portal — CRM
 
-Phase 1 of the rebuild: a real multi-agent web app with accounts and a shared database, replacing the single-file HTML portal. This phase covers login/signup and the core CRM (client records, pipeline stage, notes, tasks, follow-up dates). Email reminders, calendar sync, and folding in the Knowledge Base / Client Analyzer come in later phases.
+Phase 1 of the rebuild: a real multi-advisor web app with accounts and a shared database, replacing the single-file HTML portal. This phase covers login/signup and the core CRM (client records, pipeline stage, notes, tasks, follow-up dates). Email reminders, calendar sync, and folding in the Knowledge Base / Client Analyzer come in later phases.
 
 ## What's here right now
 
-- Agent accounts (sign up, sign in, sign out) via Supabase Auth
+- Advisor accounts (sign up, sign in, sign out) via Supabase Auth
 - Client list with pipeline stage filters (Lead / Quoted / Applied / Issued / Declined)
 - Client detail page: contact info, notes/interaction history log, a task list, and a follow-up date + note
-- Every agent only sees their own clients; an `admin` role (set manually, see below) sees everyone's
+- Every advisor only sees their own clients; an `admin` role (set manually, see below) sees everyone's
 
 ## One-time setup
 
@@ -18,6 +18,8 @@ Go to [supabase.com](https://supabase.com), create a free account, and create a 
 ### 2. Run the database schema
 
 In your Supabase project: **SQL Editor → New query**, paste the entire contents of `supabase/schema.sql`, and run it. This creates every table, security rule, and trigger this app needs.
+
+Note: the database itself still uses the internal field name `agent` for this role (e.g. `role = 'agent'`, columns like `agent_id`). That's just backend plumbing and never shows up anywhere in the app — everything a person sees says "advisor." Renaming it would mean a live database migration, so it's left alone for now.
 
 ### 3. Get your API keys
 
@@ -41,11 +43,11 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — it'll redirect you to `/login`. Click through to **Create an account** to make your first agent.
+Open http://localhost:3000 — it'll redirect you to `/login`. Click through to **Create an account** to make your first advisor.
 
 ### 6. Make yourself an admin (optional)
 
-By default every new signup is a plain `agent` (sees only their own clients). To make an account an `admin` (sees every agent's clients), run this in the Supabase SQL Editor:
+By default every new signup is a plain `agent` (sees only their own clients) — again, that's just the internal role name in the database; the app calls them advisors everywhere. To make an account an `admin` (sees every advisor's clients), run this in the Supabase SQL Editor:
 
 ```sql
 update public.profiles set role = 'admin' where email = 'your-email@example.com';
@@ -62,6 +64,6 @@ The easiest path is [Vercel](https://vercel.com) (free tier, built by the makers
 
 ## What's next (already tracked as follow-up work)
 
-- **Phase 3**: real email reminders — a scheduled job that checks the `reminders` table daily and emails agents whose follow-up is due (via Resend).
+- **Phase 3**: real email reminders — a scheduled job that checks the `reminders` table daily and emails advisors whose follow-up is due (via Resend).
 - **Phase 4**: Google Calendar two-way sync, plus a plain `.ics` feed URL any calendar app (Apple Calendar, Outlook) can subscribe to.
 - **Phase 5**: move the Knowledge Base, Client Analyzer, and Downloads tab from the old single-file portal into this app, so it's genuinely one tool.

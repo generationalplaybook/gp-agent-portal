@@ -19,7 +19,7 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  // If your Supabase project has email confirmation ON (the default), the agent
+  // If your Supabase project has email confirmation ON (the default), the advisor
   // needs to click the link in their inbox before they can sign in.
   redirect("/login?error=" + encodeURIComponent("Check your email to confirm your account, then sign in."));
 }

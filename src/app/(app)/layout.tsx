@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col bg-[#F5F0E8]">
       <nav className="flex h-14 items-center justify-between border-b border-[#D9CFBA] bg-[#F5F0E8] px-6">
         <div className="flex items-center gap-6">
-          <span className="font-serif text-lg font-semibold text-[#1C1C1C]">GP Agent Portal</span>
+          <span className="font-serif text-lg font-semibold text-[#1C1C1C]">GP Advisor Portal</span>
           <Link href="/clients" className="text-sm text-[#2E2E2E] hover:text-[#1C1C1C] hover:font-semibold">
             Clients
           </Link>

@@ -113,7 +113,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <div key={n.id} className="border-l-2 border-[#D9CFBA] pl-3">
                 <p className="text-sm text-[#2E2E2E] whitespace-pre-wrap">{n.body}</p>
                 <p className="mt-1 text-xs text-[#999]">
-                  {(n as unknown as { author?: { full_name?: string } }).author?.full_name ?? "Agent"} ·{" "}
+                  {(n as unknown as { author?: { full_name?: string } }).author?.full_name ?? "Advisor"} ·{" "}
                   {new Date(n.created_at).toLocaleString()}
                 </p>
               </div>

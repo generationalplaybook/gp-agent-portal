@@ -11,8 +11,8 @@ export default async function LoginPage({
   return (
     <div className="flex flex-1 items-center justify-center bg-[#F5F0E8] px-4">
       <div className="w-full max-w-sm rounded-xl border border-[#D9CFBA] bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-[#1C1C1C]">GP Agent Portal</h1>
-        <p className="mb-6 text-sm text-[#666]">Sign in to your agent account.</p>
+        <h1 className="mb-1 text-xl font-semibold text-[#1C1C1C]">GP Advisor Portal</h1>
+        <p className="mb-6 text-sm text-[#666]">Sign in to your advisor account.</p>
 
         {error && (
           <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
@@ -46,7 +46,7 @@ export default async function LoginPage({
         </form>
 
         <p className="mt-5 text-center text-xs text-[#888]">
-          New agent?{" "}
+          New advisor?{" "}
           <Link href="/signup" className="font-medium text-[#1C1C1C] underline">
             Create an account
           </Link>

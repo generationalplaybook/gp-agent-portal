@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GP Agent Portal",
-  description: "Agent CRM — client pipeline, follow-ups, and reminders.",
+  title: "GP Advisor Portal",
+  description: "Advisor CRM — client pipeline, follow-ups, and reminders.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
