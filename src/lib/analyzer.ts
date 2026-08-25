@@ -1,0 +1,337 @@
+// Client Analyzer recommendation engine — ported verbatim (logic-for-logic) from the
+// original GP Agent Portal HTML's runAnalyzer()/buildRolloverRec() functions.
+
+export type YesNoSkip = "yes" | "no" | "skip";
+
+export interface AnalyzerInputs {
+  name: string;
+  dob: string;
+  phone: string;
+  email: string;
+  heightFt: string;
+  heightIn: string;
+  weight: string;
+  tobacco?: "none" | "former" | "current" | "skip";
+  health?: "none" | "managed" | "significant" | "skip";
+  declined?: "no" | "rated" | "declined" | "skip";
+  money?: "qualified" | "nonqualified" | "both" | "skip";
+  otherRetirement?: "yes" | "no" | "skip";
+  otherAmount?: string;
+  funding?: "monthly" | "lumpsum" | "both" | "skip";
+  amount?: string;
+  income?: string;
+  debt?: string;
+  goal?: "accumulation" | "income" | "protection" | "legacy" | "college" | "income_now" | "skip";
+  horizon?: "short" | "mid" | "long" | "never" | "skip";
+  risk?: "guaranteed" | "protected" | "growth" | "skip";
+  earlyAccess?: "yes" | "no" | "skip";
+}
+
+export interface RolloverRec {
+  product: string;
+  reasons: string[];
+}
+
+export interface AnalyzerResult {
+  name: string;
+  phone: string;
+  email: string;
+  age: number | null;
+  dob: string;
+  heightFt: string;
+  heightIn: string;
+  weight: string;
+  tobacco?: string;
+  health?: string;
+  declined?: string;
+  money?: string;
+  income: number;
+  debt: number;
+  suggestedDB: number | null;
+  suggestedReserveLow: number | null;
+  suggestedReserveHigh: number | null;
+  goal?: string;
+  horizon?: string;
+  risk?: string;
+  earlyAccess?: string;
+  primary: string;
+  secondary: string;
+  avoid: string;
+  reasons: string[];
+  talking: string[];
+  avoidReasons: string[];
+  hasRollover: boolean;
+  rolloverProduct: string | null;
+  rolloverReasons: string[] | null;
+}
+
+export function parseCurrencyValue(str: string): number {
+  if (!str) return 0;
+  const n = parseFloat(String(str).replace(/[^0-9.-]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+
+export function calcAgeFromDob(dob: string): number | null {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+export function buildRolloverRec(ageGroup: "young" | "mid" | "preretiree" | "retiree", otherAmount: string): RolloverRec {
+  let rProduct = "";
+  let rReasons: string[] = [];
+  if (ageGroup === "young") {
+    rProduct = "Athene Performance Elite or Athene Agility";
+    rReasons = [
+      "Direct rollover from the old 401k/IRA — no tax event at transfer",
+      "Performance Elite: participation rates up to 335%, pure accumulation",
+      "Agility: built-in income rider at no charge if income may be needed later in life",
+    ];
+  } else if (ageGroup === "mid") {
+    rProduct = "Athene Agility";
+    rReasons = [
+      "Direct rollover — no tax event at transfer",
+      "Built-in Income and Death Benefit Rider at no additional charge",
+      "Activate income whenever ready — not required now",
+    ];
+  } else {
+    rProduct = "Athene Ascent Pro Bonus";
+    rReasons = [
+      "Direct rollover — no tax event at transfer",
+      "10% premium bonus + 20% income base bonus + guaranteed 10% roll-up for 10 years",
+      "Routinely the highest guaranteed income payout from any A+ carrier — ideal for consolidating an old 401k into guaranteed retirement income",
+    ];
+  }
+  if (otherAmount) rReasons = ["Approximate rollover amount: " + otherAmount, ...rReasons];
+  return { product: rProduct, reasons: rReasons };
+}
+
+export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
+  const age = calcAgeFromDob(inputs.dob);
+  const income = parseCurrencyValue(inputs.income ?? "");
+  const debt = parseCurrencyValue(inputs.debt ?? "");
+  const suggestedDB = income > 0 ? income * 10 + debt : null;
+  const suggestedReserveLow = income > 0 ? Math.round(income * 0.5) : null;
+  const suggestedReserveHigh = income > 0 ? income : null;
+
+  const money = inputs.money !== "skip" ? inputs.money : undefined;
+  const insurable: "no" | "maybe" | "yes" =
+    inputs.declined === "declined" ? "no" : inputs.declined === "rated" || inputs.health === "significant" ? "maybe" : "yes";
+  const goal = inputs.goal !== "skip" ? inputs.goal : undefined;
+  const horizon = inputs.horizon !== "skip" ? inputs.horizon : undefined;
+  const funding = inputs.funding !== "skip" ? inputs.funding : undefined;
+  const earlyAccess = inputs.earlyAccess !== "skip" ? inputs.earlyAccess : undefined;
+
+  let ageGroup: "young" | "mid" | "preretiree" | "retiree" = "mid";
+  if (age !== null) {
+    if (age < 40) ageGroup = "young";
+    else if (age <= 55) ageGroup = "mid";
+    else if (age <= 65) ageGroup = "preretiree";
+    else ageGroup = "retiree";
+  }
+
+  let primary = "";
+  let secondary = "";
+  let avoid = "";
+  let reasons: string[] = [];
+  let talking: string[] = [];
+  let avoidReasons: string[] = [];
+
+  if (insurable === "no") {
+    if (goal === "income_now") {
+      primary = "Athene Activate SPIA";
+      reasons = [
+        "No underwriting required — uninsurable clients fully qualify",
+        "Income starts within 30 days",
+        "Payments guaranteed — Athene cannot reduce them",
+      ];
+      secondary = "F&G Safe Income Advantage — if income can be deferred to grow first";
+    } else if (goal === "income" || ageGroup === "retiree" || ageGroup === "preretiree") {
+      primary = "Athene Ascent Pro Bonus";
+      reasons = [
+        "No underwriting required — annuity is the right tool for uninsurable clients",
+        "10% premium bonus + 20% income base bonus at issue",
+        "Guaranteed 10% simple interest roll-up for 10 years",
+        "Routinely the highest guaranteed income payout from any A+ carrier",
+      ];
+      secondary = "F&G Safe Income Advantage — 7.2% guaranteed roll-up with inflation-linked payout";
+    } else {
+      primary = "Athene Performance Elite";
+      reasons = ["No underwriting required", "0% floor with participation rates up to 335%", "No income rider fee drag — pure accumulation"];
+      secondary = "Athene Agility — built-in income rider at no charge if income may be needed later";
+    }
+    avoid = "Any IUL or Term product";
+    avoidReasons = ["Client cannot pass life insurance underwriting — annuities require none"];
+  } else if (money === "qualified" && goal !== "protection" && goal !== "legacy") {
+    if (goal === "income_now") {
+      primary = "Athene Activate SPIA";
+      reasons = [
+        "Direct 401k/IRA rollover — no tax event at transfer",
+        "Income starts within 30 days",
+        "Payments guaranteed once set",
+      ];
+      secondary = "Athene Agility — if income can wait, built-in rider at no charge";
+    } else if (goal === "income" || ageGroup === "retiree" || ageGroup === "preretiree") {
+      primary = "Athene Ascent Pro Bonus";
+      reasons = [
+        "Qualified money rolls directly into an annuity — no tax event at transfer",
+        "10% premium bonus + 20% income base bonus + guaranteed 10% roll-up for 10 years",
+        "Taxes deferred until income distributions begin",
+      ];
+      secondary = "F&G Safe Income Advantage — 7.2% roll-up, inflation-linked payout option";
+    } else {
+      primary = "Athene Performance Elite or Athene Agility";
+      reasons = [
+        "Direct rollover — no tax event at transfer",
+        "Performance Elite: participation up to 335%, pure accumulation",
+        "Agility: built-in income rider at no charge if income may be needed later",
+      ];
+      secondary = "F&G Safe Income Advantage — if guaranteed income is the end goal";
+    }
+    avoid = "IUL";
+    avoidReasons = ["Qualified money cannot go directly into an IUL — must be distributed first, triggering taxes"];
+    talking = [
+      "Your 401k rolls directly into an annuity with zero taxes due today",
+      "The same 59 1/2 restriction already applies to your 401k — this does not make your timeline worse",
+      "The annuity adds a 0% floor so market crashes cannot touch your balance",
+    ];
+  } else {
+    if (goal === "protection") {
+      primary = "ADDvantage Term (North American)";
+      reasons = [
+        "Maximum death benefit at lowest cost",
+        "All three living benefits included at no extra cost",
+        "Convertible to any North American IUL later with no new medical exam",
+      ];
+      secondary = "Ethos Term With Living Benefits (Ameritas) — if conversion to North American is not a priority";
+      avoid = "IUL for pure protection";
+      avoidReasons = ["IUL cost of insurance is higher than term — for pure protection, term is more efficient"];
+    } else if (goal === "legacy") {
+      if (horizon === "long" || horizon === "never" || !horizon) {
+        primary = "North American Protection Builder IUL 2";
+        reasons = [
+          "Guaranteed death benefit to age 120 via Premium Guaranteed Rider",
+          "Premium Recovery Endorsement — 50% back at Year 15, 100% back at Year 20/25",
+          "Living benefits included at no extra cost",
+        ];
+        secondary = "F&G Everlast IUL — maximizes death benefit with InstApproval";
+      } else {
+        primary = "ADDvantage Term (North American) with conversion plan";
+        reasons = ["Lock in coverage now at lowest cost", "Convert to Protection Builder IUL 2 later when income supports higher premiums"];
+        secondary = "North American Protection Builder IUL 2 — if client can fund now";
+      }
+    } else if (goal === "college") {
+      primary = "North American Accumulation IUL — College Planning Juvenile (via Ethos)";
+      reasons = [
+        "Cash value NOT counted as a FAFSA asset — unlike 529 plans",
+        "Distributions start at age 18 — tax-free policy loans",
+        "No restrictions on use",
+        "Permanently locks in child's insurability",
+      ];
+      secondary = "Accumulation IUL — Max Cash Value Juvenile — if maximum long-term growth is the priority";
+      avoid = "529 Plan";
+      avoidReasons = ["529 plans count against FAFSA financial aid. IUL cash value does not appear on FAFSA and has no use restrictions"];
+    } else if (goal === "income_now") {
+      primary = "Athene Activate SPIA";
+      reasons = ["Income starts within 30 days", "Payments guaranteed once set", "Life only, period certain, or joint life options available"];
+      secondary = "F&G Safe Income Advantage — if client can wait 1-2 years, roll-up produces more";
+      avoid = "IUL for immediate income";
+      avoidReasons = ["IUL requires years to build meaningful cash value — not suitable for immediate income"];
+      talking = ["You put in your lump sum and within 30 days your guaranteed paycheck begins", "It never stops — even if you live to 100"];
+    } else if (goal === "income") {
+      if (ageGroup === "young" || horizon === "long") {
+        primary = "North American Builder Plus IUL 4";
+        reasons = [
+          "At a younger age, IUL can provide more tax-free income over a longer retirement than an annuity",
+          "Net-zero cost loans — tax-free income with no restrictions",
+          "Exclusive Fidelity index bonuses compound over 20+ years",
+        ];
+        secondary = "Athene Agility FIA — if client also has qualified money needing rollover";
+      } else {
+        primary = "Athene Ascent Pro Bonus";
+        reasons = [
+          "10% premium bonus + 20% income base bonus + 10% roll-up = maximum guaranteed income",
+          "Routinely the highest guaranteed income payout from any A+ carrier",
+        ];
+        secondary = "North American Builder Plus IUL 4 — if client is under 55 and can defer 15+ years";
+        talking = [
+          "This is the highest guaranteed income available from an A+ rated carrier",
+          "Your income is locked in regardless of what markets do",
+          "You cannot outlive it even if you live to 120",
+        ];
+      }
+    } else {
+      if (horizon === "short" || horizon === "mid" || earlyAccess === "yes") {
+        primary = "North American Smart Builder IUL 3";
+        reasons = [
+          "0% premium load — 100% of every dollar goes to cash value from Day 1",
+          "Waiver of Surrender Charge Rider = Day 1 access with no surrender penalties",
+          "Policy loans available at any age — no IRS age restriction",
+        ];
+        if (funding === "lumpsum" || funding === "both") {
+          reasons.push("LUMP SUM FRIENDLY — 0% load means 100% of lump sum goes to work immediately");
+        }
+        secondary = "North American Builder Plus IUL 4 — if time horizon is actually 15+ years";
+        avoid = "Builder Plus IUL 4 for short-term goals";
+        avoidReasons = ["Builder Plus 4 is designed for 20+ year strategies — not optimized for early access"];
+      } else {
+        primary = "North American Builder Plus IUL 4";
+        reasons = [
+          "Exclusive Fidelity Multifactor Yield Index — not available at any other carrier",
+          "Interest bonus: 1% Years 1-10, increases to 1.5% after Year 10",
+          "Net-zero cost loans — full balance earns even on loaned amount",
+        ];
+        secondary = "Ethos Protection IUL — 14-15% below national average pricing";
+        if (funding === "lumpsum" || funding === "both") {
+          reasons.push("Accepts lump sum deposits including 1035 exchanges");
+        }
+      }
+      talking = [
+        "Your money grows linked to the market but can never go backwards — 0% floor",
+        "When ready to access it, you take a policy loan — no tax, no credit check, no monthly payment required",
+        "Your full balance keeps compounding even while borrowing against it",
+      ];
+    }
+  }
+
+  const otherRetirement = inputs.otherRetirement !== "skip" ? inputs.otherRetirement : undefined;
+  const otherAmount = inputs.otherAmount ?? "";
+  const rollover = otherRetirement === "yes" ? buildRolloverRec(ageGroup, otherAmount) : null;
+
+  return {
+    name: inputs.name,
+    phone: inputs.phone,
+    email: inputs.email,
+    age,
+    dob: inputs.dob,
+    heightFt: inputs.heightFt,
+    heightIn: inputs.heightIn,
+    weight: inputs.weight,
+    tobacco: inputs.tobacco !== "skip" ? inputs.tobacco : undefined,
+    health: inputs.health !== "skip" ? inputs.health : undefined,
+    declined: inputs.declined !== "skip" ? inputs.declined : undefined,
+    money,
+    income,
+    debt,
+    suggestedDB,
+    suggestedReserveLow,
+    suggestedReserveHigh,
+    goal,
+    horizon,
+    risk: inputs.risk !== "skip" ? inputs.risk : undefined,
+    earlyAccess,
+    primary,
+    secondary,
+    avoid,
+    reasons,
+    talking,
+    avoidReasons,
+    hasRollover: otherRetirement === "yes",
+    rolloverProduct: rollover?.product ?? null,
+    rolloverReasons: rollover?.reasons ?? null,
+  };
+}

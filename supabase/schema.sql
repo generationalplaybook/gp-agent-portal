@@ -55,6 +55,7 @@ create table if not exists public.clients (
   full_name text not null,
   phone text,
   email text,
+  birth_date date,
   stage client_stage not null default 'lead',
   source text,
   follow_up_at timestamptz,

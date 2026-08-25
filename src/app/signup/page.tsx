@@ -9,7 +9,7 @@ export default async function SignupPage({
   const { error } = await searchParams;
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-[#F5F0E8] px-4">
+    <div className="flex flex-1 items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm rounded-xl border border-[#D9CFBA] bg-white p-8 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold text-[#1C1C1C]">Create your advisor account</h1>
         <p className="mb-6 text-sm text-[#666]">GP Advisor Portal</p>

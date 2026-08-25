@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
 import StageSelect from "./StageSelect";
 import TaskRow from "./TaskRow";
+import PhoneInput from "../PhoneInput";
 import { updateFollowUp, updateContactInfo, addNote, addTask } from "../actions";
 
 function toDatetimeLocal(iso: string | null) {
@@ -51,9 +52,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Phone
-              <input
+              <PhoneInput
                 name="phone"
-                defaultValue={client.phone ?? ""}
+                defaultValue={client.phone}
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
@@ -62,6 +63,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <input
                 name="email"
                 defaultValue={client.email ?? ""}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Birthdate
+              <input
+                type="date"
+                name="birth_date"
+                defaultValue={client.birth_date ?? ""}
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>

@@ -20,6 +20,7 @@ export async function createClientRecord(formData: FormData) {
   const full_name = String(formData.get("full_name") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
+  const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
   const stage = (String(formData.get("stage") || "lead") as ClientStage);
 
@@ -27,7 +28,7 @@ export async function createClientRecord(formData: FormData) {
 
   const { data, error } = await supabase
     .from("clients")
-    .insert({ owner_id: user.id, full_name, phone, email, source, stage })
+    .insert({ owner_id: user.id, full_name, phone, email, birth_date, source, stage })
     .select("id")
     .single();
 
@@ -85,9 +86,10 @@ export async function updateContactInfo(formData: FormData) {
   const full_name = String(formData.get("full_name") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
+  const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
 
-  await supabase.from("clients").update({ full_name, phone, email, source }).eq("id", clientId);
+  await supabase.from("clients").update({ full_name, phone, email, birth_date, source }).eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
 }

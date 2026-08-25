@@ -1,5 +1,6 @@
 import { createClientRecord } from "../actions";
 import { CLIENT_STAGES } from "@/lib/types";
+import PhoneInput from "../PhoneInput";
 
 export default async function NewClientPage({
   searchParams,
@@ -28,10 +29,8 @@ export default async function NewClientPage({
         </label>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
           Phone
-          <input
-            type="tel"
+          <PhoneInput
             name="phone"
-            placeholder="000-000-0000"
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
@@ -40,6 +39,14 @@ export default async function NewClientPage({
           <input
             type="email"
             name="email"
+            className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+          Birthdate
+          <input
+            type="date"
+            name="birth_date"
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>

@@ -22,6 +22,7 @@ export interface Client {
   full_name: string;
   phone: string | null;
   email: string | null;
+  birth_date: string | null;
   stage: ClientStage;
   source: string | null;
   follow_up_at: string | null;
