@@ -18,6 +18,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 - **Presentation embed / training & licensing content.** Karina is still building the
   presentation materials; she said we can add this once that's ready.
 
+## Technical follow-up
+
+- **Server action error handling.** Discovered while fixing the Invite Agents crash:
+  Next.js hides any THROWN error from a server action behind a generic message in
+  production ("Minified React error #441..."), even when the code does
+  `throw new Error("some helpful message")`. The invite/role actions were rewritten to
+  return `{ ok, error }` instead of throwing, which fixes it there. Other action files
+  (client notes, tasks, reminders, analyses) still use the throw pattern — they haven't
+  caused a reported issue yet, but the same silent-masking risk applies to all of them.
+  Worth a pass to convert them the same way if more mystery "#441" errors show up.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

@@ -14,16 +14,20 @@ interface Agent {
 export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; currentUserId: string }) {
   const [role, setRole] = useState(agent.role);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const isSelf = agent.id === currentUserId;
 
   async function handleChange(newRole: "agent" | "admin") {
+    const previous = role;
     setRole(newRole);
     setSaving(true);
-    try {
-      await updateAgentRole(agent.id, newRole);
-    } finally {
-      setSaving(false);
+    setError("");
+    const result = await updateAgentRole(agent.id, newRole);
+    if (!result.ok) {
+      setRole(previous);
+      setError(result.error);
     }
+    setSaving(false);
   }
 
   return (
@@ -33,6 +37,7 @@ export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; c
           {agent.full_name || "Unnamed"} {isSelf && <span className="text-xs text-[#999]">(you)</span>}
         </div>
         <div className="text-xs text-[#888]">{agent.email}</div>
+        {error && <div className="mt-1 text-xs font-semibold text-[#8B1A1A]">{error}</div>}
       </div>
       <select
         value={role}

@@ -13,16 +13,15 @@ export default function InviteForm() {
     e.preventDefault();
     setSending(true);
     setStatus(null);
-    try {
-      await inviteAgent(email, fullName);
+    const result = await inviteAgent(email, fullName);
+    if (result.ok) {
       setStatus({ ok: true, message: `Invite sent to ${email}.` });
       setFullName("");
       setEmail("");
-    } catch (err) {
-      setStatus({ ok: false, message: err instanceof Error ? err.message : "Could not send invite." });
-    } finally {
-      setSending(false);
+    } else {
+      setStatus({ ok: false, message: result.error });
     }
+    setSending(false);
   }
 
   return (
