@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "./actions";
 
-export default function UserMenu({ displayName }: { displayName: string }) {
+export default function UserMenu({ displayName, isAdmin = false }: { displayName: string; isAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -38,6 +38,15 @@ export default function UserMenu({ displayName }: { displayName: string }) {
         >
           My Profile
         </Link>
+        {isAdmin && (
+          <Link
+            href="/admin/invite"
+            onClick={() => setOpen(false)}
+            className="block rounded px-3 py-2 text-sm text-[#2E2E2E] hover:bg-[#F5F0E8]"
+          >
+            Invite Agents
+          </Link>
+        )}
         <form action={signOut}>
           <button
             type="submit"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
+import LocalDateTime from "../LocalDateTime";
 
 export default async function ClientsPage({
   searchParams,
@@ -15,6 +16,22 @@ export default async function ClientsPage({
     query = query.eq("stage", stage as ClientStage);
   }
   const { data: clients, error } = await query;
+
+  // A client can now have many reminders (see the Reminders card on their profile),
+  // so "next follow up" here means the soonest pending one, not a single stored field.
+  const clientIds = (clients ?? []).map((c) => c.id);
+  const nextReminderByClient = new Map<string, string>();
+  if (clientIds.length > 0) {
+    const { data: pendingReminders } = await supabase
+      .from("reminders")
+      .select("client_id, remind_at")
+      .in("client_id", clientIds)
+      .is("sent_at", null)
+      .order("remind_at", { ascending: true });
+    for (const r of pendingReminders ?? []) {
+      if (!nextReminderByClient.has(r.client_id)) nextReminderByClient.set(r.client_id, r.remind_at);
+    }
+  }
 
   return (
     <div>
@@ -62,7 +79,8 @@ export default async function ClientsPage({
       <div className="grid gap-3">
         {clients?.map((c) => {
           const stageInfo = CLIENT_STAGES.find((s) => s.value === c.stage);
-          const overdue = c.follow_up_at && new Date(c.follow_up_at) < new Date();
+          const nextReminder = nextReminderByClient.get(c.id) ?? null;
+          const overdue = nextReminder && new Date(nextReminder) < new Date();
           return (
             <Link
               key={c.id}
@@ -88,10 +106,10 @@ export default async function ClientsPage({
                   {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact info yet"}
                 </div>
               </div>
-              {c.follow_up_at && (
+              {nextReminder && (
                 <div className="text-right text-xs text-[#888]">
                   Follow up<br />
-                  {new Date(c.follow_up_at).toLocaleDateString()}
+                  <LocalDateTime iso={nextReminder} options={{ dateStyle: "medium" }} />
                 </div>
               )}
             </Link>

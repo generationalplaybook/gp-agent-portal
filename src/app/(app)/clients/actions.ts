@@ -47,43 +47,6 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   revalidatePath("/clients");
 }
 
-export async function updateFollowUp(formData: FormData) {
-  const { supabase } = await requireUser();
-  const clientId = String(formData.get("client_id"));
-  const followUpAtRaw = String(formData.get("follow_up_at") || "");
-  const followUpNote = String(formData.get("follow_up_note") || "").trim() || null;
-
-  const follow_up_at = followUpAtRaw ? new Date(followUpAtRaw).toISOString() : null;
-
-  await supabase
-    .from("clients")
-    .update({ follow_up_at, follow_up_note: followUpNote })
-    .eq("id", clientId);
-
-  // Keep exactly one pending reminder per client instead of piling up a new row every time the
-  // follow-up is edited — clear out any not-yet-sent reminder for this client first.
-  await supabase.from("reminders").delete().eq("client_id", clientId).is("sent_at", null);
-
-  if (follow_up_at) {
-    const { data: client } = await supabase
-      .from("clients")
-      .select("owner_id, full_name")
-      .eq("id", clientId)
-      .single();
-    if (client) {
-      await supabase.from("reminders").insert({
-        client_id: clientId,
-        agent_id: client.owner_id,
-        remind_at: follow_up_at,
-        message: `Follow up with ${client.full_name}` + (followUpNote ? `: ${followUpNote}` : ""),
-      });
-    }
-  }
-
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/reminders");
-}
-
 export async function updateContactInfo(formData: FormData) {
   const { supabase } = await requireUser();
   const clientId = String(formData.get("client_id"));

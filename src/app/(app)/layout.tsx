@@ -25,10 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className="flex h-14 items-center justify-between border-b border-[#D9CFBA] bg-white px-6">
         <div className="flex items-center gap-6">
           <span className="font-serif text-lg font-semibold text-[#1C1C1C]">GP Advisor Portal</span>
-          <NavLinks isAdmin={isAdmin} />
+          <NavLinks />
         </div>
         <div className="flex items-center gap-4">
-          <UserMenu displayName={displayName} />
+          <UserMenu displayName={displayName} isAdmin={isAdmin} />
         </div>
       </nav>
       <main className="flex-1 px-6 py-6">{children}</main>

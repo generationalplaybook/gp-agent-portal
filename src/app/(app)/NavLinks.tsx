@@ -12,15 +12,12 @@ const LINKS = [
   { href: "/downloads", label: "Downloads" },
 ];
 
-const ADMIN_LINKS = [{ href: "/admin/invite", label: "Invite Agents" }];
-
-export default function NavLinks({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function NavLinks() {
   const pathname = usePathname();
-  const links = isAdmin ? [...LINKS, ...ADMIN_LINKS] : LINKS;
 
   return (
     <>
-      {links.map((link) => {
+      {LINKS.map((link) => {
         const active = pathname === link.href || pathname?.startsWith(link.href + "/");
         return (
           <Link

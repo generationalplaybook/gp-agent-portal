@@ -3,25 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
 import StageSelect from "./StageSelect";
 import TaskRow from "./TaskRow";
-import FollowUpForm from "./FollowUpForm";
+import RemindersCard from "./RemindersCard";
 import AnalysesList from "./AnalysesList";
 import NoteRow from "./NoteRow";
+import LocalDateTime from "../../LocalDateTime";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo, addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
-
-function toDatetimeLocal(iso: string | null) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: client, error }, { data: notes }, { data: tasks }, { data: analyses }, { data: plan }] =
+  const [{ data: client, error }, { data: notes }, { data: tasks }, { data: analyses }, { data: plan }, { data: reminders }] =
     await Promise.all([
       supabase.from("clients").select("*").eq("id", id).single(),
       supabase
@@ -36,6 +30,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         .eq("client_id", id)
         .order("created_at", { ascending: false }),
       supabase.from("client_financial_plans").select("data, updated_at").eq("client_id", id).maybeSingle(),
+      supabase
+        .from("reminders")
+        .select("id, remind_at, message, sent_at")
+        .eq("client_id", id)
+        .order("remind_at", { ascending: true }),
     ]);
 
   if (error || !client) notFound();
@@ -224,7 +223,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 <span className="font-semibold text-[#1C1C1C]">{computeFA(plan.data as FAState).overallScore} / 100</span>
               </div>
               <div className="mb-3 text-xs text-[#999]">
-                Last updated {new Date(plan.updated_at).toLocaleDateString()}
+                Last updated <LocalDateTime iso={plan.updated_at} options={{ dateStyle: "medium" }} />
               </div>
             </>
           ) : (
@@ -239,25 +238,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Follow-Up Reminder</h2>
-          {client.follow_up_at ? (
-            <div className="mb-4 rounded-md bg-[#EBF5EE] px-3 py-2 text-xs text-[#1E6B3C]">
-              <span className="font-semibold">Next reminder:</span>{" "}
-              {new Date(client.follow_up_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-              {client.follow_up_note && <> — {client.follow_up_note}</>}
-            </div>
-          ) : (
-            <div className="mb-4 rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#888]">No reminder set.</div>
-          )}
-          <FollowUpForm
-            clientId={client.id}
-            defaultDatetime={toDatetimeLocal(client.follow_up_at)}
-            defaultNote={client.follow_up_note ?? ""}
-          />
-          <p className="mt-3 text-xs text-[#999]">
-            Saving this queues an email reminder (sent by the scheduled job — see Phase 3) and, once
-            calendar sync is connected, an event on your calendar.
-          </p>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
+          <RemindersCard clientId={client.id} reminders={reminders ?? []} />
         </div>
       </div>
     </div>

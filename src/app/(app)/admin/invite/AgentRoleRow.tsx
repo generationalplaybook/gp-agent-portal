@@ -40,7 +40,7 @@ export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; c
         onChange={(e) => handleChange(e.target.value as "agent" | "admin")}
         className="rounded-md border border-[#D9CFBA] px-2 py-1 text-xs disabled:opacity-60"
       >
-        <option value="agent">Agent</option>
+        <option value="agent">Advisor</option>
         <option value="admin">Admin</option>
       </select>
     </div>

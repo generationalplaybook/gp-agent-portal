@@ -1,51 +1,63 @@
 import { createClient } from "@/lib/supabase/server";
-
-// Kept outside the component body so it isn't flagged as an impure call during render.
-function isOverdue(iso: string): boolean {
-  return new Date(iso).getTime() < Date.now();
-}
+import ReminderRow from "../ReminderRow";
 
 export default async function RemindersPage() {
   const supabase = await createClient();
 
   const { data: reminders } = await supabase
     .from("reminders")
-    .select("id, remind_at, message, client_id, clients(id, full_name)")
-    .is("sent_at", null)
+    .select("id, remind_at, message, sent_at, client_id, clients(id, full_name)")
     .order("remind_at", { ascending: true });
+
+  const pending = (reminders ?? []).filter((r) => !r.sent_at);
+  const completed = (reminders ?? []).filter((r) => r.sent_at);
 
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Reminders</h1>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-        {(!reminders || reminders.length === 0) && (
+        {pending.length === 0 && (
           <p className="text-sm text-[#999]">No reminders set. Add one from a client&rsquo;s profile.</p>
         )}
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
-          {reminders?.map((r) => {
+          {pending.map((r) => {
             const client = r.clients as unknown as { id: string; full_name: string } | null;
-            const overdue = isOverdue(r.remind_at);
             return (
-              <a
+              <ReminderRow
                 key={r.id}
-                href={client ? `/clients/${client.id}` : "#"}
-                className="flex items-center justify-between gap-4 py-3 hover:bg-[#F5F0E8]"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-[#1C1C1C]">{client?.full_name ?? "Unknown client"}</div>
-                  <div className="text-xs text-[#666]">{r.message}</div>
-                </div>
-                <div
-                  className={`shrink-0 text-xs font-semibold ${overdue ? "text-[#8B1A1A]" : "text-[#2E2E2E]"}`}
-                >
-                  {overdue && "Overdue — "}
-                  {new Date(r.remind_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                </div>
-              </a>
+                reminder={r}
+                clientId={r.client_id}
+                clientName={client?.full_name ?? "Unknown client"}
+                clientHref={client ? `/clients/${client.id}` : undefined}
+              />
             );
           })}
         </div>
       </div>
+
+      {completed.length > 0 && (
+        <details className="mt-4 text-xs text-[#999]">
+          <summary className="cursor-pointer select-none">
+            {completed.length} completed reminder{completed.length > 1 ? "s" : ""}
+          </summary>
+          <div className="mt-2 rounded-lg border border-[#D9CFBA] bg-white p-6">
+            <div className="flex flex-col divide-y divide-[#EDE8DF]">
+              {completed.map((r) => {
+                const client = r.clients as unknown as { id: string; full_name: string } | null;
+                return (
+                  <ReminderRow
+                    key={r.id}
+                    reminder={r}
+                    clientId={r.client_id}
+                    clientName={client?.full_name ?? "Unknown client"}
+                    clientHref={client ? `/clients/${client.id}` : undefined}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
