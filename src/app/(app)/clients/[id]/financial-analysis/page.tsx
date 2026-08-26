@@ -12,7 +12,18 @@ export default async function FinancialAnalysisPage({ params }: { params: Promis
     supabase.from("client_financial_plans").select("data").eq("client_id", id).maybeSingle(),
   ]);
 
-  if (error || !client) notFound();
+  // A real "no such client" and a failed query used to look identical — both showed
+  // Next's generic 404 page. Only fall back to notFound() when there's truly no client;
+  // if the query itself failed (permissions, etc.), show why instead of hiding it.
+  if (error) {
+    return (
+      <div className="mx-auto max-w-xl rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">
+        <p className="mb-2 text-sm font-semibold text-[#8B1A1A]">Could not load this client.</p>
+        <p className="text-xs text-[#666]">{error.message}</p>
+      </div>
+    );
+  }
+  if (!client) notFound();
 
   const {
     data: { user },
