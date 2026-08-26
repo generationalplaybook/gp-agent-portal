@@ -11,7 +11,7 @@ export default function AnalysesList({
   advisor?: AdvisorInfo;
 }) {
   if (!analyses.length) {
-    return <p className="text-sm text-[#999]">No analyses yet.</p>;
+    return <p className="text-xs text-[#999]">No analyses yet.</p>;
   }
 
   return (

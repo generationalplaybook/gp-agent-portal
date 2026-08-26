@@ -203,16 +203,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
         {/* Client Analyses */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#555]">Client Analyses</h2>
-            <a
-              href={`/client-analyzer?client=${client.id}`}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
-            >
-              Start New Analysis
-            </a>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Client Analyses</h2>
+          <div className="mb-3">
+            <AnalysesList analyses={analyses ?? []} advisor={advisor} />
           </div>
-          <AnalysesList analyses={analyses ?? []} advisor={advisor} />
+          <a
+            href={`/client-analyzer?client=${client.id}`}
+            className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            Start New Analysis
+          </a>
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
