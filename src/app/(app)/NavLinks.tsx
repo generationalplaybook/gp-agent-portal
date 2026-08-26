@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/clients", label: "Clients" },
+  { href: "/reminders", label: "Reminders" },
   { href: "/knowledge-base", label: "Knowledge Base" },
   { href: "/client-analyzer", label: "Client Analyzer" },
   { href: "/compare", label: "Compare" },
   { href: "/downloads", label: "Downloads" },
-  { href: "/profile", label: "My Profile" },
 ];
 
 const ADMIN_LINKS = [{ href: "/admin/invite", label: "Invite Agents" }];

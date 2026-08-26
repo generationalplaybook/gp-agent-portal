@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "./actions";
 import NavLinks from "./NavLinks";
+import UserMenu from "./UserMenu";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -28,15 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks isAdmin={isAdmin} />
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-[#666]">{displayName}</span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs text-[#2E2E2E] hover:bg-[#EDE8DF]"
-            >
-              Sign out
-            </button>
-          </form>
+          <UserMenu displayName={displayName} />
         </div>
       </nav>
       <main className="flex-1 px-6 py-6">{children}</main>

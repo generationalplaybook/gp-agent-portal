@@ -278,7 +278,11 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
         ];
       }
     } else {
-      if (horizon === "short" || horizon === "mid" || earlyAccess === "yes" || earlyAccess === "both") {
+      // Builder Plus IUL 4 is the default here — it's what most clients end up in, and unlike
+      // Smart Builder IUL 3 it carries no waiver-of-surrender-charge cost. IUL 3 only takes over
+      // as primary when the client has a firm, explicit need for early access (not just a
+      // mid-length horizon or an "either way" answer on access).
+      if (earlyAccess === "yes") {
         primary = "North American Smart Builder IUL 3";
         reasons = [
           "0% premium load — 100% of every dollar goes to cash value from Day 1",
@@ -298,7 +302,11 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
           "Interest bonus: 1% Years 1-10, increases to 1.5% after Year 10",
           "Net-zero cost loans — full balance earns even on loaned amount",
         ];
-        secondary = "Ethos Protection IUL — 14-15% below national average pricing";
+        if (horizon === "short" || horizon === "mid" || earlyAccess === "both") {
+          secondary = "North American Smart Builder IUL 3 — if early access before 59½ turns out to be a firm need";
+        } else {
+          secondary = "Ethos Protection IUL — 14-15% below national average pricing";
+        }
         if (funding === "lumpsum" || funding === "both") {
           reasons.push("Accepts lump sum deposits including 1035 exchanges");
         }

@@ -5,6 +5,7 @@ import StageSelect from "./StageSelect";
 import TaskRow from "./TaskRow";
 import FollowUpForm from "./FollowUpForm";
 import AnalysesList from "./AnalysesList";
+import NoteRow from "./NoteRow";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo, addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -147,13 +148,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <p className="text-sm text-[#999]">No notes yet.</p>
             )}
             {notes?.map((n) => (
-              <div key={n.id} className="border-l-2 border-[#D9CFBA] pl-3">
-                <p className="text-sm text-[#2E2E2E] whitespace-pre-wrap">{n.body}</p>
-                <p className="mt-1 text-xs text-[#999]">
-                  {(n as unknown as { author?: { full_name?: string } }).author?.full_name ?? "Advisor"} ·{" "}
-                  {new Date(n.created_at).toLocaleString()}
-                </p>
-              </div>
+              <NoteRow
+                key={n.id}
+                note={n as unknown as { id: string; body: string; created_at: string; author?: { full_name?: string | null } | null }}
+                clientId={client.id}
+              />
             ))}
           </div>
         </div>
@@ -188,6 +187,19 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Sidebar: stage + analyses + financial analysis + follow-up */}
+      <div className="flex flex-col gap-5">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>
+          <span
+            className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
+            style={{ backgroundColor: stageInfo?.color }}
+          >
+            {stageInfo?.label}
+          </span>
+        </div>
 
         {/* Client Analyses */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
@@ -201,19 +213,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </a>
           </div>
           <AnalysesList analyses={analyses ?? []} advisor={advisor} />
-        </div>
-      </div>
-
-      {/* Sidebar: stage + follow-up */}
-      <div className="flex flex-col gap-5">
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>
-          <span
-            className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
-            style={{ backgroundColor: stageInfo?.color }}
-          >
-            {stageInfo?.label}
-          </span>
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
@@ -241,6 +240,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Follow-Up Reminder</h2>
+          {client.follow_up_at ? (
+            <div className="mb-4 rounded-md bg-[#EBF5EE] px-3 py-2 text-xs text-[#1E6B3C]">
+              <span className="font-semibold">Next reminder:</span>{" "}
+              {new Date(client.follow_up_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+              {client.follow_up_note && <> — {client.follow_up_note}</>}
+            </div>
+          ) : (
+            <div className="mb-4 rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#888]">No reminder set.</div>
+          )}
           <FollowUpForm
             clientId={client.id}
             defaultDatetime={toDatetimeLocal(client.follow_up_at)}

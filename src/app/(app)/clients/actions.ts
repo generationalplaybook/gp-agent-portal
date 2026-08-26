@@ -60,7 +60,10 @@ export async function updateFollowUp(formData: FormData) {
     .update({ follow_up_at, follow_up_note: followUpNote })
     .eq("id", clientId);
 
-  // Queue a reminder row for the scheduled job to pick up (see Phase 3 — email sending).
+  // Keep exactly one pending reminder per client instead of piling up a new row every time the
+  // follow-up is edited — clear out any not-yet-sent reminder for this client first.
+  await supabase.from("reminders").delete().eq("client_id", clientId).is("sent_at", null);
+
   if (follow_up_at) {
     const { data: client } = await supabase
       .from("clients")
@@ -78,6 +81,7 @@ export async function updateFollowUp(formData: FormData) {
   }
 
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/reminders");
 }
 
 export async function updateContactInfo(formData: FormData) {
@@ -101,6 +105,22 @@ export async function addNote(formData: FormData) {
   if (!body) return;
 
   await supabase.from("client_notes").insert({ client_id: clientId, author_id: user.id, body });
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function updateNote(noteId: string, clientId: string, body: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const trimmed = body.trim();
+  if (!trimmed) throw new Error("Note can't be empty.");
+  const { error } = await supabase.from("client_notes").update({ body: trimmed }).eq("id", noteId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function deleteNote(noteId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_notes").delete().eq("id", noteId);
+  if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
 }
 

@@ -149,9 +149,9 @@ export default function AnalyzerClient({
   const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
 
-  const [saveMode, setSaveMode] = useState<"new" | "existing">(prefillClient ? "existing" : "new");
   const [selectedClientId, setSelectedClientId] = useState<string>(prefillClient?.id ?? "");
-  const [saving, setSaving] = useState(false);
+  const [savingNew, setSavingNew] = useState(false);
+  const [savingExisting, setSavingExisting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ ok: boolean; message: string; clientId?: string } | null>(
     null
   );
@@ -186,31 +186,40 @@ export default function AnalyzerClient({
     setResult(null);
     setMissing([]);
     setSaveStatus(null);
-    setSaveMode("new");
     setSelectedClientId("");
   }
 
-  async function handleSaveAnalysis() {
+  async function handleSaveAsNewClient() {
     if (!result) return;
-    setSaving(true);
+    setSavingNew(true);
     setSaveStatus(null);
     try {
-      if (saveMode === "existing") {
-        if (!selectedClientId) {
-          setSaveStatus({ ok: false, message: "Choose a client to save this analysis to." });
-          return;
-        }
-        await saveAnalysisToClient(selectedClientId, inputs, result);
-        setSaveStatus({ ok: true, message: "Analysis saved to client profile.", clientId: selectedClientId });
-      } else {
-        const newId = await saveAnalysisAsNewClient(inputs, result);
-        setSaveStatus({ ok: true, message: "New client created and analysis saved.", clientId: newId });
-      }
+      const newId = await saveAnalysisAsNewClient(inputs, result);
+      setSaveStatus({ ok: true, message: "New client created and analysis saved.", clientId: newId });
       router.refresh();
     } catch (e) {
       setSaveStatus({ ok: false, message: e instanceof Error ? e.message : "Could not save analysis." });
     } finally {
-      setSaving(false);
+      setSavingNew(false);
+    }
+  }
+
+  async function handleSaveToExisting() {
+    if (!result) return;
+    if (!selectedClientId) {
+      setSaveStatus({ ok: false, message: "Choose a client to save this analysis to." });
+      return;
+    }
+    setSavingExisting(true);
+    setSaveStatus(null);
+    try {
+      await saveAnalysisToClient(selectedClientId, inputs, result);
+      setSaveStatus({ ok: true, message: "Analysis saved to client profile.", clientId: selectedClientId });
+      router.refresh();
+    } catch (e) {
+      setSaveStatus({ ok: false, message: e instanceof Error ? e.message : "Could not save analysis." });
+    } finally {
+      setSavingExisting(false);
     }
   }
 
@@ -574,63 +583,69 @@ export default function AnalyzerClient({
             </div>
 
             <div className="rounded-lg border border-[#D9CFBA] bg-white p-4">
-              <div className="mb-3 text-sm font-semibold text-[#1C1C1C]">Save This Analysis</div>
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-4 text-sm font-semibold text-[#1C1C1C]">Save This Analysis</div>
+
+              {prefillClient && (
+                <div className="mb-4 rounded-md border border-[#1C1C1C] bg-[#F5F0E8] p-3">
+                  <p className="mb-2 text-xs text-[#666]">
+                    You started this from <strong>{prefillClient.full_name}</strong>&rsquo;s profile.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={savingExisting}
+                    onClick={() => {
+                      setSelectedClientId(prefillClient.id);
+                      handleSaveToExisting();
+                    }}
+                    className="rounded-md bg-[#1C1C1C] px-4 py-2 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
+                  >
+                    {savingExisting ? "Saving..." : `Save to ${prefillClient.full_name}'s profile`}
+                  </button>
+                </div>
+              )}
+
+              <div className="mb-4 rounded-md border border-[#D9CFBA] p-3">
+                <p className="mb-2 text-xs text-[#666]">
+                  Create a new client record named &ldquo;{inputs.name || "—"}&rdquo; and attach this analysis to it.
+                </p>
                 <button
                   type="button"
-                  onClick={() => setSaveMode("new")}
-                  className={`rounded-lg border-[1.5px] px-4 py-2 text-sm transition ${
-                    saveMode === "new"
-                      ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
-                      : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:border-[#2E2E2E]"
-                  }`}
+                  disabled={savingNew || !inputs.name.trim()}
+                  onClick={handleSaveAsNewClient}
+                  className="rounded-md bg-[#1C1C1C] px-4 py-2 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
                 >
-                  Create new client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSaveMode("existing")}
-                  className={`rounded-lg border-[1.5px] px-4 py-2 text-sm transition ${
-                    saveMode === "existing"
-                      ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
-                      : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:border-[#2E2E2E]"
-                  }`}
-                >
-                  Save to existing client
+                  {savingNew ? "Creating..." : "Create New Client & Save"}
                 </button>
               </div>
 
-              {saveMode === "new" ? (
-                <p className="mb-3 text-xs text-[#666]">
-                  Creates a new client record named &ldquo;{inputs.name || "—"}&rdquo; and attaches this analysis to
-                  it.
-                </p>
-              ) : (
-                <select
-                  value={selectedClientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
-                  className="mb-3 w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-                >
-                  <option value="">Select a client…</option>
-                  {existingClients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <button
-                type="button"
-                disabled={saving}
-                onClick={handleSaveAnalysis}
-                className="rounded-md border border-[#D9CFBA] px-4 py-2 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF] disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save Analysis"}
-              </button>
+              <div className="rounded-md border border-[#D9CFBA] p-3">
+                <p className="mb-2 text-xs text-[#666]">Or save this analysis onto an existing client:</p>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    className="flex-1 rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+                  >
+                    <option value="">Select a client…</option>
+                    {existingClients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.full_name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={savingExisting || !selectedClientId}
+                    onClick={handleSaveToExisting}
+                    className="rounded-md border border-[#D9CFBA] px-4 py-2 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF] disabled:opacity-60"
+                  >
+                    {savingExisting ? "Saving..." : "Save to Selected Client"}
+                  </button>
+                </div>
+              </div>
 
               {saveStatus && (
-                <p className={`mt-2 text-xs font-semibold ${saveStatus.ok ? "text-[#1E6B3C]" : "text-[#8B1A1A]"}`}>
+                <p className={`mt-3 text-xs font-semibold ${saveStatus.ok ? "text-[#1E6B3C]" : "text-[#8B1A1A]"}`}>
                   {saveStatus.message}{" "}
                   {saveStatus.ok && saveStatus.clientId && (
                     <>
