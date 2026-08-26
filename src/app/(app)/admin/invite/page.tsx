@@ -10,7 +10,21 @@ export default async function AdminInvitePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const { data: myProfile, error: myProfileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (myProfileError) {
+    return (
+      <div className="mx-auto max-w-xl rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">
+        <p className="mb-2 text-sm font-semibold text-[#8B1A1A]">Could not load your profile.</p>
+        <p className="text-xs text-[#666]">{myProfileError.message}</p>
+      </div>
+    );
+  }
+
   if (myProfile?.role !== "admin") {
     return (
       <div className="mx-auto max-w-xl rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">
@@ -19,10 +33,19 @@ export default async function AdminInvitePage() {
     );
   }
 
-  const { data: agents } = await supabase
+  const { data: agents, error: agentsError } = await supabase
     .from("profiles")
     .select("id, full_name, email, role, created_at")
     .order("created_at", { ascending: true });
+
+  if (agentsError) {
+    return (
+      <div className="mx-auto max-w-xl rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">
+        <p className="mb-2 text-sm font-semibold text-[#8B1A1A]">Could not load your team.</p>
+        <p className="text-xs text-[#666]">{agentsError.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
