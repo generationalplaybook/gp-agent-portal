@@ -24,10 +24,39 @@ export default function SetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
     supabaseRef.current = supabase;
-    supabase.auth.getUser().then(({ data }) => {
-      setHasSession(!!data.user);
+
+    // Supabase's invite/reset link redirects back here with the session encoded one of two
+    // ways depending on project settings: either a `?code=...` (PKCE) that needs to be
+    // exchanged for a session, or an `#access_token=...` hash fragment that the client
+    // library parses on its own. We handle the PKCE case explicitly below; for the hash-token
+    // case we don't just call getUser() once (that races the library's own async parsing of
+    // the URL and can fire before the session is ready, wrongly reporting "no session"). We
+    // also subscribe to auth state changes, which fire reliably once the library finishes
+    // establishing the session either way.
+    async function checkSession() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+        // Remove the one-time code from the URL so it can't be resubmitted/reused.
+        window.history.replaceState({}, "", url.pathname);
+      }
+
+      const { data } = await supabase.auth.getSession();
+      setHasSession(!!data.session);
+      setChecking(false);
+    }
+
+    checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(!!session);
       setChecking(false);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
