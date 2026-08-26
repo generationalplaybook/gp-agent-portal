@@ -6,9 +6,9 @@ import TaskRow from "./TaskRow";
 import RemindersCard from "./RemindersCard";
 import AnalysesList from "./AnalysesList";
 import NoteRow from "./NoteRow";
+import ContactInfoForm from "./ContactInfoForm";
 import LocalDateTime from "../../LocalDateTime";
-import PhoneInput from "../PhoneInput";
-import { updateContactInfo, addNote, addTask } from "../actions";
+import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -67,58 +67,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <h1 className="font-serif text-2xl text-[#1C1C1C]">{client.full_name}</h1>
             <StageSelect clientId={client.id} stage={client.stage} />
           </div>
-          <form action={updateContactInfo} className="grid gap-3 sm:grid-cols-2">
-            <input type="hidden" name="client_id" value={client.id} />
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Full name
-              <input
-                name="full_name"
-                defaultValue={client.full_name}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Phone
-              <PhoneInput
-                name="phone"
-                defaultValue={client.phone}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Email
-              <input
-                name="email"
-                defaultValue={client.email ?? ""}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Birthdate
-              <input
-                type="date"
-                name="birth_date"
-                defaultValue={client.birth_date ?? ""}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Source
-              <input
-                name="source"
-                defaultValue={client.source ?? ""}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
-              >
-                Save contact info
-              </button>
-            </div>
-          </form>
+          <ContactInfoForm client={client} />
         </div>
 
         {/* Notes / interaction history */}

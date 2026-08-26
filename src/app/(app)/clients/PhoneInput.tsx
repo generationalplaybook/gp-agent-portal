@@ -16,11 +16,13 @@ export default function PhoneInput({
   defaultValue,
   className,
   onValueChange,
+  onBlur,
 }: {
   name?: string;
   defaultValue?: string | null;
   className?: string;
   onValueChange?: (value: string) => void;
+  onBlur?: () => void;
 }) {
   const [value, setValue] = useState(formatPhoneDigits(defaultValue ?? ""));
 
@@ -35,6 +37,7 @@ export default function PhoneInput({
         setValue(formatted);
         onValueChange?.(formatted);
       }}
+      onBlur={onBlur}
       className={className}
     />
   );

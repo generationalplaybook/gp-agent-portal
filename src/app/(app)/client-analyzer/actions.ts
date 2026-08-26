@@ -20,6 +20,19 @@ export async function saveAnalysisToClient(
   result: AnalyzerResult
 ): Promise<void> {
   const { supabase } = await requireUser();
+
+  // Whatever the advisor typed into the analyzer is the freshest info we have —
+  // keep the client's own profile fields in sync instead of leaving it stuck with
+  // whatever was on file before.
+  const contactUpdate: Record<string, string> = {};
+  if (inputs.name.trim()) contactUpdate.full_name = inputs.name.trim();
+  if (inputs.phone.trim()) contactUpdate.phone = inputs.phone.trim();
+  if (inputs.email.trim()) contactUpdate.email = inputs.email.trim();
+  if (inputs.dob) contactUpdate.birth_date = inputs.dob;
+  if (Object.keys(contactUpdate).length > 0) {
+    await supabase.from("clients").update(contactUpdate).eq("id", clientId);
+  }
+
   const { error } = await supabase.from("client_analyses").insert({
     client_id: clientId,
     inputs,
@@ -27,6 +40,7 @@ export async function saveAnalysisToClient(
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
 }
 
 export async function saveAnalysisAsNewClient(
