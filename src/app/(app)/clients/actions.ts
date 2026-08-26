@@ -47,6 +47,19 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   revalidatePath("/clients");
 }
 
+export async function deleteClient(formData: FormData) {
+  const { supabase } = await requireUser();
+  const clientId = String(formData.get("client_id"));
+
+  // Notes, tasks, reminders, analyses, and the financial plan all cascade-delete
+  // with the client (see supabase/schema.sql) — this one delete cleans up everything.
+  const { error } = await supabase.from("clients").delete().eq("id", clientId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/clients");
+  redirect("/clients");
+}
+
 export async function updateContactInfo(formData: FormData) {
   const { supabase } = await requireUser();
   const clientId = String(formData.get("client_id"));

@@ -7,6 +7,7 @@ import RemindersCard from "./RemindersCard";
 import AnalysesList from "./AnalysesList";
 import NoteRow from "./NoteRow";
 import ContactInfoForm from "./ContactInfoForm";
+import DeleteClientButton from "./DeleteClientButton";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -68,6 +69,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <StageSelect clientId={client.id} stage={client.stage} />
           </div>
           <ContactInfoForm client={client} />
+          <div className="mt-4 border-t border-[#EDE8DF] pt-4">
+            <DeleteClientButton clientId={client.id} clientName={client.full_name} />
+          </div>
         </div>
 
         {/* Notes / interaction history */}
