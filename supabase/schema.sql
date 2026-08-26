@@ -8,7 +8,10 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   email text,
+  phone text,
   role text not null default 'agent' check (role in ('agent','admin')),
+  terms_version text,
+  terms_accepted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -197,7 +200,95 @@ create policy "Agents see their own reminders, admins see all"
   );
 
 -- ─────────────────────────────────────────────────────────────
--- 6. Calendar connections (Phase 4 — Google OAuth tokens, one per agent)
+-- 6. Client Analyses (saved Client Analyzer runs, one client has many)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.client_analyses (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  inputs jsonb not null,
+  result jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists client_analyses_client_id_idx on public.client_analyses(client_id);
+
+alter table public.client_analyses enable row level security;
+
+create policy "Analyses follow client visibility"
+  on public.client_analyses for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_analyses.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_analyses.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  );
+
+-- ─────────────────────────────────────────────────────────────
+-- 7. Client Financial Plans (Full Financial Analysis — one per client)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.client_financial_plans (
+  client_id uuid primary key references public.clients(id) on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.client_financial_plans enable row level security;
+
+create policy "Financial plans follow client visibility"
+  on public.client_financial_plans for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_financial_plans.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_financial_plans.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  );
+
+drop trigger if exists client_financial_plans_set_updated_at on public.client_financial_plans;
+create trigger client_financial_plans_set_updated_at
+  before update on public.client_financial_plans
+  for each row execute procedure public.set_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
+-- 8. Advisor Credentials (NPN, carrier agent codes, etc — freeform label/code pairs)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.advisor_credentials (
+  id uuid primary key default gen_random_uuid(),
+  agent_id uuid not null references public.profiles(id) on delete cascade,
+  label text not null,
+  code text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists advisor_credentials_agent_id_idx on public.advisor_credentials(agent_id);
+
+alter table public.advisor_credentials enable row level security;
+
+create policy "Agents manage their own credentials, admins see all"
+  on public.advisor_credentials for all
+  using (
+    agent_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  )
+  with check (agent_id = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────
+-- 9. Calendar connections (Phase 4 — Google OAuth tokens, one per agent)
 -- ─────────────────────────────────────────────────────────────
 create table if not exists public.calendar_connections (
   agent_id uuid primary key references public.profiles(id) on delete cascade,

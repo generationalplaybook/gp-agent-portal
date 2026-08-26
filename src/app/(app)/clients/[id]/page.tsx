@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
 import StageSelect from "./StageSelect";
 import TaskRow from "./TaskRow";
+import FollowUpForm from "./FollowUpForm";
+import AnalysesList from "./AnalysesList";
 import PhoneInput from "../PhoneInput";
-import { updateFollowUp, updateContactInfo, addNote, addTask } from "../actions";
+import { updateContactInfo, addNote, addTask } from "../actions";
+import { computeFA, type FAState } from "@/lib/fa";
 
 function toDatetimeLocal(iso: string | null) {
   if (!iso) return "";
@@ -17,19 +20,43 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: client, error }, { data: notes }, { data: tasks }] = await Promise.all([
-    supabase.from("clients").select("*").eq("id", id).single(),
-    supabase
-      .from("client_notes")
-      .select("*, author:profiles(full_name)")
-      .eq("client_id", id)
-      .order("created_at", { ascending: false }),
-    supabase.from("client_tasks").select("*").eq("client_id", id).order("created_at", { ascending: true }),
-  ]);
+  const [{ data: client, error }, { data: notes }, { data: tasks }, { data: analyses }, { data: plan }] =
+    await Promise.all([
+      supabase.from("clients").select("*").eq("id", id).single(),
+      supabase
+        .from("client_notes")
+        .select("*, author:profiles(full_name)")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false }),
+      supabase.from("client_tasks").select("*").eq("client_id", id).order("created_at", { ascending: true }),
+      supabase
+        .from("client_analyses")
+        .select("id, created_at, result")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false }),
+      supabase.from("client_financial_plans").select("data, updated_at").eq("client_id", id).maybeSingle(),
+    ]);
 
   if (error || !client) notFound();
 
   const stageInfo = CLIENT_STAGES.find((s) => s.value === client.stage);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let advisor: { name?: string; phone?: string; email?: string } | undefined;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, phone, email")
+      .eq("id", user.id)
+      .single();
+    advisor = {
+      name: profile?.full_name ?? undefined,
+      phone: profile?.phone ?? undefined,
+      email: profile?.email ?? user.email ?? undefined,
+    };
+  }
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-[2fr_1fr]">
@@ -161,6 +188,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             ))}
           </div>
         </div>
+
+        {/* Client Analyses */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#555]">Client Analyses</h2>
+            <a
+              href={`/client-analyzer?client=${client.id}`}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+            >
+              Start New Analysis
+            </a>
+          </div>
+          <AnalysesList analyses={analyses ?? []} advisor={advisor} />
+        </div>
       </div>
 
       {/* Sidebar: stage + follow-up */}
@@ -176,34 +217,35 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Full Financial Analysis</h2>
+          {plan?.data ? (
+            <>
+              <div className="mb-2 text-xs text-[#666]">
+                Financial Wellness Score:{" "}
+                <span className="font-semibold text-[#1C1C1C]">{computeFA(plan.data as FAState).overallScore} / 100</span>
+              </div>
+              <div className="mb-3 text-xs text-[#999]">
+                Last updated {new Date(plan.updated_at).toLocaleDateString()}
+              </div>
+            </>
+          ) : (
+            <p className="mb-3 text-xs text-[#999]">Not started yet.</p>
+          )}
+          <a
+            href={`/clients/${client.id}/financial-analysis`}
+            className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            {plan?.data ? "Open Analysis" : "Start Full Financial Analysis"}
+          </a>
+        </div>
+
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Follow-Up Reminder</h2>
-          <form action={updateFollowUp} className="flex flex-col gap-3">
-            <input type="hidden" name="client_id" value={client.id} />
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Remind me at
-              <input
-                type="datetime-local"
-                name="follow_up_at"
-                defaultValue={toDatetimeLocal(client.follow_up_at)}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Note
-              <input
-                name="follow_up_note"
-                defaultValue={client.follow_up_note ?? ""}
-                placeholder="What to follow up about"
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <button
-              type="submit"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
-            >
-              Save Reminder
-            </button>
-          </form>
+          <FollowUpForm
+            clientId={client.id}
+            defaultDatetime={toDatetimeLocal(client.follow_up_at)}
+            defaultNote={client.follow_up_note ?? ""}
+          />
           <p className="mt-3 text-xs text-[#999]">
             Saving this queues an email reminder (sent by the scheduled job — see Phase 3) and, once
             calendar sync is connected, an event on your calendar.

@@ -1,10 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import PhoneInput from "../clients/PhoneInput";
 import CurrencyInput from "./CurrencyInput";
-import { runAnalyzer, calcAgeFromDob, type AnalyzerInputs, type AnalyzerResult } from "@/lib/analyzer";
-import { generateClientPDF } from "@/lib/analyzer-pdf";
+import {
+  runAnalyzer,
+  calcAgeFromDob,
+  GOAL_OPTIONS,
+  type AnalyzerInputs,
+  type AnalyzerResult,
+  type Goal,
+} from "@/lib/analyzer";
+import { generateClientPDF, type AdvisorInfo } from "@/lib/analyzer-pdf";
+import { saveAnalysisToClient, saveAnalysisAsNewClient } from "./actions";
 
 function OptionGroup<T extends string>({
   options,
@@ -31,6 +40,44 @@ function OptionGroup<T extends string>({
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function CheckboxGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T[];
+  onChange: (v: T[]) => void;
+}) {
+  function toggle(v: T) {
+    if (value.includes(v)) onChange(value.filter((x) => x !== v));
+    else onChange([...value, v]);
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const checked = value.includes(opt.value);
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => toggle(opt.value)}
+            aria-pressed={checked}
+            className={`rounded-lg border-[1.5px] px-4 py-2 text-sm transition ${
+              checked
+                ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
+                : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:border-[#2E2E2E]"
+            }`}
+          >
+            {checked ? "✓ " : ""}
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -62,12 +109,52 @@ const EMPTY: AnalyzerInputs = {
   heightFt: "",
   heightIn: "",
   weight: "",
+  goals: [],
 };
 
-export default function AnalyzerClient() {
-  const [inputs, setInputs] = useState<AnalyzerInputs>(EMPTY);
+interface ExistingClient {
+  id: string;
+  full_name: string;
+}
+
+interface PrefillClient {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  birth_date: string | null;
+}
+
+export default function AnalyzerClient({
+  advisor,
+  existingClients = [],
+  prefillClient = null,
+}: {
+  advisor?: AdvisorInfo;
+  existingClients?: ExistingClient[];
+  prefillClient?: PrefillClient | null;
+}) {
+  const router = useRouter();
+  const [inputs, setInputs] = useState<AnalyzerInputs>(() =>
+    prefillClient
+      ? {
+          ...EMPTY,
+          name: prefillClient.full_name,
+          phone: prefillClient.phone ?? "",
+          email: prefillClient.email ?? "",
+          dob: prefillClient.birth_date ?? "",
+        }
+      : EMPTY
+  );
   const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
+
+  const [saveMode, setSaveMode] = useState<"new" | "existing">(prefillClient ? "existing" : "new");
+  const [selectedClientId, setSelectedClientId] = useState<string>(prefillClient?.id ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ ok: boolean; message: string; clientId?: string } | null>(
+    null
+  );
 
   const age = useMemo(() => calcAgeFromDob(inputs.dob), [inputs.dob]);
 
@@ -90,6 +177,7 @@ export default function AnalyzerClient() {
       return;
     }
     setMissing([]);
+    setSaveStatus(null);
     setResult(runAnalyzer(inputs));
   }
 
@@ -97,6 +185,33 @@ export default function AnalyzerClient() {
     setInputs(EMPTY);
     setResult(null);
     setMissing([]);
+    setSaveStatus(null);
+    setSaveMode("new");
+    setSelectedClientId("");
+  }
+
+  async function handleSaveAnalysis() {
+    if (!result) return;
+    setSaving(true);
+    setSaveStatus(null);
+    try {
+      if (saveMode === "existing") {
+        if (!selectedClientId) {
+          setSaveStatus({ ok: false, message: "Choose a client to save this analysis to." });
+          return;
+        }
+        await saveAnalysisToClient(selectedClientId, inputs, result);
+        setSaveStatus({ ok: true, message: "Analysis saved to client profile.", clientId: selectedClientId });
+      } else {
+        const newId = await saveAnalysisAsNewClient(inputs, result);
+        setSaveStatus({ ok: true, message: "New client created and analysis saved.", clientId: newId });
+      }
+      router.refresh();
+    } catch (e) {
+      setSaveStatus({ ok: false, message: e instanceof Error ? e.message : "Could not save analysis." });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -172,6 +287,7 @@ export default function AnalyzerClient() {
               { value: "none", label: "Never used" },
               { value: "former", label: "Former user (12+ months clean)" },
               { value: "current", label: "Current user" },
+              { value: "marijuana", label: "Marijuana use (no tobacco)" },
               { value: "skip", label: "Skip" },
             ]}
           />
@@ -279,19 +395,14 @@ export default function AnalyzerClient() {
         <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Goals (optional)</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
-        <Field label="Primary Goal">
-          <OptionGroup
-            value={inputs.goal}
-            onChange={(v) => set("goal", v)}
-            options={[
-              { value: "accumulation", label: "Build cash value / savings" },
-              { value: "income", label: "Guaranteed lifetime income" },
-              { value: "protection", label: "Pure protection at lowest cost" },
-              { value: "legacy", label: "Maximize legacy / estate" },
-              { value: "college", label: "College funding for a child" },
-              { value: "income_now", label: "Income starting immediately" },
-              { value: "skip", label: "Skip" },
-            ]}
+        <Field label="Primary Goal(s)">
+          <div className="mb-1.5 text-xs text-[#888]">
+            Select one or more — we&rsquo;ll build a full recommendation for each goal chosen.
+          </div>
+          <CheckboxGroup<Goal>
+            value={inputs.goals ?? []}
+            onChange={(v) => set("goals", v)}
+            options={GOAL_OPTIONS}
           />
         </Field>
         <Field label="Time Horizon">
@@ -326,6 +437,7 @@ export default function AnalyzerClient() {
             options={[
               { value: "yes", label: "Yes — needs flexible access" },
               { value: "no", label: "No — can wait until 59½+" },
+              { value: "both", label: "Mix of both" },
               { value: "skip", label: "Skip" },
             ]}
           />
@@ -400,55 +512,139 @@ export default function AnalyzerClient() {
               </div>
             )}
 
-            <div className="rounded-lg border-l-4 border-[#1E6B3C] bg-white p-4">
-              <div className="mb-1 text-sm font-semibold text-[#1E6B3C]">
-                Primary Recommendation{result.hasRollover ? " — Today's New Plan" : ""}
+            {result.recommendations.map((rec, idx) => (
+              <div key={idx} className="flex flex-col gap-4">
+                {result.recommendations.length > 1 && (
+                  <div className="-mb-1 text-xs font-semibold uppercase tracking-wide text-[#888]">
+                    Goal: {rec.goalLabel}
+                  </div>
+                )}
+                <div className="rounded-lg border-l-4 border-[#1E6B3C] bg-white p-4">
+                  <div className="mb-1 text-sm font-semibold text-[#1E6B3C]">
+                    Primary Recommendation{result.hasRollover ? " — Today's New Plan" : ""}
+                  </div>
+                  <div className="mb-2 text-lg font-semibold text-[#1C1C1C]">{rec.primary}</div>
+                  <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
+                    {rec.reasons.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {rec.secondary && (
+                  <div className="rounded-lg border-l-4 border-[#2E2E2E] bg-white p-4">
+                    <div className="mb-1 text-sm font-semibold text-[#2E2E2E]">Runner-Up Option</div>
+                    <div className="text-base font-semibold text-[#1C1C1C]">{rec.secondary}</div>
+                  </div>
+                )}
+
+                {rec.talking.length > 0 && (
+                  <div className="rounded-lg border-l-4 border-[#1B4F8A] bg-white p-4">
+                    <div className="mb-2 text-sm font-semibold text-[#1B4F8A]">Client Talking Points</div>
+                    <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
+                      {rec.talking.map((t, i) => (
+                        <li key={i}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {rec.avoid && (
+                  <div className="rounded-lg border-l-4 border-[#8B1A1A] bg-[#FBEFEF] p-4">
+                    <div className="mb-1 text-sm font-semibold text-[#8B1A1A]">Avoid for This Client</div>
+                    <div className="mb-2 text-base font-semibold text-[#8B1A1A]">{rec.avoid}</div>
+                    <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
+                      {rec.avoidReasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <div className="mb-2 text-lg font-semibold text-[#1C1C1C]">{result.primary}</div>
-              <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
-                {result.reasons.map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
-              </ul>
+            ))}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => generateClientPDF(result, advisor)}
+                className="flex w-fit items-center gap-2 rounded-md bg-[#1C1C1C] px-6 py-3 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
+              >
+                Download Client Profile PDF
+              </button>
             </div>
 
-            {result.secondary && (
-              <div className="rounded-lg border-l-4 border-[#2E2E2E] bg-white p-4">
-                <div className="mb-1 text-sm font-semibold text-[#2E2E2E]">Runner-Up Option</div>
-                <div className="text-base font-semibold text-[#1C1C1C]">{result.secondary}</div>
+            <div className="rounded-lg border border-[#D9CFBA] bg-white p-4">
+              <div className="mb-3 text-sm font-semibold text-[#1C1C1C]">Save This Analysis</div>
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSaveMode("new")}
+                  className={`rounded-lg border-[1.5px] px-4 py-2 text-sm transition ${
+                    saveMode === "new"
+                      ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
+                      : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:border-[#2E2E2E]"
+                  }`}
+                >
+                  Create new client
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveMode("existing")}
+                  className={`rounded-lg border-[1.5px] px-4 py-2 text-sm transition ${
+                    saveMode === "existing"
+                      ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
+                      : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:border-[#2E2E2E]"
+                  }`}
+                >
+                  Save to existing client
+                </button>
               </div>
-            )}
 
-            {result.talking.length > 0 && (
-              <div className="rounded-lg border-l-4 border-[#1B4F8A] bg-white p-4">
-                <div className="mb-2 text-sm font-semibold text-[#1B4F8A]">Client Talking Points</div>
-                <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
-                  {result.talking.map((t, i) => (
-                    <li key={i}>{t}</li>
+              {saveMode === "new" ? (
+                <p className="mb-3 text-xs text-[#666]">
+                  Creates a new client record named &ldquo;{inputs.name || "—"}&rdquo; and attaches this analysis to
+                  it.
+                </p>
+              ) : (
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  className="mb-3 w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+                >
+                  <option value="">Select a client…</option>
+                  {existingClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.full_name}
+                    </option>
                   ))}
-                </ul>
-              </div>
-            )}
+                </select>
+              )}
 
-            {result.avoid && (
-              <div className="rounded-lg border-l-4 border-[#8B1A1A] bg-[#FBEFEF] p-4">
-                <div className="mb-1 text-sm font-semibold text-[#8B1A1A]">Avoid for This Client</div>
-                <div className="mb-2 text-base font-semibold text-[#8B1A1A]">{result.avoid}</div>
-                <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
-                  {result.avoidReasons.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleSaveAnalysis}
+                className="rounded-md border border-[#D9CFBA] px-4 py-2 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF] disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save Analysis"}
+              </button>
 
-            <button
-              type="button"
-              onClick={() => generateClientPDF(result)}
-              className="flex w-fit items-center gap-2 rounded-md bg-[#1C1C1C] px-6 py-3 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
-            >
-              Download Client Profile PDF
-            </button>
+              {saveStatus && (
+                <p className={`mt-2 text-xs font-semibold ${saveStatus.ok ? "text-[#1E6B3C]" : "text-[#8B1A1A]"}`}>
+                  {saveStatus.message}{" "}
+                  {saveStatus.ok && saveStatus.clientId && (
+                    <>
+                      <a href={`/clients/${saveStatus.clientId}`} className="underline">
+                        View client profile →
+                      </a>{" "}
+                      <a href={`/clients/${saveStatus.clientId}/financial-analysis`} className="underline">
+                        Start Full Financial Analysis →
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
 
             <div className="rounded-lg bg-[#F5F0E8] p-3 text-xs leading-relaxed text-[#777]">
               All figures and recommendations above are approximations for discussion purposes only. Final numbers

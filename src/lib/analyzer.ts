@@ -1,7 +1,26 @@
 // Client Analyzer recommendation engine — ported verbatim (logic-for-logic) from the
 // original GP Agent Portal HTML's runAnalyzer()/buildRolloverRec() functions.
+//
+// Goal is multi-select: the client can have more than one primary goal, and we build one
+// full recommendation block per selected goal (falling back to a single "general" block
+// when no goal is selected, matching the original tool's default behavior).
 
 export type YesNoSkip = "yes" | "no" | "skip";
+
+export type Goal = "accumulation" | "income" | "protection" | "legacy" | "college" | "income_now";
+
+export const GOAL_OPTIONS: { value: Goal; label: string }[] = [
+  { value: "accumulation", label: "Build cash value / savings" },
+  { value: "income", label: "Guaranteed lifetime income" },
+  { value: "protection", label: "Pure protection at lowest cost" },
+  { value: "legacy", label: "Maximize legacy / estate" },
+  { value: "college", label: "College funding for a child" },
+  { value: "income_now", label: "Income starting immediately" },
+];
+
+const GOAL_LABELS: Record<Goal, string> = Object.fromEntries(
+  GOAL_OPTIONS.map((o) => [o.value, o.label])
+) as Record<Goal, string>;
 
 export interface AnalyzerInputs {
   name: string;
@@ -11,7 +30,7 @@ export interface AnalyzerInputs {
   heightFt: string;
   heightIn: string;
   weight: string;
-  tobacco?: "none" | "former" | "current" | "skip";
+  tobacco?: "none" | "former" | "current" | "marijuana" | "skip";
   health?: "none" | "managed" | "significant" | "skip";
   declined?: "no" | "rated" | "declined" | "skip";
   money?: "qualified" | "nonqualified" | "both" | "skip";
@@ -21,15 +40,26 @@ export interface AnalyzerInputs {
   amount?: string;
   income?: string;
   debt?: string;
-  goal?: "accumulation" | "income" | "protection" | "legacy" | "college" | "income_now" | "skip";
+  goals?: Goal[];
   horizon?: "short" | "mid" | "long" | "never" | "skip";
   risk?: "guaranteed" | "protected" | "growth" | "skip";
-  earlyAccess?: "yes" | "no" | "skip";
+  earlyAccess?: "yes" | "no" | "both" | "skip";
 }
 
 export interface RolloverRec {
   product: string;
   reasons: string[];
+}
+
+export interface GoalRecommendation {
+  goal: Goal | null;
+  goalLabel: string;
+  primary: string;
+  secondary: string;
+  avoid: string;
+  reasons: string[];
+  talking: string[];
+  avoidReasons: string[];
 }
 
 export interface AnalyzerResult {
@@ -50,16 +80,11 @@ export interface AnalyzerResult {
   suggestedDB: number | null;
   suggestedReserveLow: number | null;
   suggestedReserveHigh: number | null;
-  goal?: string;
+  goals: Goal[];
   horizon?: string;
   risk?: string;
   earlyAccess?: string;
-  primary: string;
-  secondary: string;
-  avoid: string;
-  reasons: string[];
-  talking: string[];
-  avoidReasons: string[];
+  recommendations: GoalRecommendation[];
   hasRollover: boolean;
   rolloverProduct: string | null;
   rolloverReasons: string[] | null;
@@ -110,29 +135,17 @@ export function buildRolloverRec(ageGroup: "young" | "mid" | "preretiree" | "ret
   return { product: rProduct, reasons: rReasons };
 }
 
-export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
-  const age = calcAgeFromDob(inputs.dob);
-  const income = parseCurrencyValue(inputs.income ?? "");
-  const debt = parseCurrencyValue(inputs.debt ?? "");
-  const suggestedDB = income > 0 ? income * 10 + debt : null;
-  const suggestedReserveLow = income > 0 ? Math.round(income * 0.5) : null;
-  const suggestedReserveHigh = income > 0 ? income : null;
+interface RecommendationContext {
+  insurable: "no" | "maybe" | "yes";
+  money?: "qualified" | "nonqualified" | "both";
+  ageGroup: "young" | "mid" | "preretiree" | "retiree";
+  horizon?: "short" | "mid" | "long" | "never";
+  funding?: "monthly" | "lumpsum" | "both";
+  earlyAccess?: "yes" | "no" | "both";
+}
 
-  const money = inputs.money !== "skip" ? inputs.money : undefined;
-  const insurable: "no" | "maybe" | "yes" =
-    inputs.declined === "declined" ? "no" : inputs.declined === "rated" || inputs.health === "significant" ? "maybe" : "yes";
-  const goal = inputs.goal !== "skip" ? inputs.goal : undefined;
-  const horizon = inputs.horizon !== "skip" ? inputs.horizon : undefined;
-  const funding = inputs.funding !== "skip" ? inputs.funding : undefined;
-  const earlyAccess = inputs.earlyAccess !== "skip" ? inputs.earlyAccess : undefined;
-
-  let ageGroup: "young" | "mid" | "preretiree" | "retiree" = "mid";
-  if (age !== null) {
-    if (age < 40) ageGroup = "young";
-    else if (age <= 55) ageGroup = "mid";
-    else if (age <= 65) ageGroup = "preretiree";
-    else ageGroup = "retiree";
-  }
+function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContext): Omit<GoalRecommendation, "goal" | "goalLabel"> {
+  const { insurable, money, ageGroup, horizon, funding, earlyAccess } = ctx;
 
   let primary = "";
   let secondary = "";
@@ -265,7 +278,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
         ];
       }
     } else {
-      if (horizon === "short" || horizon === "mid" || earlyAccess === "yes") {
+      if (horizon === "short" || horizon === "mid" || earlyAccess === "yes" || earlyAccess === "both") {
         primary = "North American Smart Builder IUL 3";
         reasons = [
           "0% premium load — 100% of every dollar goes to cash value from Day 1",
@@ -298,6 +311,44 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     }
   }
 
+  return { primary, secondary, avoid, reasons, talking, avoidReasons };
+}
+
+export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
+  const age = calcAgeFromDob(inputs.dob);
+  const income = parseCurrencyValue(inputs.income ?? "");
+  const debt = parseCurrencyValue(inputs.debt ?? "");
+  const suggestedDB = income > 0 ? income * 10 + debt : null;
+  const suggestedReserveLow = income > 0 ? Math.round(income * 0.5) : null;
+  const suggestedReserveHigh = income > 0 ? income : null;
+
+  const money = inputs.money !== "skip" ? inputs.money : undefined;
+  const insurable: "no" | "maybe" | "yes" =
+    inputs.declined === "declined" ? "no" : inputs.declined === "rated" || inputs.health === "significant" ? "maybe" : "yes";
+  const goals: Goal[] = inputs.goals ?? [];
+  const horizon = inputs.horizon !== "skip" ? inputs.horizon : undefined;
+  const funding = inputs.funding !== "skip" ? inputs.funding : undefined;
+  const earlyAccess = inputs.earlyAccess !== "skip" ? inputs.earlyAccess : undefined;
+
+  let ageGroup: "young" | "mid" | "preretiree" | "retiree" = "mid";
+  if (age !== null) {
+    if (age < 40) ageGroup = "young";
+    else if (age <= 55) ageGroup = "mid";
+    else if (age <= 65) ageGroup = "preretiree";
+    else ageGroup = "retiree";
+  }
+
+  const ctx: RecommendationContext = { insurable, money, ageGroup, horizon, funding, earlyAccess };
+
+  // One full recommendation block per selected goal. If no goal was selected, fall back to a
+  // single general-purpose recommendation (matches the original tool's "goal skipped" behavior).
+  const goalsToUse: (Goal | undefined)[] = goals.length > 0 ? goals : [undefined];
+  const recommendations: GoalRecommendation[] = goalsToUse.map((g) => ({
+    goal: g ?? null,
+    goalLabel: g ? GOAL_LABELS[g] : "General Recommendation",
+    ...computeRecommendation(g, ctx),
+  }));
+
   const otherRetirement = inputs.otherRetirement !== "skip" ? inputs.otherRetirement : undefined;
   const otherAmount = inputs.otherAmount ?? "";
   const rollover = otherRetirement === "yes" ? buildRolloverRec(ageGroup, otherAmount) : null;
@@ -320,16 +371,11 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     suggestedDB,
     suggestedReserveLow,
     suggestedReserveHigh,
-    goal,
+    goals,
     horizon,
     risk: inputs.risk !== "skip" ? inputs.risk : undefined,
     earlyAccess,
-    primary,
-    secondary,
-    avoid,
-    reasons,
-    talking,
-    avoidReasons,
+    recommendations,
     hasRollover: otherRetirement === "yes",
     rolloverProduct: rollover?.product ?? null,
     rolloverReasons: rollover?.reasons ?? null,
