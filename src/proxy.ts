@@ -2,13 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { TERMS_VERSION } from "@/lib/terms";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/set-password"];
+const PUBLIC_PATHS = ["/login", "/signup", "/set-password", "/auth/confirm"];
 // Paths a logged-in user should NOT be bounced away from, even though they're public —
 // an invited agent has a session the moment they click their invite email, before they've
 // set a password, and needs to reach /set-password rather than get redirected to /clients.
-const ALLOWED_WHILE_LOGGED_IN = ["/set-password"];
+const ALLOWED_WHILE_LOGGED_IN = ["/set-password", "/auth/confirm"];
 // Paths exempt from the "must accept terms" gate.
-const TERMS_EXEMPT_PATHS = ["/terms", "/set-password", "/login", "/signup"];
+const TERMS_EXEMPT_PATHS = ["/terms", "/set-password", "/login", "/signup", "/auth/confirm"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
