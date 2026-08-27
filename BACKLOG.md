@@ -52,6 +52,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     that finds clients turning 18 that day and creates the advisor reminder automatically.
   - Karina's call: build this AFTER the invite-link fix ships and her team starts testing —
     do not bundle into tonight's deploy.
+  - **Partially covered as of 8/27** by the new family-linking feature (a guardian/parent can
+    now be linked to a minor client as a "Parent"-relationship family member, and the family
+    card on the client page already flags minors and highlights anyone turning 18 within 90
+    days). What's still missing: dedicated guardian-only contact fields (right now a guardian
+    is just another linked client record, not a distinct role), routing a minor's reminders to
+    the guardian specifically rather than just showing the guardian nearby, and the automatic
+    part — a daily Vercel Cron check that creates the advisor's "you're 18 now" reminder on the
+    actual birthday (today it only *displays* the countdown when someone looks at the page, it
+    doesn't proactively notify anyone).
 
 ## Technical follow-up
 

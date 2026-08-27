@@ -304,3 +304,16 @@ create policy "Agents manage only their own calendar connection"
   on public.calendar_connections for all
   using (agent_id = auth.uid())
   with check (agent_id = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────
+-- 10. Family linking (added 8/27 — links related client records into a household so an
+-- advisor can view a whole family at a glance from any one member's profile)
+-- ─────────────────────────────────────────────────────────────
+-- family_id is just a shared grouping key (a random uuid), not a foreign key to another
+-- table — every client that shares the same family_id is considered part of one household.
+-- No new RLS policy needed: a family member is still just a row in clients, already governed
+-- by the existing "owner sees their own, admin sees all" policy above.
+alter table public.clients add column if not exists family_id uuid;
+alter table public.clients add column if not exists family_relationship text;
+
+create index if not exists clients_family_id_idx on public.clients(family_id);

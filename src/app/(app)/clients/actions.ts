@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
@@ -125,4 +126,156 @@ export async function deleteTask(taskId: string, clientId: string) {
   const { supabase } = await requireUser();
   await supabase.from("client_tasks").delete().eq("id", taskId);
   revalidatePath(`/clients/${clientId}`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Family linking — family_id is just a shared grouping key (a random uuid). Every client
+// row that carries the same family_id is treated as one household. Ordinary RLS on the
+// clients table ("owner sees their own, admin sees all") already governs every read/write
+// below — no additional access-control logic needed here.
+// ─────────────────────────────────────────────────────────────
+
+async function ensureFamilyId(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  clientId: string,
+  currentFamilyId: string | null
+): Promise<string> {
+  if (currentFamilyId) return currentFamilyId;
+  const newFamilyId = randomUUID();
+  const { error } = await supabase.from("clients").update({ family_id: newFamilyId }).eq("id", clientId);
+  if (error) throw new Error(error.message);
+  return newFamilyId;
+}
+
+export async function searchFamilyCandidates(
+  query: string,
+  excludeIds: string[]
+): Promise<{ id: string; full_name: string; stage: ClientStage }[]> {
+  const { supabase } = await requireUser();
+  const q = query.trim();
+  if (!q) return [];
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, full_name, stage")
+    .ilike("full_name", `%${q}%`)
+    .order("full_name")
+    .limit(15);
+
+  if (error || !data) return [];
+  return data.filter((c) => !excludeIds.includes(c.id));
+}
+
+export async function linkExistingFamilyMember(
+  clientId: string,
+  relatedClientId: string,
+  relationship: string
+): Promise<void> {
+  const { supabase } = await requireUser();
+  if (clientId === relatedClientId) throw new Error("Can't link a client to themselves.");
+
+  const { data: current, error: currentErr } = await supabase
+    .from("clients")
+    .select("family_id")
+    .eq("id", clientId)
+    .single();
+  if (currentErr || !current) throw new Error(currentErr?.message || "Client not found.");
+
+  const { data: related, error: relatedErr } = await supabase
+    .from("clients")
+    .select("family_id")
+    .eq("id", relatedClientId)
+    .single();
+  if (relatedErr || !related) throw new Error(relatedErr?.message || "That client could not be found.");
+
+  const familyId = await ensureFamilyId(supabase, clientId, current.family_id);
+
+  // If the person being linked already belongs to a different family group, fold that whole
+  // group into this one rather than blocking — e.g. linking in a grandchild who's already
+  // grouped with a sibling should bring both siblings along, not just the one you searched for.
+  if (related.family_id && related.family_id !== familyId) {
+    const { error: mergeErr } = await supabase
+      .from("clients")
+      .update({ family_id: familyId })
+      .eq("family_id", related.family_id);
+    if (mergeErr) throw new Error(mergeErr.message);
+  }
+
+  const { error: linkErr } = await supabase
+    .from("clients")
+    .update({ family_id: familyId, family_relationship: relationship.trim() || null })
+    .eq("id", relatedClientId);
+  if (linkErr) throw new Error(linkErr.message);
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath(`/clients/${relatedClientId}`);
+  revalidatePath("/clients");
+}
+
+export async function addNewFamilyMember(
+  clientId: string,
+  fields: { full_name: string; relationship: string; birth_date?: string; phone?: string; email?: string }
+): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const full_name = fields.full_name.trim();
+  if (!full_name) throw new Error("Name is required.");
+
+  const { data: current, error: currentErr } = await supabase
+    .from("clients")
+    .select("family_id")
+    .eq("id", clientId)
+    .single();
+  if (currentErr || !current) throw new Error(currentErr?.message || "Client not found.");
+
+  const familyId = await ensureFamilyId(supabase, clientId, current.family_id);
+
+  const { error } = await supabase.from("clients").insert({
+    owner_id: user.id,
+    full_name,
+    phone: fields.phone?.trim() || null,
+    email: fields.email?.trim() || null,
+    birth_date: fields.birth_date?.trim() || null,
+    stage: "lead",
+    family_id: familyId,
+    family_relationship: fields.relationship.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+}
+
+export async function unlinkFamilyMember(clientId: string, memberIdToRemove: string): Promise<void> {
+  const { supabase } = await requireUser();
+
+  const { data: member, error: memberErr } = await supabase
+    .from("clients")
+    .select("family_id")
+    .eq("id", memberIdToRemove)
+    .single();
+  if (memberErr || !member) throw new Error(memberErr?.message || "Client not found.");
+
+  const familyId = member.family_id;
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ family_id: null, family_relationship: null })
+    .eq("id", memberIdToRemove);
+  if (error) throw new Error(error.message);
+
+  // If that leaves only one person in the family group, a "family of one" is meaningless —
+  // clear their family_id too so the section cleanly resets to "no family linked yet".
+  if (familyId) {
+    const { data: remaining } = await supabase.from("clients").select("id").eq("family_id", familyId);
+    if (remaining && remaining.length === 1) {
+      await supabase
+        .from("clients")
+        .update({ family_id: null, family_relationship: null })
+        .eq("id", remaining[0].id);
+    }
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath(`/clients/${memberIdToRemove}`);
+  revalidatePath("/clients");
 }

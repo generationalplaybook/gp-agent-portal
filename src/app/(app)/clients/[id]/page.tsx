@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CLIENT_STAGES } from "@/lib/types";
+import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
 import StageSelect from "./StageSelect";
 import TaskRow from "./TaskRow";
 import RemindersCard from "./RemindersCard";
@@ -8,6 +8,7 @@ import AnalysesList from "./AnalysesList";
 import NoteRow from "./NoteRow";
 import ContactInfoForm from "./ContactInfoForm";
 import DeleteClientButton from "./DeleteClientButton";
+import FamilySection from "./FamilySection";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -42,6 +43,50 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   const stageInfo = CLIENT_STAGES.find((s) => s.value === client.stage);
 
+  // Family section — a second round trip only when this client actually belongs to a family
+  // group, since we don't know client.family_id until the query above comes back.
+  type FamilyMember = {
+    id: string;
+    full_name: string;
+    stage: ClientStage;
+    birth_date: string | null;
+    family_relationship: string | null;
+    nextReminder: { remind_at: string; message: string | null } | null;
+  };
+  let familyMembers: FamilyMember[] = [];
+
+  if (client.family_id) {
+    const { data: rawMembers } = await supabase
+      .from("clients")
+      .select("id, full_name, stage, birth_date, family_relationship")
+      .eq("family_id", client.family_id)
+      .neq("id", client.id)
+      .order("full_name");
+
+    const memberIds = (rawMembers ?? []).map((m) => m.id);
+    const nextReminderByClient = new Map<string, { remind_at: string; message: string | null }>();
+
+    if (memberIds.length > 0) {
+      const { data: famReminders } = await supabase
+        .from("reminders")
+        .select("client_id, remind_at, message")
+        .in("client_id", memberIds)
+        .is("sent_at", null)
+        .order("remind_at", { ascending: true });
+
+      for (const r of famReminders ?? []) {
+        if (!nextReminderByClient.has(r.client_id)) {
+          nextReminderByClient.set(r.client_id, { remind_at: r.remind_at, message: r.message });
+        }
+      }
+    }
+
+    familyMembers = (rawMembers ?? []).map((m) => ({
+      ...m,
+      nextReminder: nextReminderByClient.get(m.id) ?? null,
+    }));
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -72,6 +117,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="mt-4 border-t border-[#EDE8DF] pt-4">
             <DeleteClientButton clientId={client.id} clientName={client.full_name} />
           </div>
+        </div>
+
+        {/* Family — linked household members, at a glance */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
+          <FamilySection clientId={client.id} members={familyMembers} />
         </div>
 
         {/* Notes / interaction history */}

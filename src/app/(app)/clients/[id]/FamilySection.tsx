@@ -1,0 +1,360 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
+import { calculateAge, daysUntilNextBirthday, FAMILY_RELATIONSHIP_OPTIONS } from "@/lib/family";
+import {
+  searchFamilyCandidates,
+  linkExistingFamilyMember,
+  addNewFamilyMember,
+  unlinkFamilyMember,
+} from "../actions";
+
+interface FamilyMember {
+  id: string;
+  full_name: string;
+  stage: ClientStage;
+  birth_date: string | null;
+  family_relationship: string | null;
+  nextReminder: { remind_at: string; message: string | null } | null;
+}
+
+export default function FamilySection({ clientId, members }: { clientId: string; members: FamilyMember[] }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [mode, setMode] = useState<"search" | "new">("search");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  // "Link existing client" mode
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; full_name: string; stage: ClientStage }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [picked, setPicked] = useState<{ id: string; full_name: string } | null>(null);
+  const [relationship, setRelationship] = useState("");
+
+  // "Add new person" mode
+  const [newName, setNewName] = useState("");
+  const [newRelationship, setNewRelationship] = useState("");
+  const [newBirthDate, setNewBirthDate] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+
+  async function runSearch(q: string) {
+    setQuery(q);
+    setPicked(null);
+    if (!q.trim()) {
+      setResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const excludeIds = [clientId, ...members.map((m) => m.id)];
+      setResults(await searchFamilyCandidates(q, excludeIds));
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function resetForm() {
+    setShowAdd(false);
+    setMode("search");
+    setQuery("");
+    setResults([]);
+    setPicked(null);
+    setRelationship("");
+    setNewName("");
+    setNewRelationship("");
+    setNewBirthDate("");
+    setNewPhone("");
+    setNewEmail("");
+    setError("");
+  }
+
+  async function handleLinkExisting() {
+    if (!picked) {
+      setError("Pick a client from the list first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await linkExistingFamilyMember(clientId, picked.id, relationship);
+      resetForm();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not link that family member.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAddNew() {
+    if (!newName.trim()) {
+      setError("Name is required.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await addNewFamilyMember(clientId, {
+        full_name: newName,
+        relationship: newRelationship,
+        birth_date: newBirthDate,
+        phone: newPhone,
+        email: newEmail,
+      });
+      resetForm();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not add that family member.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnlink(memberId: string) {
+    setBusy(true);
+    setError("");
+    try {
+      await unlinkFamilyMember(clientId, memberId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not unlink.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {members.length === 0 && !showAdd && <p className="text-xs text-[#999]">No family members linked yet.</p>}
+
+      {members.length > 0 && (
+        <div className="flex flex-col divide-y divide-[#EDE8DF]">
+          {members.map((m) => {
+            const stageInfo = CLIENT_STAGES.find((s) => s.value === m.stage);
+            const age = m.birth_date ? calculateAge(m.birth_date) : null;
+            const daysToBday = m.birth_date ? daysUntilNextBirthday(m.birth_date) : null;
+            const isMinor = age !== null && age < 18;
+            const turningAdultSoon = isMinor && age === 17 && daysToBday !== null && daysToBday <= 90;
+
+            return (
+              <div key={m.id} className="flex flex-col gap-1.5 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Link href={`/clients/${m.id}`} className="truncate text-sm font-semibold text-[#1C1C1C] hover:underline">
+                    {m.full_name}
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => handleUnlink(m.id)}
+                    className="flex-shrink-0 text-[11px] text-[#999] hover:text-[#8B1A1A] disabled:opacity-50"
+                  >
+                    Unlink
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {m.family_relationship && (
+                    <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                      {m.family_relationship}
+                    </span>
+                  )}
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+                    style={{ backgroundColor: stageInfo?.color }}
+                  >
+                    {stageInfo?.label}
+                  </span>
+                  {isMinor && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        turningAdultSoon ? "bg-[#8B1A1A] text-white" : "bg-[#F0EDE8] text-[#666]"
+                      }`}
+                    >
+                      {turningAdultSoon ? `Turns 18 in ${daysToBday}d` : `Minor · age ${age}`}
+                    </span>
+                  )}
+                </div>
+                {m.nextReminder && (
+                  <p className="text-[11px] text-[#888]">
+                    Next reminder:{" "}
+                    {new Date(m.nextReminder.remind_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    {m.nextReminder.message ? ` — ${m.nextReminder.message}` : ""}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!showAdd && (
+        <button
+          type="button"
+          onClick={() => setShowAdd(true)}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add Family Member
+        </button>
+      )}
+
+      {showAdd && (
+        <div className="flex flex-col gap-3 rounded-md border border-[#D9CFBA] p-3">
+          <div className="flex gap-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setMode("search")}
+              className={`rounded-full px-3 py-1 font-semibold ${
+                mode === "search" ? "bg-[#1C1C1C] text-[#FAF8F4]" : "bg-[#F0EDE8] text-[#666]"
+              }`}
+            >
+              Link Existing Client
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("new")}
+              className={`rounded-full px-3 py-1 font-semibold ${
+                mode === "new" ? "bg-[#1C1C1C] text-[#FAF8F4]" : "bg-[#F0EDE8] text-[#666]"
+              }`}
+            >
+              Add New Person
+            </button>
+          </div>
+
+          {mode === "search" ? (
+            <div className="flex flex-col gap-2">
+              {picked ? (
+                <div className="flex items-center justify-between rounded-md border border-[#D9CFBA] bg-white px-3 py-2 text-sm">
+                  <span>{picked.full_name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPicked(null);
+                      setQuery("");
+                    }}
+                    className="text-xs text-[#888] hover:text-[#1C1C1C]"
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    value={query}
+                    onChange={(e) => runSearch(e.target.value)}
+                    placeholder="Search your clients by name…"
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                  {searching && <p className="text-xs text-[#999]">Searching…</p>}
+                  {!searching && query && results.length === 0 && (
+                    <p className="text-xs text-[#999]">No matching clients.</p>
+                  )}
+                  {results.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto rounded-md border border-[#D9CFBA] bg-white">
+                      {results.map((r) => (
+                        <div
+                          key={r.id}
+                          onClick={() => {
+                            setPicked({ id: r.id, full_name: r.full_name });
+                            setResults([]);
+                          }}
+                          className="cursor-pointer border-b border-[#F0EDE8] px-3 py-2 text-sm last:border-0 hover:bg-[#F5F0E8]"
+                        >
+                          {r.full_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              <input
+                value={relationship}
+                onChange={(e) => setRelationship(e.target.value)}
+                list="family-relationship-options"
+                placeholder="Relationship (e.g. Spouse, Child)"
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy || !picked}
+                  onClick={handleLinkExisting}
+                  className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-50"
+                >
+                  {busy ? "Linking…" : "Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Full name *"
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <input
+                value={newRelationship}
+                onChange={(e) => setNewRelationship(e.target.value)}
+                list="family-relationship-options"
+                placeholder="Relationship (e.g. Spouse, Child)"
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Birthdate
+                <input
+                  type="date"
+                  value={newBirthDate}
+                  onChange={(e) => setNewBirthDate(e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <input
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                placeholder="Phone (optional)"
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Email (optional)"
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleAddNew}
+                  className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-50"
+                >
+                  {busy ? "Adding…" : "Add & Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <datalist id="family-relationship-options">
+            {FAMILY_RELATIONSHIP_OPTIONS.map((r) => (
+              <option key={r} value={r} />
+            ))}
+          </datalist>
+        </div>
+      )}
+    </div>
+  );
+}

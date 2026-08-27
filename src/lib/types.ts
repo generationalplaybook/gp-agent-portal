@@ -28,6 +28,8 @@ export interface Client {
   follow_up_at: string | null;
   follow_up_note: string | null;
   notes_summary: string | null;
+  family_id: string | null;
+  family_relationship: string | null;
   created_at: string;
   updated_at: string;
 }
