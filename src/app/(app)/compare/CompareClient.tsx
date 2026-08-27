@@ -27,10 +27,19 @@ function SlotPicker({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
+  // Every item in the Knowledge Base should be pickable here — this used to cap the list at 20,
+  // which silently hid everything past the first 20 KB entries (in practice, most of F&G, Athene,
+  // and every concept/tax entry) unless you typed a search term that matched them exactly.
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    if (!q) return KB.slice(0, 20);
-    return KB.filter((i) => i.name.toLowerCase().includes(q) || i.type.toLowerCase().includes(q)).slice(0, 20);
+    if (!q) return KB;
+    return KB.filter(
+      (i) =>
+        i.name.toLowerCase().includes(q) ||
+        i.type.toLowerCase().includes(q) ||
+        i.label.toLowerCase().includes(q) ||
+        i.tags.some((t) => t.toLowerCase().includes(q))
+    );
   }, [query]);
 
   return (
