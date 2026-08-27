@@ -1,24 +1,18 @@
-// ⚠️ PLACEHOLDER — Karina, this is the ONE thing in Phase 4 I could not port faithfully: I don't
-// have the actual verbatim "Proprietary Technology Notice" text from the other conversation you
-// referenced. I'm not willing to write real legal/proprietary terms language myself and pass it
-// off as the real thing, so this is a clearly-labeled placeholder. Send me the exact text and I'll
-// drop it in here verbatim — nothing else about the acceptance flow needs to change.
-//
-// Updated per Karina's request (8/26): switched "agent" -> "advisor" throughout to match the
-// product's own branding ("GP Advisor Portal", the "Advisor" role label everyone actually sees),
-// and strengthened #5 to explicitly tell advisors to independently verify everything the portal
-// generates rather than relying on it — this is still placeholder wording pending her real text.
+// Karina asked (8/27) to drop the visible "PLACEHOLDER TEXT" line so this reads clean for her
+// team while they start testing tonight. Note this is still NOT lawyer-reviewed, verbatim
+// proprietary-terms language — it's a reasonable working draft I wrote covering the points she'd
+// mentioned (confidentiality, no competing use, client data ownership, revocable access, and
+// "verify before you rely on it"). If she ever gets real legal text from counsel, drop it in here
+// verbatim and bump TERMS_VERSION so everyone gets re-prompted to accept the real version.
 //
 // Bump TERMS_VERSION any time the wording changes — advisors who already accepted an older version
 // will be prompted again automatically (the gate compares against profiles.terms_version).
 
-export const TERMS_VERSION = "v2-placeholder";
+export const TERMS_VERSION = "v3";
 
 export const TERMS_TITLE = "Generational Playbook — Advisor Portal Terms";
 
-export const TERMS_TEXT = `PLACEHOLDER TEXT — replace with the real, verbatim terms.
-
-This portal, its Knowledge Base content, recommendation logic, and any generated materials are the
+export const TERMS_TEXT = `This portal, its Knowledge Base content, recommendation logic, and any generated materials are the
 proprietary property of Generational Playbook and are provided to you solely for your use as an
 authorized Generational Playbook advisor.
 
