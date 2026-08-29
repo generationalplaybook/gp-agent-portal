@@ -9,6 +9,7 @@ import NoteRow from "./NoteRow";
 import ContactInfoForm from "./ContactInfoForm";
 import DeleteClientButton from "./DeleteClientButton";
 import FamilySection from "./FamilySection";
+import ProductsSection from "./ProductsSection";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -17,27 +18,39 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: client, error }, { data: notes }, { data: tasks }, { data: analyses }, { data: plan }, { data: reminders }] =
-    await Promise.all([
-      supabase.from("clients").select("*").eq("id", id).single(),
-      supabase
-        .from("client_notes")
-        .select("*, author:profiles(full_name)")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      supabase.from("client_tasks").select("*").eq("client_id", id).order("created_at", { ascending: true }),
-      supabase
-        .from("client_analyses")
-        .select("id, created_at, result")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      supabase.from("client_financial_plans").select("data, updated_at").eq("client_id", id).maybeSingle(),
-      supabase
-        .from("reminders")
-        .select("id, remind_at, message, sent_at")
-        .eq("client_id", id)
-        .order("remind_at", { ascending: true }),
-    ]);
+  const [
+    { data: client, error },
+    { data: notes },
+    { data: tasks },
+    { data: analyses },
+    { data: plan },
+    { data: reminders },
+    { data: products },
+  ] = await Promise.all([
+    supabase.from("clients").select("*").eq("id", id).single(),
+    supabase
+      .from("client_notes")
+      .select("*, author:profiles(full_name)")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    supabase.from("client_tasks").select("*").eq("client_id", id).order("created_at", { ascending: true }),
+    supabase
+      .from("client_analyses")
+      .select("id, created_at, result")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    supabase.from("client_financial_plans").select("data, updated_at").eq("client_id", id).maybeSingle(),
+    supabase
+      .from("reminders")
+      .select("id, remind_at, message, sent_at")
+      .eq("client_id", id)
+      .order("remind_at", { ascending: true }),
+    supabase
+      .from("client_products")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (error || !client) notFound();
 
@@ -123,6 +136,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
           <FamilySection clientId={client.id} members={familyMembers} />
+        </div>
+
+        {/* Products — coverage this client already owns, with conversion windows at a glance */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Products</h2>
+          <ProductsSection clientId={client.id} products={products ?? []} />
         </div>
 
         {/* Notes / interaction history */}

@@ -61,3 +61,22 @@ export interface Reminder {
   sent_at: string | null;
   created_at: string;
 }
+
+export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Annuity", "Other"];
+
+export interface ClientProduct {
+  id: string;
+  client_id: string;
+  product_name: string;
+  product_type: string | null;
+  carrier: string | null;
+  issue_date: string | null;
+  expiration_date: string | null;
+  conversion_deadline: string | null;
+  conversion_notes: string | null;
+  face_amount: number | null;
+  premium: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}

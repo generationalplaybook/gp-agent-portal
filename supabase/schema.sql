@@ -317,3 +317,51 @@ alter table public.clients add column if not exists family_id uuid;
 alter table public.clients add column if not exists family_relationship text;
 
 create index if not exists clients_family_id_idx on public.clients(family_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- 11. Client Products (added 8/27 — policies/products a client already owns, so the advisor
+-- can see coverage they're holding and any conversion window at a glance, e.g. a term policy
+-- convertible to an IUL without a medical exam only within a set window)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.client_products (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  product_name text not null,
+  product_type text, -- freeform label: Term Life, Whole Life, IUL, Annuity, Other, ...
+  carrier text,
+  issue_date date,
+  expiration_date date,
+  conversion_deadline date, -- convertible to permanent coverage with NO medical exam until this date
+  conversion_notes text,
+  face_amount numeric,
+  premium numeric,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists client_products_client_id_idx on public.client_products(client_id);
+
+alter table public.client_products enable row level security;
+
+create policy "Products follow client visibility"
+  on public.client_products for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_products.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_products.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  );
+
+drop trigger if exists client_products_set_updated_at on public.client_products;
+create trigger client_products_set_updated_at
+  before update on public.client_products
+  for each row execute procedure public.set_updated_at();

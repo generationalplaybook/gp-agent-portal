@@ -279,3 +279,83 @@ export async function unlinkFamilyMember(clientId: string, memberIdToRemove: str
   revalidatePath(`/clients/${memberIdToRemove}`);
   revalidatePath("/clients");
 }
+
+// ─────────────────────────────────────────────────────────────
+// Client Products — policies/coverage a client already owns (not something the advisor is
+// selling them now), so the advisor can see at a glance what's in force and, for a term
+// policy, whether it can still convert to a permanent product without a new medical exam.
+// ─────────────────────────────────────────────────────────────
+
+export interface ProductFields {
+  product_name: string;
+  product_type?: string;
+  carrier?: string;
+  issue_date?: string;
+  expiration_date?: string;
+  conversion_deadline?: string;
+  conversion_notes?: string;
+  face_amount?: string;
+  premium?: string;
+  notes?: string;
+}
+
+function parseNumberOrNull(v?: string): number | null {
+  if (!v || !v.trim()) return null;
+  const n = Number(v.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function addProduct(clientId: string, fields: ProductFields): Promise<void> {
+  const { supabase } = await requireUser();
+  const product_name = fields.product_name.trim();
+  if (!product_name) throw new Error("Product name is required.");
+
+  const { error } = await supabase.from("client_products").insert({
+    client_id: clientId,
+    product_name,
+    product_type: fields.product_type?.trim() || null,
+    carrier: fields.carrier?.trim() || null,
+    issue_date: fields.issue_date?.trim() || null,
+    expiration_date: fields.expiration_date?.trim() || null,
+    conversion_deadline: fields.conversion_deadline?.trim() || null,
+    conversion_notes: fields.conversion_notes?.trim() || null,
+    face_amount: parseNumberOrNull(fields.face_amount),
+    premium: parseNumberOrNull(fields.premium),
+    notes: fields.notes?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function updateProduct(productId: string, clientId: string, fields: ProductFields): Promise<void> {
+  const { supabase } = await requireUser();
+  const product_name = fields.product_name.trim();
+  if (!product_name) throw new Error("Product name is required.");
+
+  const { error } = await supabase
+    .from("client_products")
+    .update({
+      product_name,
+      product_type: fields.product_type?.trim() || null,
+      carrier: fields.carrier?.trim() || null,
+      issue_date: fields.issue_date?.trim() || null,
+      expiration_date: fields.expiration_date?.trim() || null,
+      conversion_deadline: fields.conversion_deadline?.trim() || null,
+      conversion_notes: fields.conversion_notes?.trim() || null,
+      face_amount: parseNumberOrNull(fields.face_amount),
+      premium: parseNumberOrNull(fields.premium),
+      notes: fields.notes?.trim() || null,
+    })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function deleteProduct(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_products").delete().eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
