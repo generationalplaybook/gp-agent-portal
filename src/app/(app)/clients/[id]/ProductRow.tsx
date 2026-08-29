@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateProduct, deleteProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus } from "@/lib/products";
+import RidersField from "./RidersField";
 
 const STATUS_STYLES: Record<"good" | "warn" | "bad", string> = {
   good: "bg-[#00693C] text-white",
@@ -26,6 +27,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     premium: p.premium != null ? String(p.premium) : "",
     notes: p.notes ?? "",
     owner_client_id: p.owner_client_id ?? "",
+    riders: p.riders ?? [],
   };
 }
 
@@ -178,6 +180,7 @@ export default function ProductRow({
           placeholder="Other notes"
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
+        <RidersField value={fields.riders ?? []} onChange={(riders) => setFields((f) => ({ ...f, riders }))} />
         {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
         <div className="flex gap-2">
           <button
@@ -257,6 +260,16 @@ export default function ProductRow({
       )}
 
       {product.conversion_notes && <p className="text-xs text-[#666]">{product.conversion_notes}</p>}
+
+      {product.riders && product.riders.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {product.riders.map((rider) => (
+            <span key={rider} className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] text-[#666]">
+              {rider}
+            </span>
+          ))}
+        </div>
+      )}
 
       {(product.face_amount || product.premium) && (
         <p className="text-xs text-[#888]">

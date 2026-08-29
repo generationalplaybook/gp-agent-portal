@@ -5,6 +5,7 @@ import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
+import RidersField from "./RidersField";
 
 // Suggestions for the product-name field: your own carrier products (life/annuity — not the
 // Knowledge Base's concept/tax entries), deduplicated. Rendered as a native <datalist> so a
@@ -26,6 +27,7 @@ const EMPTY_FIELDS: ProductFields = {
   premium: "",
   notes: "",
   owner_client_id: "",
+  riders: [],
 };
 
 export default function ProductsSection({
@@ -204,6 +206,10 @@ export default function ProductsSection({
             rows={2}
             placeholder="Other notes"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+          <RidersField
+            value={fields.riders ?? []}
+            onChange={(riders) => setFields((f) => ({ ...f, riders }))}
           />
           {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
           <div className="flex gap-2">

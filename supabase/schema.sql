@@ -456,3 +456,11 @@ begin
   return new;
 end;
 $$;
+
+-- ─────────────────────────────────────────────────────────────
+-- 14. Product riders (added 8/29) — the endorsements attached to a policy (accelerated death
+-- benefit for terminal/critical/chronic illness, overloan protection, carrier-specific perks,
+-- etc). A plain text array: a handful of common ones are offered as checkboxes in the UI, and
+-- anything else gets typed in free-form, since riders vary a lot by carrier.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists riders text[] not null default '{}';

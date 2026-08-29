@@ -73,6 +73,18 @@ export interface Reminder {
 
 export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Annuity", "Other"];
 
+// The riders that show up often enough to offer as one-click checkboxes when logging a product.
+// Anything else (Ethos Perks, a carrier-specific endorsement, etc.) gets typed in as a custom
+// rider instead — riders vary a lot by carrier, so this list is deliberately just the common
+// ones, not exhaustive.
+export const COMMON_RIDER_OPTIONS = [
+  "Accelerated Death Benefit Rider – Terminal Illness",
+  "Accelerated Death Benefit Rider – Critical Illness",
+  "Accelerated Death Benefit Rider – Chronic Illness",
+  "Overloan Protection Benefit Endorsement",
+  "Protected Death Benefit Endorsement",
+];
+
 export interface ClientProduct {
   id: string;
   client_id: string;
@@ -86,6 +98,7 @@ export interface ClientProduct {
   face_amount: number | null;
   premium: number | null;
   notes: string | null;
+  riders: string[];
   // Who currently owns this product, when it's someone other than the client it's attached
   // to — e.g. a parent owns a juvenile policy until the covered child turns 18. Null means
   // the client on the product owns it outright.
