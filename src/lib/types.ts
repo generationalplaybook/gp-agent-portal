@@ -11,6 +11,9 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
 export interface Profile {
   id: string;
   full_name: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
   email: string | null;
   role: "agent" | "admin";
   created_at: string;
@@ -19,7 +22,12 @@ export interface Profile {
 export interface Client {
   id: string;
   owner_id: string;
+  // full_name is auto-derived (by a DB trigger) from first/middle/last — read it anywhere you
+  // need a display string, but write first_name/middle_name/last_name, never full_name directly.
   full_name: string;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
   phone: string | null;
   email: string | null;
   birth_date: string | null;

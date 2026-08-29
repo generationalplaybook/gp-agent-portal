@@ -15,10 +15,13 @@ async function requireUser() {
 
 export async function updateMyProfile(formData: FormData) {
   const { supabase, user } = await requireUser();
-  const full_name = String(formData.get("full_name") || "").trim();
+  const first_name = String(formData.get("first_name") || "").trim() || null;
+  const middle_name = String(formData.get("middle_name") || "").trim() || null;
+  const last_name = String(formData.get("last_name") || "").trim() || null;
   const phone = String(formData.get("phone") || "").trim() || null;
 
-  await supabase.from("profiles").update({ full_name, phone }).eq("id", user.id);
+  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  await supabase.from("profiles").update({ first_name, middle_name, last_name, phone }).eq("id", user.id);
   revalidatePath("/profile");
 }
 

@@ -28,19 +28,28 @@ async function requireAdmin() {
 // means even something unexpected (like a missing env var) surfaces its real message
 // instead of that wall of text.
 
-export async function inviteAgent(email: string, fullName: string): Promise<ActionResult> {
+export async function inviteAgent(
+  email: string,
+  firstName: string,
+  middleName: string,
+  lastName: string
+): Promise<ActionResult> {
   try {
     await requireAdmin();
 
     const trimmedEmail = email.trim().toLowerCase();
-    const trimmedName = fullName.trim();
+    const trimmedFirst = firstName.trim();
+    const trimmedMiddle = middleName.trim();
+    const trimmedLast = lastName.trim();
     if (!trimmedEmail) return { ok: false, error: "Email is required." };
 
     const siteUrl = await getSiteUrl();
     const admin = createAdminClient();
 
+    // full_name is computed by a DB trigger (see schema.sql) from these three fields, once
+    // handle_new_user() creates the profile row — don't pass full_name here.
     const { error } = await admin.auth.admin.inviteUserByEmail(trimmedEmail, {
-      data: { full_name: trimmedName },
+      data: { first_name: trimmedFirst, middle_name: trimmedMiddle, last_name: trimmedLast },
       redirectTo: `${siteUrl}/set-password`,
     });
 

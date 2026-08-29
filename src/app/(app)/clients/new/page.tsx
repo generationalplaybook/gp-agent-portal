@@ -18,15 +18,34 @@ export default async function NewClientPage({
       )}
 
       <form action={createClientRecord} className="flex flex-col gap-4 rounded-lg border border-[#D9CFBA] bg-white p-6">
-        <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-          Full name *
-          <input
-            type="text"
-            name="full_name"
-            required
-            className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-          />
-        </label>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            First name *
+            <input
+              type="text"
+              name="first_name"
+              required
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Middle name
+            <input
+              type="text"
+              name="middle_name"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Last name *
+            <input
+              type="text"
+              name="last_name"
+              required
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        </div>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
           Phone
           <PhoneInput

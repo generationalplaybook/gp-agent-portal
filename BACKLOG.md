@@ -17,11 +17,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   short training/quiz mode, or something surfaced directly inside the Client Analyzer flow
   when a death benefit option is being chosen for an actual client.
 
-- **First / Last / Middle name split.** Right now "name" is a single field everywhere.
-  Needs to become separate First Name / Last Name (required) and Middle Name (optional)
-  fields, on both:
-  - Advisor accounts (the invite form and My Profile)
-  - Client records (new client form, client profile contact info, Client Analyzer)
+- **First / Last / Middle name split — built 8/29.** First Name / Last Name (required) and
+  Middle Name (optional) are now separate fields everywhere someone's name gets entered or
+  edited: the invite form, My Profile, the new client form, the client profile's contact info,
+  and the "Add New Person" flow inside Family. `full_name` still exists on both `clients` and
+  `profiles` and everything that displays a name keeps reading it unchanged — it's now
+  auto-computed by a database trigger from first/middle/last, so nothing should write to it
+  directly anymore. Existing rows were backfilled by splitting the old full_name on the first
+  space; anyone whose name didn't split cleanly (a single-word name, or one that already had a
+  middle name jammed into one field) can just re-enter it correctly once in the UI.
+  - **Left as one field on purpose:** the Client Analyzer's "Client Name" box. That tool is a
+    scratch illustration calculator (not a saved record), so it just needs a name to print on
+    the output — splitting it wouldn't connect to anything. Flag if you want it split too.
 
 - **Better home page.** The landing page after login is minimal right now. Karina wants
   something more useful here, but said not to worry about it yet.

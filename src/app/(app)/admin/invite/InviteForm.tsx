@@ -4,7 +4,9 @@ import { useState } from "react";
 import { inviteAgent } from "./actions";
 
 export default function InviteForm() {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
@@ -13,10 +15,12 @@ export default function InviteForm() {
     e.preventDefault();
     setSending(true);
     setStatus(null);
-    const result = await inviteAgent(email, fullName);
+    const result = await inviteAgent(email, firstName, middleName, lastName);
     if (result.ok) {
       setStatus({ ok: true, message: `Invite sent to ${email}.` });
-      setFullName("");
+      setFirstName("");
+      setMiddleName("");
+      setLastName("");
       setEmail("");
     } else {
       setStatus({ ok: false, message: result.error });
@@ -27,11 +31,28 @@ export default function InviteForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
       <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Full name
+        First name
         <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Agent's name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          placeholder="Advisor's first name"
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Middle name
+        <input
+          value={middleName}
+          onChange={(e) => setMiddleName(e.target.value)}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Last name
+        <input
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          placeholder="Advisor's last name"
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
       </label>

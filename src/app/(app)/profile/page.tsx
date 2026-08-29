@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: credentials }] = await Promise.all([
-    supabase.from("profiles").select("full_name, email, phone, role").eq("id", user.id).single(),
+    supabase.from("profiles").select("first_name, middle_name, last_name, email, phone, role").eq("id", user.id).single(),
     supabase
       .from("advisor_credentials")
       .select("id, label, code")
@@ -28,10 +28,26 @@ export default async function ProfilePage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Info</h2>
         <form action={updateMyProfile} className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Full name
+            First name
             <input
-              name="full_name"
-              defaultValue={profile?.full_name ?? ""}
+              name="first_name"
+              defaultValue={profile?.first_name ?? ""}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Middle name
+            <input
+              name="middle_name"
+              defaultValue={profile?.middle_name ?? ""}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Last name
+            <input
+              name="last_name"
+              defaultValue={profile?.last_name ?? ""}
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>

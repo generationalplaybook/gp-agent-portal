@@ -34,7 +34,9 @@ export default function FamilySection({ clientId, members }: { clientId: string;
   const [relationship, setRelationship] = useState("");
 
   // "Add new person" mode
-  const [newName, setNewName] = useState("");
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newMiddleName, setNewMiddleName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
   const [newRelationship, setNewRelationship] = useState("");
   const [newBirthDate, setNewBirthDate] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -63,7 +65,9 @@ export default function FamilySection({ clientId, members }: { clientId: string;
     setResults([]);
     setPicked(null);
     setRelationship("");
-    setNewName("");
+    setNewFirstName("");
+    setNewMiddleName("");
+    setNewLastName("");
     setNewRelationship("");
     setNewBirthDate("");
     setNewPhone("");
@@ -89,15 +93,17 @@ export default function FamilySection({ clientId, members }: { clientId: string;
   }
 
   async function handleAddNew() {
-    if (!newName.trim()) {
-      setError("Name is required.");
+    if (!newFirstName.trim() || !newLastName.trim()) {
+      setError("First and last name are required.");
       return;
     }
     setBusy(true);
     setError("");
     try {
       await addNewFamilyMember(clientId, {
-        full_name: newName,
+        first_name: newFirstName,
+        middle_name: newMiddleName,
+        last_name: newLastName,
         relationship: newRelationship,
         birth_date: newBirthDate,
         phone: newPhone,
@@ -293,12 +299,26 @@ export default function FamilySection({ clientId, members }: { clientId: string;
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Full name *"
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  value={newFirstName}
+                  onChange={(e) => setNewFirstName(e.target.value)}
+                  placeholder="First name *"
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+                <input
+                  value={newMiddleName}
+                  onChange={(e) => setNewMiddleName(e.target.value)}
+                  placeholder="Middle"
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+                <input
+                  value={newLastName}
+                  onChange={(e) => setNewLastName(e.target.value)}
+                  placeholder="Last name *"
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </div>
               <input
                 value={newRelationship}
                 onChange={(e) => setNewRelationship(e.target.value)}

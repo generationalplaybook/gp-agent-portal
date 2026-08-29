@@ -380,3 +380,79 @@ alter table public.client_products add column if not exists owner_client_id uuid
 -- advisor reminder. This flag stops the same client from re-triggering it if the job ever
 -- reruns same-day, and — since turning 18 only happens once in a life — never needs to reset.
 alter table public.clients add column if not exists turned_18_notice_sent boolean not null default false;
+
+-- ─────────────────────────────────────────────────────────────
+-- 13. Name split — first / middle / last, with full_name auto-derived (added 8/29)
+-- ─────────────────────────────────────────────────────────────
+-- full_name stays put as a normal column so every existing query, RLS policy, and component
+-- that already reads client.full_name / profile.full_name keeps working untouched — a trigger
+-- below recomputes it from first/middle/last on every insert or update. Entry forms now collect
+-- the three parts; nothing should write to full_name directly anymore.
+
+alter table public.clients add column if not exists first_name text;
+alter table public.clients add column if not exists middle_name text;
+alter table public.clients add column if not exists last_name text;
+
+alter table public.profiles add column if not exists first_name text;
+alter table public.profiles add column if not exists middle_name text;
+alter table public.profiles add column if not exists last_name text;
+
+-- One-time backfill for rows that already exist: naive split on the first space (first word ->
+-- first name, everything after -> last name). Covers the common "First Last" case already on
+-- file; a name with a middle name already in the data, or just one word, can be re-split by hand
+-- in the UI afterward — that's a one-time cleanup, not something worth writing careful SQL for.
+update public.clients
+  set first_name = coalesce(first_name, split_part(full_name, ' ', 1)),
+      last_name = coalesce(last_name, nullif(trim(regexp_replace(full_name, '^\S+\s*', '')), ''))
+  where full_name is not null;
+
+update public.profiles
+  set first_name = coalesce(first_name, split_part(full_name, ' ', 1)),
+      last_name = coalesce(last_name, nullif(trim(regexp_replace(full_name, '^\S+\s*', '')), ''))
+  where full_name is not null and full_name <> '';
+
+-- Recomputes full_name any time first/middle/last change. Never returns null (worst case an
+-- empty string), so this can't trip clients.full_name's NOT NULL constraint.
+create or replace function public.sync_full_name()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.full_name := trim(both ' ' from
+    coalesce(new.first_name, '') ||
+    case when coalesce(trim(new.middle_name), '') <> '' then ' ' || trim(new.middle_name) else '' end ||
+    case when coalesce(trim(new.last_name), '') <> '' then ' ' || trim(new.last_name) else '' end
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_client_full_name on public.clients;
+create trigger sync_client_full_name
+  before insert or update of first_name, middle_name, last_name on public.clients
+  for each row execute function public.sync_full_name();
+
+drop trigger if exists sync_profile_full_name on public.profiles;
+create trigger sync_profile_full_name
+  before insert or update of first_name, middle_name, last_name on public.profiles
+  for each row execute function public.sync_full_name();
+
+-- Advisor invites now send first/middle/last through the auth metadata instead of one
+-- "full_name" string, so the profile row created here needs the same split.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, first_name, middle_name, last_name)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data ->> 'first_name',
+    new.raw_user_meta_data ->> 'middle_name',
+    new.raw_user_meta_data ->> 'last_name'
+  );
+  return new;
+end;
+$$;

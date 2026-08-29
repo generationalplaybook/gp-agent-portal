@@ -18,18 +18,22 @@ async function requireUser() {
 export async function createClientRecord(formData: FormData) {
   const { supabase, user } = await requireUser();
 
-  const full_name = String(formData.get("full_name") || "").trim();
+  const first_name = String(formData.get("first_name") || "").trim();
+  const middle_name = String(formData.get("middle_name") || "").trim() || null;
+  const last_name = String(formData.get("last_name") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
   const stage = (String(formData.get("stage") || "lead") as ClientStage);
 
-  if (!full_name) redirect("/clients/new?error=" + encodeURIComponent("Client name is required."));
+  if (!first_name || !last_name)
+    redirect("/clients/new?error=" + encodeURIComponent("First and last name are required."));
 
+  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   const { data, error } = await supabase
     .from("clients")
-    .insert({ owner_id: user.id, full_name, phone, email, birth_date, source, stage })
+    .insert({ owner_id: user.id, first_name, middle_name, last_name, phone, email, birth_date, source, stage })
     .select("id")
     .single();
 
@@ -64,13 +68,19 @@ export async function deleteClient(formData: FormData) {
 export async function updateContactInfo(formData: FormData) {
   const { supabase } = await requireUser();
   const clientId = String(formData.get("client_id"));
-  const full_name = String(formData.get("full_name") || "").trim();
+  const first_name = String(formData.get("first_name") || "").trim();
+  const middle_name = String(formData.get("middle_name") || "").trim() || null;
+  const last_name = String(formData.get("last_name") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
 
-  await supabase.from("clients").update({ full_name, phone, email, birth_date, source }).eq("id", clientId);
+  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  await supabase
+    .from("clients")
+    .update({ first_name, middle_name, last_name, phone, email, birth_date, source })
+    .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
 }
@@ -214,11 +224,20 @@ export async function linkExistingFamilyMember(
 
 export async function addNewFamilyMember(
   clientId: string,
-  fields: { full_name: string; relationship: string; birth_date?: string; phone?: string; email?: string }
+  fields: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    relationship: string;
+    birth_date?: string;
+    phone?: string;
+    email?: string;
+  }
 ): Promise<void> {
   const { supabase, user } = await requireUser();
-  const full_name = fields.full_name.trim();
-  if (!full_name) throw new Error("Name is required.");
+  const first_name = fields.first_name.trim();
+  const last_name = fields.last_name.trim();
+  if (!first_name || !last_name) throw new Error("First and last name are required.");
 
   const { data: current, error: currentErr } = await supabase
     .from("clients")
@@ -229,9 +248,12 @@ export async function addNewFamilyMember(
 
   const familyId = await ensureFamilyId(supabase, clientId, current.family_id);
 
+  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   const { error } = await supabase.from("clients").insert({
     owner_id: user.id,
-    full_name,
+    first_name,
+    middle_name: fields.middle_name?.trim() || null,
+    last_name,
     phone: fields.phone?.trim() || null,
     email: fields.email?.trim() || null,
     birth_date: fields.birth_date?.trim() || null,
