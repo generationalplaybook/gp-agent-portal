@@ -5,6 +5,7 @@ import { updateProduct, deleteProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus } from "@/lib/products";
 import RidersField from "./RidersField";
+import DollarInput from "./DollarInput";
 
 const STATUS_STYLES: Record<"good" | "warn" | "bad", string> = {
   good: "bg-[#00693C] text-white",
@@ -28,6 +29,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     notes: p.notes ?? "",
     owner_client_id: p.owner_client_id ?? "",
     riders: p.riders ?? [],
+    minimum_premium: p.minimum_premium != null ? String(p.minimum_premium) : "",
   };
 }
 
@@ -160,19 +162,28 @@ export default function ProductRow({
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
         <div className="grid grid-cols-2 gap-2">
-          <input
-            value={fields.face_amount}
-            onChange={(e) => set("face_amount", e.target.value)}
+          <DollarInput
+            value={fields.face_amount ?? ""}
+            onChange={(v) => set("face_amount", v)}
             placeholder="Face amount"
-            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
           />
-          <input
-            value={fields.premium}
-            onChange={(e) => set("premium", e.target.value)}
+          <DollarInput
+            value={fields.premium ?? ""}
+            onChange={(v) => set("premium", v)}
             placeholder="Premium"
-            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </div>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Minimum to avoid lapse (monthly)
+          <DollarInput
+            value={fields.minimum_premium ?? ""}
+            onChange={(v) => set("minimum_premium", v)}
+            placeholder="e.g. 67"
+            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+        </label>
         <textarea
           value={fields.notes}
           onChange={(e) => set("notes", e.target.value)}
@@ -276,6 +287,12 @@ export default function ProductRow({
           {product.face_amount != null && `Face: $${product.face_amount.toLocaleString()}`}
           {product.face_amount != null && product.premium != null && " · "}
           {product.premium != null && `Premium: $${product.premium.toLocaleString()}`}
+        </p>
+      )}
+
+      {product.minimum_premium != null && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Minimum to avoid lapse: ${product.minimum_premium.toLocaleString()}/mo
         </p>
       )}
 

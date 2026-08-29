@@ -6,6 +6,7 @@ import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
+import DollarInput from "./DollarInput";
 
 // Suggestions for the product-name field: your own carrier products (life/annuity — not the
 // Knowledge Base's concept/tax entries), deduplicated. Rendered as a native <datalist> so a
@@ -28,6 +29,7 @@ const EMPTY_FIELDS: ProductFields = {
   notes: "",
   owner_client_id: "",
   riders: [],
+  minimum_premium: "",
 };
 
 export default function ProductsSection({
@@ -187,19 +189,28 @@ export default function ProductsSection({
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
           <div className="grid grid-cols-2 gap-2">
-            <input
-              value={fields.face_amount}
-              onChange={(e) => set("face_amount", e.target.value)}
+            <DollarInput
+              value={fields.face_amount ?? ""}
+              onChange={(v) => set("face_amount", v)}
               placeholder="Face amount"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <input
-              value={fields.premium}
-              onChange={(e) => set("premium", e.target.value)}
+            <DollarInput
+              value={fields.premium ?? ""}
+              onChange={(v) => set("premium", v)}
               placeholder="Premium"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </div>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Minimum to avoid lapse (monthly)
+            <DollarInput
+              value={fields.minimum_premium ?? ""}
+              onChange={(v) => set("minimum_premium", v)}
+              placeholder="e.g. 67"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
           <textarea
             value={fields.notes}
             onChange={(e) => set("notes", e.target.value)}

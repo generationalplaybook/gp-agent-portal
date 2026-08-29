@@ -97,6 +97,10 @@ export interface ClientProduct {
   conversion_notes: string | null;
   face_amount: number | null;
   premium: number | null;
+  // The bare-minimum monthly premium that keeps the policy from lapsing — usually lower than
+  // `premium` (the planned/target payment), common on UL/IUL products. So an advisor can find
+  // it fast if a policy shows as lapsed.
+  minimum_premium: number | null;
   notes: string | null;
   riders: string[];
   // Who currently owns this product, when it's someone other than the client it's attached

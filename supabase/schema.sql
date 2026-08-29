@@ -464,3 +464,10 @@ $$;
 -- anything else gets typed in free-form, since riders vary a lot by carrier.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists riders text[] not null default '{}';
+
+-- ─────────────────────────────────────────────────────────────
+-- 15. Minimum premium to avoid lapse (added 8/29) — for a UL/IUL, the planned/target premium
+-- (what's in `premium`) is usually higher than the bare minimum that actually keeps the policy
+-- in force. When a policy shows as lapsed, the advisor needs this number fast.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists minimum_premium numeric;

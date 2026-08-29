@@ -318,6 +318,9 @@ export interface ProductFields {
   conversion_notes?: string;
   face_amount?: string;
   premium?: string;
+  // Bare-minimum monthly premium that keeps the policy from lapsing (usually lower than
+  // `premium`, common on UL/IUL products).
+  minimum_premium?: string;
   notes?: string;
   // Who owns this product right now, when it's someone other than the client it's attached to —
   // e.g. a parent owns a juvenile policy until the covered child turns 18. Set to another
@@ -348,6 +351,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     conversion_notes: fields.conversion_notes?.trim() || null,
     face_amount: parseNumberOrNull(fields.face_amount),
     premium: parseNumberOrNull(fields.premium),
+    minimum_premium: parseNumberOrNull(fields.minimum_premium),
     notes: fields.notes?.trim() || null,
     owner_client_id: fields.owner_client_id?.trim() || null,
     riders: fields.riders ?? [],
@@ -374,6 +378,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       conversion_notes: fields.conversion_notes?.trim() || null,
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),
+      minimum_premium: parseNumberOrNull(fields.minimum_premium),
       notes: fields.notes?.trim() || null,
       owner_client_id: fields.owner_client_id?.trim() || null,
       riders: fields.riders ?? [],
