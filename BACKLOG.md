@@ -4,6 +4,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Death Benefit Option explainer for advisors.** Karina wants a clear way to teach her
+  advisors the three death benefit structures — Level, Increasing, and (per her phrasing)
+  "level to increasing" — what each does and when to use which. Explicitly told not to build
+  this yet (8/27), just capture the idea. Note: the Level vs. Increasing (Option 1 vs Option 2)
+  comparison already exists as a Knowledge Base concept entry today (what it is / does /
+  agent note / client-facing explanation / highlights) — worth showing her that before
+  building anything new, since it may already cover most of this. Open questions for when we
+  pick this up: what exactly is the third "level to increasing" option (a policy that switches
+  DBO over time, which the KB only mentions in passing under a couple of NA product notes —
+  may need its own writeup), and whether she wants this as more Knowledge Base content, a
+  short training/quiz mode, or something surfaced directly inside the Client Analyzer flow
+  when a death benefit option is being chosen for an actual client.
+
 - **First / Last / Middle name split.** Right now "name" is a single field everywhere.
   Needs to become separate First Name / Last Name (required) and Middle Name (optional)
   fields, on both:
@@ -55,12 +68,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   - **Partially covered as of 8/27** by the new family-linking feature (a guardian/parent can
     now be linked to a minor client as a "Parent"-relationship family member, and the family
     card on the client page already flags minors and highlights anyone turning 18 within 90
-    days). What's still missing: dedicated guardian-only contact fields (right now a guardian
-    is just another linked client record, not a distinct role), routing a minor's reminders to
-    the guardian specifically rather than just showing the guardian nearby, and the automatic
-    part — a daily Vercel Cron check that creates the advisor's "you're 18 now" reminder on the
-    actual birthday (today it only *displays* the countdown when someone looks at the page, it
-    doesn't proactively notify anyone).
+    days).
+  - **Further covered as of 8/27 (later same day)** by the Products feature's
+    `owner_client_id` field (a product can be owned by a different linked family member — e.g.
+    a parent owns a child's juvenile policy) plus a daily Vercel Cron job
+    (`src/app/api/cron/check-birthdays/route.ts`, `vercel.json`) that runs automatically: on a
+    client's 18th birthday it transfers any product they're covered under but don't yet own to
+    them, and creates the advisor a reminder to have the "you're 18 now" conversation. No
+    automated email goes to the client, per Karina's earlier instruction.
+  - What's still missing: dedicated guardian-only contact fields (right now a guardian is just
+    another linked client record, not a distinct role), and routing a minor's day-to-day
+    reminders to the guardian specifically rather than just showing the guardian nearby.
 
 ## Technical follow-up
 

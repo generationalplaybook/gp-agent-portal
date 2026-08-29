@@ -4,7 +4,7 @@ import { useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB } from "@/lib/kb-data";
-import ProductRow from "./ProductRow";
+import ProductRow, { type OwnerOption } from "./ProductRow";
 
 // Suggestions for the product-name field: your own carrier products (life/annuity — not the
 // Knowledge Base's concept/tax entries), deduplicated. Rendered as a native <datalist> so a
@@ -25,9 +25,20 @@ const EMPTY_FIELDS: ProductFields = {
   face_amount: "",
   premium: "",
   notes: "",
+  owner_client_id: "",
 };
 
-export default function ProductsSection({ clientId, products }: { clientId: string; products: ClientProduct[] }) {
+export default function ProductsSection({
+  clientId,
+  clientName,
+  products,
+  ownerOptions,
+}: {
+  clientId: string;
+  clientName: string;
+  products: ClientProduct[];
+  ownerOptions: OwnerOption[];
+}) {
   const [showAdd, setShowAdd] = useState(false);
   const [fields, setFields] = useState<ProductFields>(EMPTY_FIELDS);
   const [saving, setSaving] = useState(false);
@@ -62,7 +73,7 @@ export default function ProductsSection({ clientId, products }: { clientId: stri
       {products.length > 0 && (
         <div className="flex flex-col gap-3">
           {products.map((p) => (
-            <ProductRow key={p.id} product={p} clientId={clientId} />
+            <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
           ))}
         </div>
       )}
@@ -126,6 +137,23 @@ export default function ProductsSection({ clientId, products }: { clientId: stri
               />
             </label>
           </div>
+          {ownerOptions.length > 0 && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
+              <select
+                value={fields.owner_client_id}
+                onChange={(e) => set("owner_client_id", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              >
+                <option value="">{clientName} (this client)</option>
+                {ownerOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Convertible without exam until
             <input

@@ -297,6 +297,10 @@ export interface ProductFields {
   face_amount?: string;
   premium?: string;
   notes?: string;
+  // Who owns this product right now, when it's someone other than the client it's attached to —
+  // e.g. a parent owns a juvenile policy until the covered child turns 18. Set to another
+  // linked family member's client id, or left empty when the client on the product owns it.
+  owner_client_id?: string;
 }
 
 function parseNumberOrNull(v?: string): number | null {
@@ -322,6 +326,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     face_amount: parseNumberOrNull(fields.face_amount),
     premium: parseNumberOrNull(fields.premium),
     notes: fields.notes?.trim() || null,
+    owner_client_id: fields.owner_client_id?.trim() || null,
   });
   if (error) throw new Error(error.message);
 
@@ -346,6 +351,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),
       notes: fields.notes?.trim() || null,
+      owner_client_id: fields.owner_client_id?.trim() || null,
     })
     .eq("id", productId);
   if (error) throw new Error(error.message);

@@ -141,7 +141,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {/* Products — coverage this client already owns, with conversion windows at a glance */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Products</h2>
-          <ProductsSection clientId={client.id} products={products ?? []} />
+          <ProductsSection
+            clientId={client.id}
+            clientName={client.full_name}
+            products={products ?? []}
+            ownerOptions={familyMembers.map((m) => ({ id: m.id, full_name: m.full_name }))}
+          />
         </div>
 
         {/* Notes / interaction history */}

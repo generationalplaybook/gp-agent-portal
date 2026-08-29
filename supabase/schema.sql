@@ -365,3 +365,18 @@ drop trigger if exists client_products_set_updated_at on public.client_products;
 create trigger client_products_set_updated_at
   before update on public.client_products
   for each row execute procedure public.set_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
+-- 12. Juvenile policy ownership + automatic 18th-birthday transfer (added 8/27)
+-- ─────────────────────────────────────────────────────────────
+-- owner_client_id: who currently owns this product, when it's someone other than the client
+-- it's attached to — e.g. a parent owns a juvenile policy until the covered child turns 18.
+-- Left null for the (normal) case where the client on the product IS the owner.
+alter table public.client_products add column if not exists owner_client_id uuid references public.clients(id) on delete set null;
+
+-- turned_18_notice_sent: sirens off the daily birthday-check cron job (see
+-- src/app/api/cron/check-birthdays/route.ts) exactly once per client, the day they turn 18 —
+-- it transfers ownership on any product they don't already own outright and creates an
+-- advisor reminder. This flag stops the same client from re-triggering it if the job ever
+-- reruns same-day, and — since turning 18 only happens once in a life — never needs to reset.
+alter table public.clients add column if not exists turned_18_notice_sent boolean not null default false;

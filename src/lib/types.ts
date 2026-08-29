@@ -30,6 +30,7 @@ export interface Client {
   notes_summary: string | null;
   family_id: string | null;
   family_relationship: string | null;
+  turned_18_notice_sent: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +78,10 @@ export interface ClientProduct {
   face_amount: number | null;
   premium: number | null;
   notes: string | null;
+  // Who currently owns this product, when it's someone other than the client it's attached
+  // to — e.g. a parent owns a juvenile policy until the covered child turns 18. Null means
+  // the client on the product owns it outright.
+  owner_client_id: string | null;
   created_at: string;
   updated_at: string;
 }

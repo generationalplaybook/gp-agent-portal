@@ -11,6 +11,8 @@ const STATUS_STYLES: Record<"good" | "warn" | "bad", string> = {
   bad: "bg-[#8B1A1A] text-white",
 };
 
+export type OwnerOption = { id: string; full_name: string };
+
 function toFieldValues(p: ClientProduct): ProductFields {
   return {
     product_name: p.product_name,
@@ -23,10 +25,21 @@ function toFieldValues(p: ClientProduct): ProductFields {
     face_amount: p.face_amount != null ? String(p.face_amount) : "",
     premium: p.premium != null ? String(p.premium) : "",
     notes: p.notes ?? "",
+    owner_client_id: p.owner_client_id ?? "",
   };
 }
 
-export default function ProductRow({ product, clientId }: { product: ClientProduct; clientId: string }) {
+export default function ProductRow({
+  product,
+  clientId,
+  clientName,
+  ownerOptions,
+}: {
+  product: ClientProduct;
+  clientId: string;
+  clientName: string;
+  ownerOptions: OwnerOption[];
+}) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [fields, setFields] = useState<ProductFields>(toFieldValues(product));
@@ -112,6 +125,23 @@ export default function ProductRow({ product, clientId }: { product: ClientProdu
             />
           </label>
         </div>
+        {ownerOptions.length > 0 && (
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
+            <select
+              value={fields.owner_client_id}
+              onChange={(e) => set("owner_client_id", e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            >
+              <option value="">{clientName} (this client)</option>
+              {ownerOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.full_name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           Convertible without exam until
           <input
@@ -175,6 +205,7 @@ export default function ProductRow({ product, clientId }: { product: ClientProdu
   }
 
   const status = getProductStatus(product.expiration_date, product.conversion_deadline);
+  const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
 
   return (
     <div className="flex flex-col gap-1.5 rounded-md border border-[#D9CFBA] p-3">
@@ -201,13 +232,20 @@ export default function ProductRow({ product, clientId }: { product: ClientProdu
         )}
       </div>
 
-      {status && (
-        <span
-          className={`self-start rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}
-        >
-          {status.label}
-        </span>
-      )}
+      <div className="flex flex-wrap gap-1.5">
+        {status && (
+          <span
+            className={`self-start rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}
+          >
+            {status.label}
+          </span>
+        )}
+        {owner && (
+          <span className="self-start rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#555]">
+            Owned by {owner.full_name}
+          </span>
+        )}
+      </div>
 
       {(product.issue_date || product.expiration_date) && (
         <p className="text-xs text-[#888]">
