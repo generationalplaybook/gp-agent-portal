@@ -33,11 +33,13 @@ export default function ProductsSection({
   clientName,
   products,
   ownerOptions,
+  isMinor,
 }: {
   clientId: string;
   clientName: string;
   products: ClientProduct[];
   ownerOptions: OwnerOption[];
+  isMinor: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [fields, setFields] = useState<ProductFields>(EMPTY_FIELDS);
@@ -68,6 +70,19 @@ export default function ProductsSection({
 
   return (
     <div className="flex flex-col gap-3">
+      {isMinor && ownerOptions.length === 0 && (
+        <p className="rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
+          {clientName} is a minor with no family linked yet — link their parent or guardian in Family above so you
+          can set them as the owner on any policy below.
+        </p>
+      )}
+      {isMinor && ownerOptions.length > 0 && products.length === 0 && !showAdd && (
+        <p className="rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
+          {clientName} is a minor — when you add a policy, set &ldquo;Owned by&rdquo; to whichever parent or
+          guardian actually owns it.
+        </p>
+      )}
+
       {products.length === 0 && !showAdd && <p className="text-xs text-[#999]">No products on file yet.</p>}
 
       {products.length > 0 && (

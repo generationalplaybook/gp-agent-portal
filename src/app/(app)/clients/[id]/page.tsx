@@ -13,6 +13,7 @@ import ProductsSection from "./ProductsSection";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
+import { calculateAge, daysUntilNextBirthday } from "@/lib/family";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,6 +56,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (error || !client) notFound();
 
   const stageInfo = CLIENT_STAGES.find((s) => s.value === client.stage);
+
+  // Is this client themselves a minor? Drives the "Minor" badge in the header and the
+  // ownership nudge on Products below — same age math the Family card already uses for
+  // linked members, just applied to the client whose page you're on.
+  const clientAge = client.birth_date ? calculateAge(client.birth_date) : null;
+  const clientIsMinor = clientAge !== null && clientAge < 18;
+  const clientDaysToBday = client.birth_date ? daysUntilNextBirthday(client.birth_date) : null;
+  const clientTurning18Soon = clientIsMinor && clientAge === 17 && clientDaysToBday !== null && clientDaysToBday <= 90;
 
   // Family section — a second round trip only when this client actually belongs to a family
   // group, since we don't know client.family_id until the query above comes back.
@@ -123,9 +132,27 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {/* Header / contact info */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h1 className="font-serif text-2xl text-[#1C1C1C]">{client.full_name}</h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-serif text-2xl text-[#1C1C1C]">{client.full_name}</h1>
+              {clientIsMinor && (
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                    clientTurning18Soon ? "bg-[#8B1A1A] text-white" : "bg-[#F0EDE8] text-[#666]"
+                  }`}
+                >
+                  {clientTurning18Soon ? `Minor · turns 18 in ${clientDaysToBday}d` : `Minor · age ${clientAge}`}
+                </span>
+              )}
+            </div>
             <StageSelect clientId={client.id} stage={client.stage} />
           </div>
+          {clientIsMinor && (
+            <p className="mb-4 rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
+              This client is a minor. Add their parent or legal guardian in Family below, then mark them as the
+              owner of any policy in Products — ownership transfers to {client.full_name.split(" ")[0]} automatically
+              on their 18th birthday.
+            </p>
+          )}
           <ContactInfoForm client={client} />
           <div className="mt-4 border-t border-[#EDE8DF] pt-4">
             <DeleteClientButton clientId={client.id} clientName={client.full_name} />
@@ -146,6 +173,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             clientName={client.full_name}
             products={products ?? []}
             ownerOptions={familyMembers.map((m) => ({ id: m.id, full_name: m.full_name }))}
+            isMinor={clientIsMinor}
           />
         </div>
 
