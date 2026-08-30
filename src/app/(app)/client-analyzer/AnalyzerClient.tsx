@@ -7,7 +7,9 @@ import CurrencyInput from "./CurrencyInput";
 import {
   runAnalyzer,
   calcAgeFromDob,
+  formatPeriodicFunding,
   GOAL_OPTIONS,
+  PERIODIC_FREQUENCY_OPTIONS,
   type AnalyzerInputs,
   type AnalyzerResult,
   type Goal,
@@ -410,14 +412,23 @@ export default function AnalyzerClient({
           </Field>
         )}
         {inputs.funding === "periodic" && (
-          <Field label="Periodic Contribution Amount">
-            <CurrencyInput
-              value={inputs.periodicAmount ?? ""}
-              onChange={(v) => set("periodicAmount", v)}
-              placeholder="e.g. $20,000, 1-2x/year"
-              className={inputClass + " max-w-xs"}
-            />
-          </Field>
+          <>
+            <Field label="Periodic Contribution Amount">
+              <CurrencyInput
+                value={inputs.periodicAmount ?? ""}
+                onChange={(v) => set("periodicAmount", v)}
+                placeholder="e.g. $20,000 per contribution"
+                className={inputClass + " max-w-xs"}
+              />
+            </Field>
+            <Field label="How Often" optional>
+              <OptionGroup
+                value={inputs.periodicFrequency}
+                onChange={(v) => set("periodicFrequency", v)}
+                options={[...PERIODIC_FREQUENCY_OPTIONS, { value: "skip", label: "Unsure" }]}
+              />
+            </Field>
+          </>
         )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Annual Income" optional>
@@ -534,7 +545,7 @@ export default function AnalyzerClient({
                   {[
                     result.monthlyBudget && `${result.monthlyBudget}/month`,
                     result.lumpSumAmount && `${result.lumpSumAmount} lump sum`,
-                    result.periodicAmount && `${result.periodicAmount} periodically`,
+                    formatPeriodicFunding(result.periodicAmount, result.periodicFrequency),
                   ]
                     .filter(Boolean)
                     .join(" + ")}

@@ -22,6 +22,33 @@ const GOAL_LABELS: Record<Goal, string> = Object.fromEntries(
   GOAL_OPTIONS.map((o) => [o.value, o.label])
 ) as Record<Goal, string>;
 
+export type PeriodicFrequency = "annual" | "semiannual" | "quarterly" | "other";
+
+export const PERIODIC_FREQUENCY_OPTIONS: { value: PeriodicFrequency; label: string }[] = [
+  { value: "annual", label: "Once a year" },
+  { value: "semiannual", label: "Twice a year" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "other", label: "Other / varies" },
+];
+
+const PERIODIC_FREQUENCY_LABELS: Record<PeriodicFrequency, string> = {
+  annual: "once a year",
+  semiannual: "twice a year",
+  quarterly: "quarterly",
+  other: "periodically",
+};
+
+// Shared by the on-screen results and the PDF summary so "$20,000 twice a year" reads the same
+// in both places. Falls back to a generic "periodically" when no frequency was picked.
+export function formatPeriodicFunding(amount?: string, frequency?: string): string | undefined {
+  if (!amount) return undefined;
+  const freqLabel =
+    frequency && frequency in PERIODIC_FREQUENCY_LABELS
+      ? PERIODIC_FREQUENCY_LABELS[frequency as PeriodicFrequency]
+      : "periodically";
+  return `${amount} ${freqLabel}`;
+}
+
 export interface AnalyzerInputs {
   name: string;
   dob: string;
@@ -50,6 +77,9 @@ export interface AnalyzerInputs {
   // monthly or a single lump sum) — common for high earners dumping in extra money for tax
   // purposes around bonus season or year-end.
   periodicAmount?: string;
+  // How often those periodic contributions happen, e.g. once a year vs. twice a year — matters
+  // for planning around when the extra money actually shows up (bonus season, year-end, etc.).
+  periodicFrequency?: PeriodicFrequency | "skip";
   income?: string;
   debt?: string;
   goals?: Goal[];
@@ -97,6 +127,7 @@ export interface AnalyzerResult {
   lumpSumAmount?: string;
   monthlyBudget?: string;
   periodicAmount?: string;
+  periodicFrequency?: string;
   income: number;
   debt: number;
   suggestedDB: number | null;
@@ -426,6 +457,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     lumpSumAmount: inputs.lumpSumAmount?.trim() || undefined,
     monthlyBudget: inputs.monthlyBudget?.trim() || undefined,
     periodicAmount: inputs.periodicAmount?.trim() || undefined,
+    periodicFrequency: inputs.periodicFrequency !== "skip" ? inputs.periodicFrequency : undefined,
     income,
     debt,
     suggestedDB,

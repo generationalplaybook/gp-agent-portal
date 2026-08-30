@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import type { AnalyzerResult, GoalRecommendation } from "./analyzer";
+import { formatPeriodicFunding, type AnalyzerResult, type GoalRecommendation } from "./analyzer";
 
 type RGB = [number, number, number];
 
@@ -123,7 +123,7 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
   const fundingParts = [
     d.monthlyBudget && d.monthlyBudget + "/month",
     d.lumpSumAmount && d.lumpSumAmount + " lump sum",
-    d.periodicAmount && d.periodicAmount + " periodically",
+    formatPeriodicFunding(d.periodicAmount, d.periodicFrequency),
   ].filter(Boolean);
   const summaryLines = [
     "Money Type: " + (d.money || "Not specified"),

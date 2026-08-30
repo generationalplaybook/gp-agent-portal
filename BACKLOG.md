@@ -4,6 +4,12 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Periodic funding frequency — built 8/30.** Follow-up to the Periodic funding option above:
+  added a "How Often" picker (Once a year / Twice a year / Quarterly / Other / Unsure) next to
+  the Periodic Contribution Amount field, so "$20,000 twice a year" is captured as structured
+  data rather than jammed into one freeform box. Shows up the same way in results and the PDF
+  summary. No SQL migration needed.
+
 - **"Periodic" funding option — built 8/30.** Karina pointed out that plenty of clients (esp.
   higher earners) don't fund monthly or in one lump sum — they dump extra money in a couple
   times a year, often for tax reasons (bonus season, year-end planning). Added "Periodic (a few
