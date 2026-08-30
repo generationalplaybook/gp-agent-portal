@@ -487,3 +487,35 @@ alter type client_stage add value if not exists 'pending';
 -- advisor sets it in My Profile.
 -- ─────────────────────────────────────────────────────────────
 alter table public.profiles add column if not exists scheduling_link text;
+
+-- ─────────────────────────────────────────────────────────────
+-- 18. In-person meetings (added 8/30) — entered directly on a client's profile (date, location,
+-- notes), not booked through a scheduling page. The calendar invite (.ics) that actually lands
+-- on the advisor's and client's calendars is generated in the browser from this same row —
+-- nothing here talks to an external calendar API.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.client_meetings (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  agent_id uuid not null references public.profiles(id) on delete cascade,
+  meeting_at timestamptz not null,
+  location text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists client_meetings_client_id_idx on public.client_meetings(client_id);
+
+alter table public.client_meetings enable row level security;
+
+drop policy if exists "Agents see their own meetings, admins see all" on public.client_meetings;
+create policy "Agents see their own meetings, admins see all"
+  on public.client_meetings for all
+  using (
+    agent_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  )
+  with check (
+    agent_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );

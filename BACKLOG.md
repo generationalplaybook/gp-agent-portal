@@ -4,6 +4,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **In-Person Meetings — built 8/30.** Karina wanted to log an in-person meeting directly on a
+  client's profile and have it land on calendars, without going through a Cal.com booking page
+  (she already knows the time — she just needs it recorded and on calendars). New "In-Person
+  Meetings" card in the client sidebar (right under Schedule a Call): enter a date/time,
+  location, and notes, and it's saved to the client's record immediately — shows up in an
+  upcoming list right there on the page, with past meetings tucked into a collapsed section.
+  Each meeting has an "Add to Calendar" button that generates a standard .ics invite file
+  (works with Google/Outlook/Apple) right in the browser — no external calendar account or API
+  key involved. The advisor downloads it to add to their own calendar, and can forward the same
+  file to the client so it lands on theirs too. Reschedules/cancellations aren't synced
+  automatically (that's the Cal.com-integration tradeoff we talked through) — updating the time
+  means deleting and re-adding, which sends a fresh invite.
+  New table: `client_meetings` (SQL below).
+
 - **My Profile "Saved" confirmation — built 8/30.** Karina noticed clicking Save on My Profile
   gave no feedback that anything happened. The "Your Info" form (name, phone, Cal.com link) was
   a plain server-action form with a full page round-trip and no visible change when values
