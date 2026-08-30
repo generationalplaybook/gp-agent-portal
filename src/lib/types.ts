@@ -21,6 +21,10 @@ export interface Profile {
   email: string | null;
   role: "agent" | "admin";
   created_at: string;
+  // Cal.com booking link for this advisor's client-consultation event type. Video (Cal Video,
+  // Zoom, Google Meet) is configured on that event type inside Cal.com itself — this is just
+  // the link the portal opens/sends. Null until the advisor sets it in My Profile.
+  scheduling_link?: string | null;
 }
 
 export interface Client {

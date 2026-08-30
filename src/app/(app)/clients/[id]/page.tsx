@@ -10,6 +10,7 @@ import ContactInfoForm from "./ContactInfoForm";
 import DeleteClientButton from "./DeleteClientButton";
 import FamilySection from "./FamilySection";
 import ProductsSection from "./ProductsSection";
+import ScheduleCallCard from "./ScheduleCallCard";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -113,10 +114,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     data: { user },
   } = await supabase.auth.getUser();
   let advisor: { name?: string; phone?: string; email?: string } | undefined;
+  let schedulingLink: string | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, phone, email")
+      .select("full_name, phone, email, scheduling_link")
       .eq("id", user.id)
       .single();
     advisor = {
@@ -124,6 +126,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       phone: profile?.phone ?? undefined,
       email: profile?.email ?? user.email ?? undefined,
     };
+    schedulingLink = profile?.scheduling_link ?? null;
   }
 
   return (
@@ -246,6 +249,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
       {/* Sidebar: stage + analyses + financial analysis + follow-up */}
       <div className="flex flex-col gap-5">
+        <ScheduleCallCard
+          schedulingLink={schedulingLink}
+          clientName={client.full_name}
+          clientEmail={client.email}
+        />
+
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>
           <span

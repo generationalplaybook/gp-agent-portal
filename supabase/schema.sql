@@ -479,3 +479,11 @@ alter table public.client_products add column if not exists minimum_premium nume
 -- visible in Products regardless of what Stage they're on.
 -- ─────────────────────────────────────────────────────────────
 alter type client_stage add value if not exists 'pending';
+
+-- ─────────────────────────────────────────────────────────────
+-- 17. Cal.com scheduling link (added 8/30) — each advisor's own Cal.com booking link for their
+-- client-consultation event type. Video (Cal Video, Zoom, Google Meet) is configured on that
+-- event type inside Cal.com itself; the portal just opens/sends this link. Null until the
+-- advisor sets it in My Profile.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists scheduling_link text;

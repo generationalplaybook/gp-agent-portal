@@ -12,7 +12,11 @@ export default async function ProfilePage() {
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: credentials }] = await Promise.all([
-    supabase.from("profiles").select("first_name, middle_name, last_name, email, phone, role").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("first_name, middle_name, last_name, email, phone, role, scheduling_link")
+      .eq("id", user.id)
+      .single(),
     supabase
       .from("advisor_credentials")
       .select("id, label, code")
@@ -66,6 +70,20 @@ export default async function ProfilePage() {
               value={profile?.email ?? ""}
               className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#888]"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
+            Cal.com Scheduling Link
+            <input
+              name="scheduling_link"
+              defaultValue={profile?.scheduling_link ?? ""}
+              placeholder="e.g. https://cal.com/your-name/consultation"
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <span className="mt-0.5 text-[11px] text-[#999]">
+              Paste the booking link for the event type you want clients scheduling into (set video — Cal Video,
+              Zoom, or Google Meet — on that event type inside Cal.com). Once saved, a &ldquo;Schedule a Call&rdquo;
+              button appears on every client&rsquo;s profile.
+            </span>
           </label>
           <div className="sm:col-span-2">
             <button

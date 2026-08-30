@@ -4,6 +4,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Cal.com scheduling — simple version built 8/30.** Karina uses Cal.com and wanted a way to
+  put a calendar in the portal and send clients video-call links. We scoped two versions and
+  went with the simple one first (full API sync into client profiles is logged below as a
+  possible upgrade). Each advisor pastes their Cal.com booking link for their consultation
+  event type into My Profile (new "Cal.com Scheduling Link" field) — video itself (Cal Video,
+  Zoom, or Google Meet) is configured on that event type inside Cal.com, not in the portal.
+  Every client profile now has a "Schedule a Call" card in the sidebar with: Open Scheduling
+  Page (new tab, pre-filled with the client's name/email via URL params), Copy Link to Send
+  (for texting/emailing the client directly), and Book Here (expands the same page inline via
+  iframe so the advisor can book it live with the client). Cal.com handles sending the video
+  join link to both sides once it's booked — the portal doesn't touch that part.
+  New column: `profiles.scheduling_link` (SQL below).
+  - **Possible upgrade, not built:** a fuller version where a booked call's time + video link
+    get pulled back into the client's profile automatically via Cal.com's API + a webhook (so
+    the profile shows "Next Call: Thu 2pm — Join" without anyone copying anything). Needs a
+    Cal.com API key and a new `bookings` table. Revisit if the simple version feels like it's
+    missing something once she's used it a while.
+
 - **Periodic funding frequency — built 8/30.** Follow-up to the Periodic funding option above:
   added a "How Often" picker (Once a year / Twice a year / Quarterly / Other / Unsure) next to
   the Periodic Contribution Amount field, so "$20,000 twice a year" is captured as structured
