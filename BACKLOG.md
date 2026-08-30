@@ -4,6 +4,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **"Final expense / burial costs only" goal — built 8/30.** Karina pointed out that some
+  clients just want a small policy so their family isn't stuck with funeral/burial costs — not
+  income replacement, not savings, not a legacy plan. Added it as a 7th Primary Goal option on
+  the Client Analyzer. It's handled differently from every other goal: because guaranteed- and
+  simplified-issue final expense whole life exists, this goal is reachable even for a client who
+  answered "Declined" on insurability (who'd otherwise get routed to annuity-only
+  recommendations) — so it's checked before the usual insurability logic, not after. Declined
+  clients get Ethos Final Expense Whole Life (TruStage), Guaranteed Issue — no health questions,
+  no exam, no declines, with Banner Life's Social Security Billing version as the runner-up.
+  Everyone else gets the Simplified Issue version of the same TruStage product, with Mutual of
+  Omaha Living Promise (no exam, purchasable online) as the runner-up. Both are real products
+  already documented in the Knowledge Base. No SQL migration needed.
+
 - **In-Person Meetings — built 8/30.** Karina wanted to log an in-person meeting directly on a
   client's profile and have it land on calendars, without going through a Cal.com booking page
   (she already knows the time — she just needs it recorded and on calendars). New "In-Person
