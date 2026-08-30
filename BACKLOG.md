@@ -4,6 +4,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Policy Illustration Summary — built 8/30.** Advisors can now enter the key numbers from a
+  carrier's own illustration and get back a short, visual, client-facing PDF instead of handing
+  someone the full dense illustration packet. New "Illustration Summary" link on every product
+  in a client's Products list (`/clients/[id]/illustrations/[productId]`). The fields shown are
+  entirely different depending on the product's type, matching what's actually relevant:
+  - **IUL / Whole Life / Other:** advisor adds as many milestones as the case needs (e.g. Age
+    18, 25, 65 for a juvenile IUL), each with Cash Value and Death Benefit, both Guaranteed and
+    Non-Guaranteed. PDF renders these as a table plus two line charts (cash value over time,
+    death benefit over time), each chart showing the guaranteed line (dashed) against the
+    non-guaranteed/current-assumption line (solid) so neither number gets overstated.
+  - **Term Life:** no milestones (term has no cash value to chart) — instead a summary card
+    with the flat death benefit, term length, level premium, conversion deadline, and which
+    living-benefit riders are attached (reuses the same rider picker as Products).
+  - **Annuity:** Initial Premium plus milestones of Accumulation Value, Income Value (if there's
+    an income rider), and Death Benefit — table plus a chart of accumulation vs. income value
+    growth.
+  One illustration is saved per product (saving again overwrites the previous version — no
+  history/versioning yet). "Download PDF Summary" works whether or not it's been saved, so an
+  advisor can iterate before committing. New table: `product_illustrations` (SQL below).
+  Charts are hand-drawn with jsPDF's own drawing primitives (lines, dashes, gridlines) — no
+  charting library dependency.
+  - **Not built yet / open for later:** illustration versioning (show old vs. new over time),
+    a premium-paid-to-date or surrender-value column if she wants those too, and whether a
+    minor's guardian should get their own copy of the wording (currently the PDF just says the
+    client's name, same as the Client Analyzer PDF).
+
 - **"Final expense / burial costs only" goal — built 8/30.** Karina pointed out that some
   clients just want a small policy so their family isn't stuck with funeral/burial costs — not
   income replacement, not savings, not a legacy plan. Added it as a 7th Primary Goal option on

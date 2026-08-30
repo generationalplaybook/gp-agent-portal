@@ -519,3 +519,43 @@ create policy "Agents see their own meetings, admins see all"
     agent_id = auth.uid()
     or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
   );
+
+-- ─────────────────────────────────────────────────────────────
+-- 19. Policy Illustration Summaries (added 8/30) — advisor-entered highlights from a carrier's
+-- own illustration (cash value / death benefit / income at a few milestone ages, or a term
+-- summary card), condensed into a one-page client-facing PDF. One illustration per product —
+-- saving again overwrites the previous one (see the unique constraint on product_id). `data`
+-- shape depends on product_type; see src/lib/illustration.ts.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.product_illustrations (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null unique references public.client_products(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  product_type text,
+  data jsonb not null,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists product_illustrations_client_id_idx on public.product_illustrations(client_id);
+
+alter table public.product_illustrations enable row level security;
+
+drop policy if exists "Illustrations follow client visibility" on public.product_illustrations;
+create policy "Illustrations follow client visibility"
+  on public.product_illustrations for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = product_illustrations.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = product_illustrations.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  );
