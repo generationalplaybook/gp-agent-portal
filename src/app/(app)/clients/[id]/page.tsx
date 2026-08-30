@@ -127,7 +127,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-[2fr_1fr]">
+    <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[2fr_1fr]">
       <div className="flex flex-col gap-5">
         {/* Header / contact info */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">

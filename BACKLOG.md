@@ -48,10 +48,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   "still very jumbled" across several pages, but wants to hold off on aesthetic/layout cleanup
   until the feature set is more settled. Revisit once she says features are done for now.
 
-- **"Hone in on the alerts" — needs a follow-up conversation (8/29).** Karina flagged, while
-  testing, that the reminder/alert system needs attention but didn't specify what's wrong yet —
-  she's still testing. Ask her what specifically isn't working (timing, which alerts fire,
-  missing alerts, etc.) before touching this.
+- **Reminders vs. Tasks, and no actual notifications — clarified 8/29, no change needed.**
+  Karina asked whether Tasks and Reminders on a client profile do the same thing. They don't:
+  Tasks are a plain checklist (title, optional due date, done/not done, nothing flags it as
+  overdue elsewhere). Reminders are time-specific and drive the "Follow-up overdue" badge on
+  the Clients list and the "Next reminder" line on Family cards — but today they're purely
+  in-app: nothing actually emails or texts anyone when one comes due, even though a
+  `channel: email/sms` field already sits unused in the `reminders` table. Karina confirmed
+  this is fine to leave as-is for now — revisit only if she asks for real outbound
+  notifications later.
 
 - **Better home page.** The landing page after login is minimal right now. Karina wants
   something more useful here, but said not to worry about it yet.
