@@ -11,6 +11,7 @@ import DeleteClientButton from "./DeleteClientButton";
 import FamilySection from "./FamilySection";
 import ProductsSection from "./ProductsSection";
 import ScheduleCallCard from "./ScheduleCallCard";
+import MeetingsCard from "./MeetingsCard";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -28,6 +29,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     { data: plan },
     { data: reminders },
     { data: products },
+    { data: meetings },
   ] = await Promise.all([
     supabase.from("clients").select("*").eq("id", id).single(),
     supabase
@@ -52,6 +54,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .select("*")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("client_meetings")
+      .select("id, meeting_at, location, notes")
+      .eq("client_id", id)
+      .order("meeting_at", { ascending: true }),
   ]);
 
   if (error || !client) notFound();
@@ -254,6 +261,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           clientName={client.full_name}
           clientEmail={client.email}
         />
+
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">In-Person Meetings</h2>
+          <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
+        </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>

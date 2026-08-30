@@ -139,6 +139,41 @@ export async function deleteTask(taskId: string, clientId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// In-person meetings — entered directly on the client's profile (not booked through a
+// Cal.com-style page), so it shows up on the record immediately. The calendar invite (.ics)
+// that goes on the advisor's and client's actual calendars is generated client-side from this
+// same data — see MeetingsCard.tsx — nothing here talks to an external calendar.
+// ─────────────────────────────────────────────────────────────
+
+export async function addMeeting(
+  clientId: string,
+  meetingAtIso: string,
+  location: string,
+  notes: string
+): Promise<void> {
+  const { supabase, user } = await requireUser();
+  if (!meetingAtIso) throw new Error("Pick a date and time.");
+
+  const { error } = await supabase.from("client_meetings").insert({
+    client_id: clientId,
+    agent_id: user.id,
+    meeting_at: meetingAtIso,
+    location: location.trim() || null,
+    notes: notes.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function deleteMeeting(meetingId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_meetings").delete().eq("id", meetingId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+// ─────────────────────────────────────────────────────────────
 // Family linking — family_id is just a shared grouping key (a random uuid). Every client
 // row that carries the same family_id is treated as one household. Ordinary RLS on the
 // clients table ("owner sees their own, admin sees all") already governs every read/write

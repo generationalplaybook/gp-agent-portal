@@ -79,6 +79,19 @@ export interface Reminder {
   created_at: string;
 }
 
+// An in-person (or otherwise not-Cal.com-booked) meeting entered directly on the client's
+// profile. The calendar invite that lands on actual calendars is generated client-side from
+// this row (see src/lib/ics.ts) — this table is just the record.
+export interface ClientMeeting {
+  id: string;
+  client_id: string;
+  agent_id: string;
+  meeting_at: string;
+  location: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Annuity", "Other"];
 
 // The riders that show up often enough to offer as one-click checkboxes when logging a product.
