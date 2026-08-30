@@ -41,11 +41,15 @@ export interface AnalyzerInputs {
   money?: "qualified" | "nonqualified" | "both" | "skip";
   otherRetirement?: "yes" | "no" | "skip";
   otherAmount?: string;
-  funding?: "monthly" | "lumpsum" | "both" | "skip";
+  funding?: "monthly" | "lumpsum" | "both" | "periodic" | "skip";
   // Approx one-time amount available, when funding includes a lump sum.
   lumpSumAmount?: string;
   // Approx monthly budget available, when funding includes ongoing premiums.
   monthlyBudget?: string;
+  // Approx amount per contribution, when funding is periodic (a few times a year rather than
+  // monthly or a single lump sum) — common for high earners dumping in extra money for tax
+  // purposes around bonus season or year-end.
+  periodicAmount?: string;
   income?: string;
   debt?: string;
   goals?: Goal[];
@@ -92,6 +96,7 @@ export interface AnalyzerResult {
   funding?: string;
   lumpSumAmount?: string;
   monthlyBudget?: string;
+  periodicAmount?: string;
   income: number;
   debt: number;
   suggestedDB: number | null;
@@ -157,7 +162,7 @@ interface RecommendationContext {
   money?: "qualified" | "nonqualified" | "both";
   ageGroup: "young" | "mid" | "preretiree" | "retiree";
   horizon?: "short" | "mid" | "long" | "never";
-  funding?: "monthly" | "lumpsum" | "both";
+  funding?: "monthly" | "lumpsum" | "both" | "periodic";
   earlyAccess?: "yes" | "no" | "both";
 }
 
@@ -314,8 +319,8 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
           "Waiver of Surrender Charge Rider = Day 1 access with no surrender penalties",
           "Policy loans available at any age — no IRS age restriction",
         ];
-        if (funding === "lumpsum" || funding === "both") {
-          reasons.push("LUMP SUM FRIENDLY — 0% load means 100% of lump sum goes to work immediately");
+        if (funding === "lumpsum" || funding === "both" || funding === "periodic") {
+          reasons.push("LUMP SUM FRIENDLY — 0% load means 100% of every deposit goes to work immediately, whether it's one lump sum or a few a year");
         }
         secondary = "North American Builder Plus IUL 4 — if time horizon is actually 15+ years";
         avoid = "Builder Plus IUL 4 for short-term goals";
@@ -332,8 +337,8 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
         } else {
           secondary = "Ethos Protection IUL — 14-15% below national average pricing";
         }
-        if (funding === "lumpsum" || funding === "both") {
-          reasons.push("Accepts lump sum deposits including 1035 exchanges");
+        if (funding === "lumpsum" || funding === "both" || funding === "periodic") {
+          reasons.push("Flexible premium — accepts lump sum deposits including 1035 exchanges, on whatever schedule works for the client");
         }
       }
       talking = [
@@ -341,6 +346,23 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
         "When ready to access it, you take a policy loan — no tax, no credit check, no monthly payment required",
         "Your full balance keeps compounding even while borrowing against it",
       ];
+    }
+  }
+
+  // Periodic funding (a few deposits a year rather than monthly or a single lump sum — common
+  // for higher earners adding extra around bonus season or year-end for tax reasons) behaves
+  // like a lump sum for an IUL's flexible-premium design, but annuities vary: most only accept
+  // additional deposits during an initial purchase-payment window, not indefinitely. Flag that
+  // distinction so the advisor double-checks the specific product rather than assuming.
+  if (funding === "periodic" && primary) {
+    if (primary.includes("IUL")) {
+      reasons.push(
+        "Flexible-premium product — deposits a few times a year (bonus season, year-end tax planning, etc.) work fine, no fixed schedule required"
+      );
+    } else if (!primary.includes("Term")) {
+      reasons.push(
+        "Confirm this specific annuity's purchase-payment window — most only accept additional deposits during an initial period (often the first several years), not indefinitely"
+      );
     }
   }
 
@@ -403,6 +425,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     funding,
     lumpSumAmount: inputs.lumpSumAmount?.trim() || undefined,
     monthlyBudget: inputs.monthlyBudget?.trim() || undefined,
+    periodicAmount: inputs.periodicAmount?.trim() || undefined,
     income,
     debt,
     suggestedDB,

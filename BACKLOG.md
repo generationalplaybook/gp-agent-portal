@@ -4,6 +4,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **"Periodic" funding option — built 8/30.** Karina pointed out that plenty of clients (esp.
+  higher earners) don't fund monthly or in one lump sum — they dump extra money in a couple
+  times a year, often for tax reasons (bonus season, year-end planning). Added "Periodic (a few
+  times a year, e.g. tax-driven)" as a 4th Funding Method choice, with its own approx-amount
+  field, alongside Monthly / Lump Sum / Both. It's treated like a lump sum for IUL purposes
+  (flexible-premium IULs take deposits on any schedule), but the tool now also adds a reminder
+  bullet on annuity recommendations to confirm that specific product's purchase-payment window,
+  since most annuities only accept additional deposits during an initial period after issue —
+  not indefinitely, unlike IULs. Shows up in results and the PDF summary same as the other
+  funding fields. No SQL migration needed.
+
 - **Monthly budget field on the intake — built 8/30.** The "Approximate Amount" field under
   Funding Method used to be a single freeform box covering both a monthly premium budget and a
   lump sum, which made it easy to lose track of which one the client meant. It's now two

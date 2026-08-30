@@ -384,6 +384,7 @@ export default function AnalyzerClient({
               { value: "monthly", label: "Monthly premiums" },
               { value: "lumpsum", label: "One-time lump sum" },
               { value: "both", label: "Both" },
+              { value: "periodic", label: "Periodic (a few times a year, e.g. tax-driven)" },
               { value: "skip", label: "Skip" },
             ]}
           />
@@ -404,6 +405,16 @@ export default function AnalyzerClient({
               value={inputs.lumpSumAmount ?? ""}
               onChange={(v) => set("lumpSumAmount", v)}
               placeholder="e.g. $100,000"
+              className={inputClass + " max-w-xs"}
+            />
+          </Field>
+        )}
+        {inputs.funding === "periodic" && (
+          <Field label="Periodic Contribution Amount">
+            <CurrencyInput
+              value={inputs.periodicAmount ?? ""}
+              onChange={(v) => set("periodicAmount", v)}
+              placeholder="e.g. $20,000, 1-2x/year"
               className={inputClass + " max-w-xs"}
             />
           </Field>
@@ -517,12 +528,13 @@ export default function AnalyzerClient({
                   <strong>Existing coverage:</strong> {result.existingCoverage}
                 </div>
               )}
-              {(result.monthlyBudget || result.lumpSumAmount) && (
+              {(result.monthlyBudget || result.lumpSumAmount || result.periodicAmount) && (
                 <div className="mt-2 text-xs text-[#666]">
                   <strong>Funding:</strong>{" "}
                   {[
                     result.monthlyBudget && `${result.monthlyBudget}/month`,
                     result.lumpSumAmount && `${result.lumpSumAmount} lump sum`,
+                    result.periodicAmount && `${result.periodicAmount} periodically`,
                   ]
                     .filter(Boolean)
                     .join(" + ")}

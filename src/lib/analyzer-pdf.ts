@@ -123,6 +123,7 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
   const fundingParts = [
     d.monthlyBudget && d.monthlyBudget + "/month",
     d.lumpSumAmount && d.lumpSumAmount + " lump sum",
+    d.periodicAmount && d.periodicAmount + " periodically",
   ].filter(Boolean);
   const summaryLines = [
     "Money Type: " + (d.money || "Not specified"),
