@@ -27,6 +27,11 @@ export interface AnalyzerInputs {
   dob: string;
   phone: string;
   email: string;
+  // Freeform: what the client already has on the books (existing policies/products), so the
+  // advisor isn't recommending something redundant and can see the fuller picture at a glance.
+  // Auto-filled from the client's Products list when the analysis is started from their
+  // profile; editable either way.
+  existingCoverage?: string;
   heightFt: string;
   heightIn: string;
   weight: string;
@@ -60,6 +65,11 @@ export interface GoalRecommendation {
   reasons: string[];
   talking: string[];
   avoidReasons: string[];
+  // A pairing suggestion rather than a hard avoid — e.g. qualified money can't fund an IUL
+  // directly, but the client may still be a good fit for one funded with other money alongside
+  // the annuity. Shown as a distinct "combo option" callout, never mixed into avoid/avoidReasons.
+  combo: string;
+  comboReasons: string[];
 }
 
 export interface AnalyzerResult {
@@ -68,6 +78,7 @@ export interface AnalyzerResult {
   email: string;
   age: number | null;
   dob: string;
+  existingCoverage?: string;
   heightFt: string;
   heightIn: string;
   weight: string;
@@ -153,6 +164,8 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   let reasons: string[] = [];
   let talking: string[] = [];
   let avoidReasons: string[] = [];
+  let combo = "";
+  let comboReasons: string[] = [];
 
   if (insurable === "no") {
     if (goal === "income_now") {
@@ -205,8 +218,14 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
       ];
       secondary = "F&G Safe Income Advantage — if guaranteed income is the end goal";
     }
-    avoid = "IUL";
-    avoidReasons = ["Qualified money cannot go directly into an IUL — must be distributed first, triggering taxes"];
+    // Not a blanket "avoid IUL" — qualified money specifically can't fund one directly. If the
+    // client has other, non-qualified money (income, savings, a second account), a separately
+    // funded IUL alongside this annuity is still worth raising, not ruled out.
+    combo = "Pair with a separately-funded IUL";
+    comboReasons = [
+      "Qualified money can't fund an IUL directly — it would need to be distributed first, triggering taxes",
+      "If the client has other income or savings outside this qualified account, a separately-funded IUL alongside this annuity adds tax-free cash value growth and extra legacy protection",
+    ];
     talking = [
       "Your 401k rolls directly into an annuity with zero taxes due today",
       "The same 59 1/2 restriction already applies to your 401k — this does not make your timeline worse",
@@ -319,7 +338,7 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
     }
   }
 
-  return { primary, secondary, avoid, reasons, talking, avoidReasons };
+  return { primary, secondary, avoid, reasons, talking, avoidReasons, combo, comboReasons };
 }
 
 export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
@@ -367,6 +386,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     email: inputs.email,
     age,
     dob: inputs.dob,
+    existingCoverage: inputs.existingCoverage?.trim() || undefined,
     heightFt: inputs.heightFt,
     heightIn: inputs.heightIn,
     weight: inputs.weight,

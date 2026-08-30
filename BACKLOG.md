@@ -4,6 +4,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **IUL + annuity combo option (qualified money) — built 8/30.** The Client Analyzer used to
+  tell advisors to flat-out avoid an IUL any time the client's money was qualified. That's
+  still true for *directly* funding the IUL with that qualified money (can't be done without
+  triggering taxes), but it doesn't mean the client is a bad fit for an IUL at all. Now, for
+  the goals where this used to show a red "Avoid" box, it instead shows a blue "Combo Option"
+  box suggesting the qualified-money annuity rollover be paired with a separately-funded IUL
+  (funded by other income/savings) — same on-screen and in the PDF export. The red "Avoid"
+  box itself wasn't touched — it's still used for the other, unrelated hard tradeoffs
+  (uninsurable client, protection goal, juvenile 529-vs-IUL, immediate income need).
+  Also added: an "Existing Coverage / Products" question on the intake, so advisors can note
+  what a client already has. When the analysis is started from a client's profile page, this
+  auto-fills from their actual Products records; it's shown in the results and printed in the
+  PDF's Client Profile Summary when present. No SQL migration needed — both new fields ride
+  along in the existing `jsonb` result column, and the existing-coverage prefill just reads the
+  Products table that's already there.
+
 - **Death Benefit Option explainer for advisors.** Karina wants a clear way to teach her
   advisors the three death benefit structures — Level, Increasing, and (per her phrasing)
   "level to increasing" — what each does and when to use which. Explicitly told not to build

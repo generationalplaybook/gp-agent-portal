@@ -32,7 +32,22 @@ export default async function ClientAnalyzerPage({
     .select("id, full_name, phone, email, birth_date")
     .order("full_name", { ascending: true });
 
-  const prefillClient = clientId ? clients?.find((c) => c.id === clientId) ?? null : null;
+  const matchedClient = clientId ? clients?.find((c) => c.id === clientId) ?? null : null;
+
+  // Pull this client's existing Products so "what do they already have" starts pre-filled
+  // instead of the advisor having to remember and retype it.
+  let existingCoverage: string | undefined;
+  if (matchedClient) {
+    const { data: products } = await supabase
+      .from("client_products")
+      .select("product_name")
+      .eq("client_id", matchedClient.id);
+    if (products && products.length > 0) {
+      existingCoverage = products.map((p) => p.product_name).join(", ");
+    }
+  }
+
+  const prefillClient = matchedClient ? { ...matchedClient, existingCoverage } : null;
 
   return (
     <div className="mx-auto max-w-6xl">

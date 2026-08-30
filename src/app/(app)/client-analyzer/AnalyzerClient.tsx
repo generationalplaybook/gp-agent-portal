@@ -123,6 +123,9 @@ interface PrefillClient {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
+  // Product names already on file for this client (from their Products section), joined into
+  // a starting string for Existing Coverage — editable, not locked to what's on record.
+  existingCoverage?: string;
 }
 
 export default function AnalyzerClient({
@@ -143,6 +146,7 @@ export default function AnalyzerClient({
           phone: prefillClient.phone ?? "",
           email: prefillClient.email ?? "",
           dob: prefillClient.birth_date ?? "",
+          existingCoverage: prefillClient.existingCoverage ?? "",
         }
       : EMPTY
   );
@@ -329,6 +333,16 @@ export default function AnalyzerClient({
         <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Financial (optional)</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
+        <Field label="Existing Coverage / Products" optional>
+          <textarea
+            value={inputs.existingCoverage ?? ""}
+            onChange={(e) => set("existingCoverage", e.target.value)}
+            rows={2}
+            placeholder="What do they already have? e.g. a term policy through work, an old annuity, a whole life policy..."
+            className={inputClass}
+          />
+        </Field>
+
         <Field label="Money Type">
           <OptionGroup
             value={inputs.money}
@@ -486,6 +500,11 @@ export default function AnalyzerClient({
                 {result.phone}
                 {result.email && <> &middot; {result.email}</>}
               </div>
+              {result.existingCoverage && (
+                <div className="mt-2 text-xs text-[#666]">
+                  <strong>Existing coverage:</strong> {result.existingCoverage}
+                </div>
+              )}
             </div>
 
             {result.suggestedDB !== null && (
@@ -564,6 +583,18 @@ export default function AnalyzerClient({
                     <div className="mb-2 text-base font-semibold text-[#8B1A1A]">{rec.avoid}</div>
                     <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
                       {rec.avoidReasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {rec.combo && (
+                  <div className="rounded-lg border-l-4 border-[#1B4F8A] bg-[#EEF3FA] p-4">
+                    <div className="mb-1 text-sm font-semibold text-[#1B4F8A]">Combo Option</div>
+                    <div className="mb-2 text-base font-semibold text-[#1C1C1C]">{rec.combo}</div>
+                    <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
+                      {rec.comboReasons.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
                     </ul>

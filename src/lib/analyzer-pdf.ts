@@ -23,6 +23,7 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
   const WARM: RGB = [250, 248, 244];
   const RED: RGB = [139, 26, 26];
   const GRAY: RGB = [102, 102, 102];
+  const BLUE: RGB = [27, 79, 138];
 
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
   const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
@@ -128,6 +129,9 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
     "Risk Tolerance: " + (d.risk || "Not specified"),
     "Needs Access Before 59.5: " + (d.earlyAccess || "Not specified"),
   ];
+  if (d.existingCoverage) {
+    summaryLines.push("Existing Coverage: " + d.existingCoverage);
+  }
   summaryLines.forEach((line) => {
     doc.text(line, M, y);
     y += 14;
@@ -237,6 +241,24 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
       doc.setFontSize(8.5);
       setText(CHARCOAL);
       (rec.avoidReasons ?? []).forEach((reason) => {
+        const rl = doc.splitTextToSize("— " + reason, W - 2 * M - 14);
+        doc.text(rl, M + 10, y);
+        y += rl.length * 11;
+      });
+      y += 12;
+    }
+
+    if (rec.combo) {
+      ensureRoom(100);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(BLUE);
+      doc.text("COMBO OPTION: " + rec.combo, M, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      setText(CHARCOAL);
+      (rec.comboReasons ?? []).forEach((reason) => {
         const rl = doc.splitTextToSize("— " + reason, W - 2 * M - 14);
         doc.text(rl, M + 10, y);
         y += rl.length * 11;
