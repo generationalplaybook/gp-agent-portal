@@ -1,10 +1,14 @@
-export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "declined";
+export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "declined";
 
 export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }[] = [
   { value: "lead", label: "Lead", color: "#8b6a00" },
   { value: "quoted", label: "Quoted", color: "#0057b8" },
   { value: "applied", label: "Applied", color: "#4b2d83" },
   { value: "issued", label: "Issued", color: "#00693c" },
+  // For a client who already has a policy in force but is actively being worked on new
+  // business — keeps them out of "Issued" (which now reads as "nothing to do") without losing
+  // their existing coverage, which stays visible in Products the whole time either way.
+  { value: "pending", label: "Pending", color: "#0e7490" },
   { value: "declined", label: "Declined", color: "#8b1a1a" },
 ];
 

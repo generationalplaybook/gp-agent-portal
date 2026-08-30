@@ -30,6 +30,29 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     scratch illustration calculator (not a saved record), so it just needs a name to print on
     the output — splitting it wouldn't connect to anything. Flag if you want it split too.
 
+- **"Pending" pipeline stage — built 8/29.** For a client who already has a policy in force
+  (Issued) but is actively being worked on a new one — Stage can now be set to Pending so they
+  don't just sit in "Issued" (which otherwise reads as "nothing to do here"). Their existing
+  coverage stays visible in Products no matter what Stage they're on; Pending only changes the
+  pipeline label/filter tab, nothing else. Move them back to Issued once the new policy is
+  settled.
+
+- **Default stage for a newly-added family member — open question (8/29).** When you use "Add
+  New Person" in Family (e.g. adding a juvenile's parent/guardian), they're created as a new
+  client on Lead, same as the regular New Client form. Karina flagged that a guardian usually
+  isn't actually a Lead. Raised but not decided yet — she wants to think it over. One option
+  already scoped: add a Stage picker to that form (defaulting to Lead, but changeable), same as
+  the main New Client form has.
+
+- **Mobile layout cleanup — explicitly deferred (8/29).** Karina's said the mobile view is
+  "still very jumbled" across several pages, but wants to hold off on aesthetic/layout cleanup
+  until the feature set is more settled. Revisit once she says features are done for now.
+
+- **"Hone in on the alerts" — needs a follow-up conversation (8/29).** Karina flagged, while
+  testing, that the reminder/alert system needs attention but didn't specify what's wrong yet —
+  she's still testing. Ask her what specifically isn't working (timing, which alerts fire,
+  missing alerts, etc.) before touching this.
+
 - **Better home page.** The landing page after login is minimal right now. Karina wants
   something more useful here, but said not to worry about it yet.
 

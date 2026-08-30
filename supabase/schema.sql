@@ -471,3 +471,11 @@ alter table public.client_products add column if not exists riders text[] not nu
 -- in force. When a policy shows as lapsed, the advisor needs this number fast.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists minimum_premium numeric;
+
+-- ─────────────────────────────────────────────────────────────
+-- 16. "Pending" pipeline stage (added 8/29) — for an already-Issued client who's actively
+-- being worked on a new policy, so they don't just sit in "Issued" (which otherwise reads as
+-- "nothing to do here") while new business is in progress. Their existing coverage stays
+-- visible in Products regardless of what Stage they're on.
+-- ─────────────────────────────────────────────────────────────
+alter type client_stage add value if not exists 'pending';
