@@ -232,6 +232,12 @@ export default function ProductRow({
         </div>
         {!confirmingDelete && (
           <div className="flex flex-shrink-0 gap-3">
+            <a
+              href={`/clients/${clientId}/illustrations/${product.id}`}
+              className="text-xs text-[#1C1C1C] underline hover:text-[#2E2E2E]"
+            >
+              Illustration Summary
+            </a>
             <button type="button" onClick={() => setEditing(true)} className="text-xs text-[#666] underline hover:text-[#1C1C1C]">
               Edit
             </button>

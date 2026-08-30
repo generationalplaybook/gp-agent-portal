@@ -131,3 +131,18 @@ export interface ClientProduct {
   created_at: string;
   updated_at: string;
 }
+
+// The saved Policy Illustration Summary for a product — advisor-entered highlights from the
+// carrier's own illustration, condensed for a client-facing PDF. `data` shape depends on
+// product_type (see src/lib/illustration.ts) — jsonb because IUL/Whole Life, Term, and Annuity
+// need completely different fields, same pattern as client_analyses.result.
+export interface ProductIllustration {
+  id: string;
+  product_id: string;
+  client_id: string;
+  product_type: string | null;
+  data: unknown;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
