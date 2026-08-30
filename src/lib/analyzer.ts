@@ -16,7 +16,7 @@ export const GOAL_OPTIONS: { value: Goal; label: string }[] = [
   { value: "legacy", label: "Maximize legacy / estate" },
   { value: "college", label: "College funding for a child" },
   { value: "income_now", label: "Income starting immediately" },
-  { value: "final_expense", label: "Final expense / burial costs only" },
+  { value: "final_expense", label: "Final expense" },
 ];
 
 const GOAL_LABELS: Record<Goal, string> = Object.fromEntries(
