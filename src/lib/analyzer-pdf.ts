@@ -120,10 +120,14 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
     d.recommendations.length && d.recommendations.some((r) => r.goal)
       ? d.recommendations.map((r) => r.goalLabel).join(", ")
       : "Not specified";
+  const fundingParts = [
+    d.monthlyBudget && d.monthlyBudget + "/month",
+    d.lumpSumAmount && d.lumpSumAmount + " lump sum",
+  ].filter(Boolean);
   const summaryLines = [
     "Money Type: " + (d.money || "Not specified"),
     "Other Retirement Accounts: " + (d.hasRollover ? "Yes" : "No / Unsure"),
-    "Funding Method: " + (d.income || d.debt ? "See amounts above" : "Not specified"),
+    "Funding Method: " + (fundingParts.length ? fundingParts.join(" + ") : "Not specified"),
     "Primary Goal(s): " + goalsLabel,
     "Time Horizon: " + (d.horizon || "Not specified"),
     "Risk Tolerance: " + (d.risk || "Not specified"),

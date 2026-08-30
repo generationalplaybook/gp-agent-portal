@@ -388,14 +388,26 @@ export default function AnalyzerClient({
             ]}
           />
         </Field>
-        <Field label="Approximate Amount">
-          <CurrencyInput
-            value={inputs.amount ?? ""}
-            onChange={(v) => set("amount", v)}
-            placeholder="e.g. $300/month or $100,000 lump sum"
-            className={inputClass + " max-w-xs"}
-          />
-        </Field>
+        {(inputs.funding === "monthly" || inputs.funding === "both") && (
+          <Field label="Monthly Budget">
+            <CurrencyInput
+              value={inputs.monthlyBudget ?? ""}
+              onChange={(v) => set("monthlyBudget", v)}
+              placeholder="e.g. $300/month"
+              className={inputClass + " max-w-xs"}
+            />
+          </Field>
+        )}
+        {(inputs.funding === "lumpsum" || inputs.funding === "both") && (
+          <Field label="Lump Sum Amount">
+            <CurrencyInput
+              value={inputs.lumpSumAmount ?? ""}
+              onChange={(v) => set("lumpSumAmount", v)}
+              placeholder="e.g. $100,000"
+              className={inputClass + " max-w-xs"}
+            />
+          </Field>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Annual Income" optional>
             <CurrencyInput
@@ -503,6 +515,17 @@ export default function AnalyzerClient({
               {result.existingCoverage && (
                 <div className="mt-2 text-xs text-[#666]">
                   <strong>Existing coverage:</strong> {result.existingCoverage}
+                </div>
+              )}
+              {(result.monthlyBudget || result.lumpSumAmount) && (
+                <div className="mt-2 text-xs text-[#666]">
+                  <strong>Funding:</strong>{" "}
+                  {[
+                    result.monthlyBudget && `${result.monthlyBudget}/month`,
+                    result.lumpSumAmount && `${result.lumpSumAmount} lump sum`,
+                  ]
+                    .filter(Boolean)
+                    .join(" + ")}
                 </div>
               )}
             </div>

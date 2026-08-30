@@ -4,6 +4,30 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Monthly budget field on the intake — built 8/30.** The "Approximate Amount" field under
+  Funding Method used to be a single freeform box covering both a monthly premium budget and a
+  lump sum, which made it easy to lose track of which one the client meant. It's now two
+  separate fields — "Monthly Budget" and "Lump Sum Amount" — each only shown when the selected
+  Funding Method actually calls for it (Monthly shows the budget field, Lump Sum shows the
+  amount field, Both shows both). Also fixed a gap where this funding info was captured on the
+  form but never actually showed up anywhere after that — it's now visible in the on-screen
+  results and printed correctly in the PDF's Client Profile Summary under "Funding Method"
+  (previously that line just said "See amounts above" and didn't reference funding at all). No
+  SQL migration needed.
+
+- **"Mixture of Both" money type — needs streamlining, paused for now (8/30).** Karina noticed
+  that picking "Mixture of Both" for money type still suggests an IUL, and flagged it could be
+  "streamlined" but wants to think on it before deciding what that means. For context when this
+  comes back up: today, `computeRecommendation()` in `src/lib/analyzer.ts` treats `money ===
+  "both"` exactly like fully non-qualified — it falls straight into the goal-based IUL/Term
+  logic with no mention that part of the money is qualified (and that portion can't fund an IUL
+  directly, same tax mechanic as the qualified-only case that now gets the blue Combo Option
+  box). Options raised but not decided: (a) auto-add the same Combo Option box to the mixed-funds
+  case too, so the qualified portion's rollover-into-annuity gets flagged automatically; (b) just
+  a one-line caveat under the primary recommendation instead of a full box; (c) something else —
+  she said the "streamline" comment might not even be about this logic at all. Don't build
+  anything here until she circles back with what she actually wants.
+
 - **IUL + annuity combo option (qualified money) — built 8/30.** The Client Analyzer used to
   tell advisors to flat-out avoid an IUL any time the client's money was qualified. That's
   still true for *directly* funding the IUL with that qualified money (can't be done without

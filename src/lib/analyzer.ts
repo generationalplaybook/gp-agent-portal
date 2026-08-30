@@ -42,7 +42,10 @@ export interface AnalyzerInputs {
   otherRetirement?: "yes" | "no" | "skip";
   otherAmount?: string;
   funding?: "monthly" | "lumpsum" | "both" | "skip";
-  amount?: string;
+  // Approx one-time amount available, when funding includes a lump sum.
+  lumpSumAmount?: string;
+  // Approx monthly budget available, when funding includes ongoing premiums.
+  monthlyBudget?: string;
   income?: string;
   debt?: string;
   goals?: Goal[];
@@ -86,6 +89,9 @@ export interface AnalyzerResult {
   health?: string;
   declined?: string;
   money?: string;
+  funding?: string;
+  lumpSumAmount?: string;
+  monthlyBudget?: string;
   income: number;
   debt: number;
   suggestedDB: number | null;
@@ -394,6 +400,9 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     health: inputs.health !== "skip" ? inputs.health : undefined,
     declined: inputs.declined !== "skip" ? inputs.declined : undefined,
     money,
+    funding,
+    lumpSumAmount: inputs.lumpSumAmount?.trim() || undefined,
+    monthlyBudget: inputs.monthlyBudget?.trim() || undefined,
     income,
     debt,
     suggestedDB,
