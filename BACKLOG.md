@@ -4,6 +4,13 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **My Profile "Saved" confirmation — built 8/30.** Karina noticed clicking Save on My Profile
+  gave no feedback that anything happened. The "Your Info" form (name, phone, Cal.com link) was
+  a plain server-action form with a full page round-trip and no visible change when values
+  stayed the same. Rebuilt as `ProfileInfoForm.tsx` (client-side, same pattern already used on
+  the client contact-info form) so clicking Save now shows "Saving..." then "Saved ✓" next to
+  the button. No SQL migration needed.
+
 - **Cal.com scheduling — simple version built 8/30.** Karina uses Cal.com and wanted a way to
   put a calendar in the portal and send clients video-call links. We scoped two versions and
   went with the simple one first (full API sync into client profiles is logged below as a

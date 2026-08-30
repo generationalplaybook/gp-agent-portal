@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import PhoneInput from "../clients/PhoneInput";
 import CredentialRow from "./CredentialRow";
-import { updateMyProfile, addCredential } from "./actions";
+import ProfileInfoForm from "./ProfileInfoForm";
+import { addCredential } from "./actions";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -30,70 +30,7 @@ export default async function ProfilePage() {
 
       <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Info</h2>
-        <form action={updateMyProfile} className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            First name
-            <input
-              name="first_name"
-              defaultValue={profile?.first_name ?? ""}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Middle name
-            <input
-              name="middle_name"
-              defaultValue={profile?.middle_name ?? ""}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Last name
-            <input
-              name="last_name"
-              defaultValue={profile?.last_name ?? ""}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Phone
-            <PhoneInput
-              name="phone"
-              defaultValue={profile?.phone}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
-            Email
-            <input
-              disabled
-              value={profile?.email ?? ""}
-              className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#888]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
-            Cal.com Scheduling Link
-            <input
-              name="scheduling_link"
-              defaultValue={profile?.scheduling_link ?? ""}
-              placeholder="e.g. https://cal.com/your-name/consultation"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-            <span className="mt-0.5 text-[11px] text-[#999]">
-              Paste the booking link for the event type you want clients scheduling into (set video — Cal Video,
-              Zoom, or Google Meet — on that event type inside Cal.com). Once saved, a &ldquo;Schedule a Call&rdquo;
-              button appears on every client&rsquo;s profile.
-            </span>
-          </label>
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              className="rounded-md bg-[#1C1C1C] px-4 py-2 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
-            >
-              Save
-            </button>
-          </div>
-        </form>
+        <ProfileInfoForm profile={profile ?? null} />
       </div>
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
