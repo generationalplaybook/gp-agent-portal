@@ -7,7 +7,7 @@
 
 export type YesNoSkip = "yes" | "no" | "skip";
 
-export type Goal = "accumulation" | "income" | "protection" | "legacy" | "college" | "income_now";
+export type Goal = "accumulation" | "income" | "protection" | "legacy" | "college" | "income_now" | "final_expense";
 
 export const GOAL_OPTIONS: { value: Goal; label: string }[] = [
   { value: "accumulation", label: "Build cash value / savings" },
@@ -16,6 +16,7 @@ export const GOAL_OPTIONS: { value: Goal; label: string }[] = [
   { value: "legacy", label: "Maximize legacy / estate" },
   { value: "college", label: "College funding for a child" },
   { value: "income_now", label: "Income starting immediately" },
+  { value: "final_expense", label: "Final expense / burial costs only" },
 ];
 
 const GOAL_LABELS: Record<Goal, string> = Object.fromEntries(
@@ -208,6 +209,40 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   let avoidReasons: string[] = [];
   let combo = "";
   let comboReasons: string[] = [];
+
+  // Final expense / burial-only clients have a fundamentally different need than every other
+  // goal below — they're not replacing income, building savings, or leaving a legacy, just
+  // guaranteeing a small, fixed amount exists so their family never has to cover funeral/burial
+  // costs. Simplified- and guaranteed-issue final expense whole life exists specifically for
+  // this, which means this goal is reachable even for a client who'd otherwise get routed to
+  // annuity-only recommendations by the "uninsurable" branch below — so it's checked first,
+  // ahead of the insurability/money-type logic that governs every other goal.
+  if (goal === "final_expense") {
+    if (insurable === "no") {
+      primary = "Ethos Final Expense Whole Life (TruStage) — Guaranteed Issue";
+      reasons = [
+        "Guaranteed acceptance — no health questions, no exam, no declines",
+        "Permanent coverage with fixed premiums that never increase",
+        "Graded 2-year benefit applies to natural causes only — accidental death is covered in full from day one",
+      ];
+      secondary =
+        "Banner Life Final Expense (Guaranteed Issue, via Ethos) — worth it if Social Security Billing (premiums auto-deducted from their SS check) would help them keep the policy current";
+    } else {
+      primary = "Ethos Final Expense Whole Life (TruStage) — Simplified Issue";
+      reasons = [
+        "Simplified issue — a handful of health questions, no medical exam",
+        "Permanent coverage with fixed premiums that never increase, plus guaranteed cash value growth",
+        "Sized for funeral, burial, and small final bills — not a large policy with a payment to match",
+      ];
+      secondary =
+        "Mutual of Omaha Living Promise — also no exam and purchasable online, if a well-known carrier name matters to the client";
+    }
+    talking = [
+      "This isn't about replacing your income — it's making sure your family never has to come up with money for funeral or burial costs",
+      "The payment is small and locked in for life, because the coverage amount is sized to the actual need, not overbuilt",
+    ];
+    return { primary, secondary, avoid, reasons, talking, avoidReasons, combo, comboReasons };
+  }
 
   if (insurable === "no") {
     if (goal === "income_now") {
