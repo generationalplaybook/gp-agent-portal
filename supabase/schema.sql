@@ -587,3 +587,13 @@ create index if not exists clients_intake_pending_review_idx
 -- is_quote = false and kept, and the rest are deleted outright — Karina's call, not archived.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists is_quote boolean not null default false;
+
+-- 22. Height & weight on the client record itself (added 8/31) — captured at New Client and
+-- editable on the profile's Contact Info card, so it's on hand for underwriting conversations
+-- without needing a Client Analyzer run first. Separate from any saved analysis's own
+-- height/weight snapshot, which stays frozen at whatever it was when that analysis ran — this
+-- is the client's current, always-editable value.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists height_ft integer;
+alter table public.clients add column if not exists height_in integer;
+alter table public.clients add column if not exists weight integer;

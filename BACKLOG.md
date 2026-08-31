@@ -4,6 +4,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Height & weight on the client record itself — built 8/31.** Karina noticed a client's
+  profile had no height/weight even though the Client Analyzer collects both — turned out
+  those were never stored anywhere except inside a saved analysis snapshot, not on the client
+  record. Added `height_ft`, `height_in`, `weight` as real columns on `clients`: they're now
+  fields on the New Client form, editable on every client's Contact Info card (same
+  save-on-blur pattern as the rest of that card), and captured automatically when a lead comes
+  in through an advisor's Intake Link. As a bonus, starting a Client Analyzer run from a
+  client's profile now pre-fills height/weight from the client record if it's on file (same as
+  it already does for phone/email/DOB/existing coverage), and saving an analysis back to a
+  client keeps their profile's height/weight in sync with whatever was just entered — same as
+  it already does for name/phone/email/DOB. Needs the SQL below run in Supabase before
+  uploading.
+
 - **Client detail page layout — spaced out, Pipeline Stage moved to top — built 8/31, sticky
   bug fixed 8/31.** Karina flagged the page as too cramped and not using the width of the
   screen. Widened the page's max width (1152px → 1440px) and opened up the gaps between cards
