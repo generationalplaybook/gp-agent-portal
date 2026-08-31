@@ -185,8 +185,10 @@ export default function AnalyzerClient({
     const req: string[] = [];
     if (!inputs.name.trim()) req.push("Client Name");
     if (!inputs.dob) req.push("Date of Birth");
-    if (!inputs.phone.trim()) req.push("Phone Number");
-    if (!inputs.email.trim()) req.push("Email");
+    // Phone and Email are intentionally NOT required — a child on a family analysis usually has
+    // neither, and mid-call an advisor often doesn't have a prospect's contact info yet but
+    // still wants talking points from a real recommendation. Both still save to the client
+    // record when present (see actions.ts), just never block getting a result.
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
 
@@ -267,13 +269,13 @@ export default function AnalyzerClient({
           <Field label="Date of Birth">
             <input type="date" value={inputs.dob} onChange={(e) => set("dob", e.target.value)} className={inputClass} />
           </Field>
-          <Field label="Phone Number">
+          <Field label="Phone Number" optional>
             <PhoneInput defaultValue={inputs.phone} onValueChange={(v) => set("phone", v)} className={inputClass} />
           </Field>
         </div>
         {age !== null && <div className="-mt-3 mb-4 text-xs text-[#888]">Age: {age} years old</div>}
 
-        <Field label="Email">
+        <Field label="Email" optional>
           <input
             type="email"
             value={inputs.email}
@@ -549,10 +551,13 @@ export default function AnalyzerClient({
                 <strong>{result.name}</strong>
                 {result.age !== null && <> &middot; Age {result.age}</>}
               </div>
-              <div className="mt-1 text-xs text-[#666]">
-                {result.phone}
-                {result.email && <> &middot; {result.email}</>}
-              </div>
+              {(result.phone || result.email) && (
+                <div className="mt-1 text-xs text-[#666]">
+                  {result.phone}
+                  {result.phone && result.email && <> &middot; </>}
+                  {result.email}
+                </div>
+              )}
               {result.existingCoverage && (
                 <div className="mt-2 text-xs text-[#666]">
                   <strong>Existing coverage:</strong> {result.existingCoverage}

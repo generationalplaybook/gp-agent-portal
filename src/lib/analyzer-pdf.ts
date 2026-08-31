@@ -63,8 +63,8 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   doc.setFontSize(9);
   setText(CHARCOAL);
   doc.text("DOB: " + (d.dob || "—") + (d.age ? "   ·   Age: " + d.age : ""), M + 14, y + 38);
-  doc.text("Phone: " + d.phone, M + 14, y + 52);
-  doc.text("Email: " + d.email, M + 14, y + 66);
+  doc.text("Phone: " + (d.phone || "—"), M + 14, y + 52);
+  doc.text("Email: " + (d.email || "—"), M + 14, y + 66);
   doc.text(
     "Height: " + d.heightFt + "'" + (d.heightIn || "0") + '"   ·   Weight: ' + d.weight + " lbs",
     M + 280,
