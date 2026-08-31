@@ -4,6 +4,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Intake Link — required ages + spouse age, simpler wording (built 8/30, same day as first
+  ship).** The Family checkboxes on the Intake Link previously let someone check "Children" or
+  "Aging parent(s)" without saying how old anyone actually is — not useful, since a 2-year-old
+  and a 16-year-old need completely different conversations, and what's even available for an
+  aging parent depends a lot on their actual age. Ages are now required the moment the box is
+  checked: exact ages, typed in (not an under/18-over/18 split — too coarse to be useful for
+  product planning), same for a new "Spouse's Age" field that shows up when Spouse is checked.
+  Also simplified a couple of option labels on the intake form itself (not the internal Client
+  Analyzer, which still says these differently) — "Other Retirement Accounts?" now just says
+  Yes / No / Unsure instead of "Yes — has other retirement accounts," and "Needs Access Before
+  59½?" got the same treatment. No schema change — household_summary is still one text field,
+  just built from richer inputs now.
+
 - **Bug fix — Client Intake Link was requiring a login (found 8/30, right after first ship).**
   The portal gates every page through `src/proxy.ts` (Next.js 16 renamed "middleware" to
   "proxy" — same idea, a check that runs before every request), which redirects anyone
