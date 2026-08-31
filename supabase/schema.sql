@@ -597,3 +597,29 @@ alter table public.client_products add column if not exists is_quote boolean not
 alter table public.clients add column if not exists height_ft integer;
 alter table public.clients add column if not exists height_in integer;
 alter table public.clients add column if not exists weight integer;
+
+-- 23. Provider-agnostic scheduling link + Cal.com auto-sync (added 8/31) — "Schedule a Call"
+-- now works with any booking tool (Calendly, Zoom Scheduler, Acuity, Cal.com, etc.), since it's
+-- always been just a public link the portal opens/copies/embeds — that part never needed
+-- Cal.com specifically. Cal.com additionally supports real auto-sync: once an advisor connects
+-- a Cal.com API key (see connectCalCom in src/app/(app)/profile/actions.ts), the portal
+-- registers a webhook on their Cal.com account, and every booking made through their link
+-- automatically creates/updates/removes a meeting on the right client's profile — no manual
+-- entry needed. Other providers (Calendly, Zoom Scheduler) don't get auto-sync yet — each has
+-- its own separate auth/webhook system and is its own integration project for whenever there's
+-- real demand. client_meetings.source + external_booking_uid keep the door open for a future
+-- provider's webhook handler to write into this same shape without a rearchitecture.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists cal_api_key text;
+alter table public.profiles add column if not exists cal_webhook_id text;
+alter table public.profiles add column if not exists cal_webhook_secret text;
+
+alter table public.client_meetings add column if not exists source text not null default 'manual' check (source in ('manual','cal.com'));
+alter table public.client_meetings add column if not exists external_booking_uid text;
+
+-- Lets the webhook handler safely upsert on retries/reschedules without creating duplicates —
+-- scoped to (source, external_booking_uid) so it never collides with manually-entered rows,
+-- which never set external_booking_uid.
+create unique index if not exists client_meetings_external_booking_uid_idx
+  on public.client_meetings (source, external_booking_uid)
+  where external_booking_uid is not null;

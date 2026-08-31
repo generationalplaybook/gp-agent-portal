@@ -4,6 +4,42 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Scheduling link generalized + Cal.com Auto-Sync — built 8/31.** Karina booked a call via
+  "Schedule a Call" on a client's profile and the portal showed no sign it happened — because
+  that feature was only ever a link out to Cal.com; the booking itself lived entirely on Cal.com's
+  side and nothing sent it back into the CRM. Two changes:
+  1. **"Schedule a Call" is now provider-agnostic.** Renamed away from "Cal.com Scheduling
+     Link" everywhere — the open/copy/embed link feature never actually needed Cal.com
+     specifically, so any advisor can paste a Calendly, Zoom Scheduler, Acuity, or Cal.com
+     booking link and it works the same way. Relevant since Karina wants to license this
+     platform out later, and not every advisor will use Cal.com.
+  2. **Cal.com Auto-Sync (new, optional).** On the Profile page, an advisor can paste their
+     Cal.com Personal API Key (Settings → Developer → API Keys in Cal.com) to connect it. The
+     portal registers a webhook on their Cal.com account; from then on, any booking made
+     through their scheduling link automatically creates/updates/removes a meeting on the right
+     client's profile (matched by the attendee's email against that advisor's clients) — no
+     manual entry. Synced meetings show a "Via Cal.com" badge and live in the same card as
+     manually-logged ones, now relabeled "Meetings & Calls" since it's no longer only
+     in-person entries. Deleting a synced meeting only removes it from the portal's view — it
+     does not cancel the real Cal.com booking.
+     - Only syncs when the booking's attendee email matches an existing client on file — if
+       someone books under an email that doesn't match anyone, it's intentionally left alone
+       rather than guessed at or used to create a new client.
+     - Calendly and Zoom Scheduler do NOT get auto-sync — each has its own separate
+       webhook/auth system (Calendly needs a registered OAuth app, Zoom needs a registered Zoom
+       App), so each would be its own follow-up integration project. The data model
+       (`client_meetings.source` / `external_booking_uid`) is shaped so adding one later is "a
+       new webhook handler," not a rearchitecture — worth building only once an advisor
+       actually needs one.
+     - **Built against Cal.com's documented v1 webhook API, but the one piece that couldn't be
+       tested from here is the "Connect" step itself** (registering the webhook via Cal.com's
+       API) — I couldn't verify it against a live Cal.com account. The receiving side (webhook
+       signature verification, payload parsing, matching to a client) is solid and won't need
+       to change. If "Connect" on the Profile page ever errors, the message shown comes
+       straight from Cal.com's own response — send that over and it'll point at exactly what
+       needs adjusting.
+  - Needs the SQL below run in Supabase before uploading.
+
 - **Height & weight on the client record itself — built 8/31.** Karina noticed a client's
   profile had no height/weight even though the Client Analyzer collects both — turned out
   those were never stored anywhere except inside a saved analysis snapshot, not on the client
