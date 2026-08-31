@@ -16,7 +16,7 @@ export default function ScheduleCallCard({
 
   if (!schedulingLink) {
     return (
-      <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+      <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
         <p className="text-xs text-[#888]">
           Add your Cal.com scheduling link in{" "}
@@ -48,7 +48,7 @@ export default function ScheduleCallCard({
   }
 
   return (
-    <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+    <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
       <div className="flex flex-wrap gap-2">
         <a

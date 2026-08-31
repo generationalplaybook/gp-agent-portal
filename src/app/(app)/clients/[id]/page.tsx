@@ -138,10 +138,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[2fr_1fr]">
-      <div className="flex flex-col gap-5">
+    <div className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[2fr_1fr]">
+      <div className="flex flex-col gap-6">
         {/* Header / contact info */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <h1 className="font-serif text-2xl text-[#1C1C1C]">{client.full_name}</h1>
@@ -190,13 +190,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         {/* Family — linked household members, at a glance */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
           <FamilySection clientId={client.id} members={familyMembers} />
         </div>
 
         {/* Products — coverage this client already owns, with conversion windows at a glance */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Products</h2>
           <ProductsSection
             clientId={client.id}
@@ -208,7 +208,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         {/* Notes / interaction history */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">
             Notes &amp; Interaction History
           </h2>
@@ -243,7 +243,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         {/* Tasks */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Tasks</h2>
           <form action={addTask} className="mb-4 flex flex-wrap gap-2">
             <input type="hidden" name="client_id" value={client.id} />
@@ -275,19 +275,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       </div>
 
       {/* Sidebar: stage + analyses + financial analysis + follow-up */}
-      <div className="flex flex-col gap-5">
-        <ScheduleCallCard
-          schedulingLink={schedulingLink}
-          clientName={client.full_name}
-          clientEmail={client.email}
-        />
-
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">In-Person Meetings</h2>
-          <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
-        </div>
-
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+      <div className="flex flex-col gap-6">
+        {/* Pipeline Stage stays pinned at the top of the sidebar so it's visible no matter how
+            far down the page you've scrolled — the "top" offset clears the app's own 56px nav
+            bar (h-14) plus a little breathing room. */}
+        <div className="sticky top-[72px] z-10 rounded-lg border border-[#D9CFBA] bg-white p-7 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>
           <span
             className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
@@ -297,8 +289,19 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </span>
         </div>
 
+        <ScheduleCallCard
+          schedulingLink={schedulingLink}
+          clientName={client.full_name}
+          clientEmail={client.email}
+        />
+
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">In-Person Meetings</h2>
+          <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
+        </div>
+
         {/* Client Analyses */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Client Analyses</h2>
           <div className="mb-3">
             <AnalysesList analyses={analyses ?? []} advisor={advisor} />
@@ -311,7 +314,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </a>
         </div>
 
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Full Financial Analysis</h2>
           {plan?.data ? (
             <>
@@ -334,7 +337,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </a>
         </div>
 
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
           <RemindersCard clientId={client.id} reminders={reminders ?? []} />
         </div>
