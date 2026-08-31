@@ -4,6 +4,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Custom intake link handle — built 8/31.** Karina's intake link showed her raw profile UUID
+  (`.../intake/347198cb-...`) and asked if advisors could set something readable instead. Added
+  a "Custom link" field on the Profile page (under the intake link card) — an advisor can set a
+  short handle like `karina`, and their link becomes `.../intake/karina`. Rules: 3–40 characters,
+  lowercase letters/numbers/hyphens only, unique case-insensitively across every advisor
+  (enforced by a DB index, since this matters once more than one company is on the platform —
+  two advisors should never be able to grab the same handle). The original id-based link is
+  never disabled — the intake route (`src/app/intake/[advisorId]/page.tsx`) now tries both a raw
+  UUID and a slug lookup, so setting or later changing a handle can never break a link that's
+  already been shared under its other form (a small warning is shown once a handle is set, since
+  changing *that specific* link would still break anyone who has it).
+  Also discussed: full white-labeling (an advisor's own company domain, e.g.
+  `intake.theirfirm.com`) once Karina is ready to license this out. Deliberately **not** built
+  now — that's real infrastructure (per-domain SSL, DNS verification, likely per-company
+  branding/data separation) that's not worth designing against a hypothetical; the custom slug
+  above works the same regardless of what domain eventually sits in front of it, so nothing here
+  needs to be redone when that project actually starts.
+
 - **Cal.com Auto-Sync — fixed to use API v2 — built 8/31.** Karina's first real "Connect"
   attempt on a live Cal.com account confirmed the exact uncertainty flagged when this was first
   built: Cal.com rejected the request with HTTP 410, "API v1 has been decommissioned. Please

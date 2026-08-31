@@ -623,3 +623,17 @@ alter table public.client_meetings add column if not exists external_booking_uid
 create unique index if not exists client_meetings_external_booking_uid_idx
   on public.client_meetings (source, external_booking_uid)
   where external_booking_uid is not null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 24. Custom intake link handle (added 8/31) — an advisor can set a short, memorable slug
+-- (e.g. "karina") so their public intake link reads .../intake/karina instead of the raw
+-- profile id. The id-based link keeps working forever even after a slug is set (the intake
+-- route tries both forms), so setting/changing a slug is purely additive and never breaks an
+-- already-shared id-based link. Case-insensitive-unique across all advisors — matters once this
+-- is licensed to multiple companies, so two advisors can never claim the same handle.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists intake_slug text;
+
+create unique index if not exists profiles_intake_slug_idx
+  on public.profiles (lower(intake_slug))
+  where intake_slug is not null;
