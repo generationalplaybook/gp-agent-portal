@@ -12,6 +12,7 @@ import FamilySection from "./FamilySection";
 import ProductsSection from "./ProductsSection";
 import ScheduleCallCard from "./ScheduleCallCard";
 import MeetingsCard from "./MeetingsCard";
+import SourceField from "./SourceField";
 import MarkReviewedButton from "./MarkReviewedButton";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
@@ -289,6 +290,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           >
             {stageInfo?.label}
           </span>
+          <SourceField clientId={client.id} source={client.source} />
         </div>
 
         <ScheduleCallCard

@@ -128,18 +128,33 @@ export async function updateContactInfo(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
-  const source = String(formData.get("source") || "").trim() || null;
   const height_ft = parseIntOrNull(formData.get("height_ft"));
   const height_in = parseIntOrNull(formData.get("height_in"));
   const weight = parseIntOrNull(formData.get("weight"));
 
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  // Note: `source` (lead source) is intentionally NOT handled here — it's edited separately via
+  // updateLeadSource below, from its own field in the sidebar, so this save-on-blur form can't
+  // clobber it with a stale value.
   await supabase
     .from("clients")
-    .update({ first_name, middle_name, last_name, phone, email, birth_date, source, height_ft, height_in, weight })
+    .update({ first_name, middle_name, last_name, phone, email, birth_date, height_ft, height_in, weight })
     .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
+}
+
+// Lead source (Referral, Facebook ad, walk-in, etc.) — a lightweight, optional note on where
+// this client came from. Split into its own action/field (sidebar, not the main Contact Info
+// card) so it doesn't compete for attention with the client's actual contact details, and so it
+// can't be accidentally overwritten by a save from a totally different field on the page.
+export async function updateLeadSource(clientId: string, source: string): Promise<void> {
+  const { supabase } = await requireUser();
+  await supabase
+    .from("clients")
+    .update({ source: source.trim() || null })
+    .eq("id", clientId);
+  revalidatePath(`/clients/${clientId}`);
 }
 
 export async function addNote(formData: FormData) {
