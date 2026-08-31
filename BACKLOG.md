@@ -4,6 +4,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Cal.com Auto-Sync — fixed to use API v2 — built 8/31.** Karina's first real "Connect"
+  attempt on a live Cal.com account confirmed the exact uncertainty flagged when this was first
+  built: Cal.com rejected the request with HTTP 410, "API v1 has been decommissioned. Please
+  migrate to API v2." Rebuilt the webhook-registration call (`connectCalCom` in
+  `profile/actions.ts`) against Cal.com's official v2 docs — `POST https://api.cal.com/v2/webhooks`
+  with an `Authorization: Bearer <apiKey>` header (v1 used an `?apiKey=` query param), and the
+  request body field is `triggers` instead of `eventTriggers`. The v2 response also comes back
+  wrapped as `{status, data: {...}}` rather than `{webhook: {...}}`, so the webhook id extraction
+  was updated too. `disconnectCalCom`'s delete call was updated the same way. Nothing else
+  changed — the part that actually receives bookings (`/api/webhooks/cal/[agentId]`, the HMAC
+  signature check, the booking payload shape) turned out to be unaffected by the v1→v2 split, so
+  that route needed no changes. This should be it — reconnect with the same API key and it should
+  say "Connected ✓."
+
 - **Lead Source moved to the sidebar — built 8/31.** The "Source" field (Referral, Facebook ad,
   walk-in, etc.) used to sit in the main Contact Info card up top, next to real contact details
   it didn't really belong with. Moved it into the Pipeline Stage card in the right sidebar,
