@@ -578,3 +578,12 @@ alter table public.client_analyses add column if not exists from_intake boolean 
 create index if not exists clients_intake_pending_review_idx
   on public.clients (owner_id, intake_pending_review)
   where intake_pending_review = true;
+
+-- 21. Quote tracking for Products (added 8/31) — while a client is in the Quoted stage,
+-- a product added is automatically flagged as a candidate quote (is_quote = true) rather than
+-- confirmed coverage, since an advisor is often comparing 2-3 carriers before the client picks
+-- one. When the client's stage moves to Issued, the advisor is asked which quote actually got
+-- issued (see resolveQuotesOnIssue in src/app/(app)/clients/actions.ts): that one is flipped to
+-- is_quote = false and kept, and the rest are deleted outright — Karina's call, not archived.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists is_quote boolean not null default false;

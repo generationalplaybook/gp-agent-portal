@@ -4,6 +4,55 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Quote tracking on Products, resolved when a client is Issued — built 8/31.** Karina pointed
+  out that while a deal's in the Quoted stage, she's often comparing 2-3 carriers, and there was
+  nowhere to hold "these are candidates" without them looking like real, confirmed policies.
+  Now: any product added while a client's Pipeline Stage is "Quoted" is automatically flagged as
+  a quote (shows a small amber "Quote — not yet issued" badge) — no extra step, nothing to
+  remember to check. When the advisor picks "Issued" on the Pipeline Stage dropdown and there
+  are tracked quotes, a small inline panel pops up right there asking which one won; confirming
+  keeps that one as a real product and **deletes the rest outright** (Karina's call — once a
+  client's issued, the quotes that lost don't need to stick around). New column:
+  `client_products.is_quote` (SQL below).
+
+- **Final Expense gets its own, simpler Illustration Summary — built 8/31.** Karina flagged that
+  a Final Expense Whole Life policy was showing the same Guaranteed/Non-Guaranteed milestone
+  table as an IUL, which doesn't make sense — final expense is guaranteed- or simplified-issue,
+  so the death benefit and premium are both locked for life with no "non-guaranteed" side to
+  compare against. "Final Expense" is now its own selectable Product Type (separate from plain
+  "Whole Life"), and its Illustration Summary is a simple card — Guaranteed Death Benefit,
+  Guaranteed Level Premium, riders, notes — no milestones, no chart, matching how the product
+  actually gets sold. **Note:** this only applies going forward, or once a product's own Type
+  dropdown is changed to "Final Expense" — any existing product typed as plain "Whole Life"
+  (like Robin Roberson's Banner Life policy from the screenshot) keeps the old milestone view
+  until its Type is updated on the product itself. No schema change (product_type was already a
+  free-text field).
+
+- **Client detail page — layout is too cramped (flagged 8/30, not built).** Karina's take
+  looking at a real client page: it doesn't use the width of the screen, everything feels
+  packed together, and needs real spacing to breathe. Two specific asks:
+  - Loosen up the spacing/width generally — more breathing room between cards, make better use
+    of wide screens instead of the current fairly narrow max-width layout.
+  - "Pipeline Stage" should always be visible at the top of the right-hand sidebar — right now
+    it's buried a few cards down (after Schedule a Call / In-Person Meetings), so it scrolls out
+    of view. Either move it to the top of the sidebar column, or make it sticky so it stays
+    visible near the top-right as the page scrolls.
+  Needs an actual design pass through the whole page, not just a quick tweak — hold for a
+  dedicated session on it rather than a quick patch.
+
+- **Advisor email alert on new Intake submission — discussing, not decided.** Karina asked
+  whether the advisor should get an email when a client completes the Intake Link form.
+  Discussed and paused mid-conversation (picking back up later): my read is yes, it's worth
+  building — otherwise the only way to know a new intake came in is checking the "Needs Review"
+  tab manually, and the whole point of this feature is a fast first-meeting turnaround. Catch:
+  the portal has zero email-sending infrastructure today (the only email that goes out is
+  Supabase's own account stuff — invites, signup confirmation), so this means adding a real
+  piece of new infrastructure, not just a notification toggle. Suggested Resend (cheap/free at
+  this volume, simple API key setup) — starting on their shared sending domain works
+  immediately, with a quick DNS step later to send from Karina's own domain for better
+  deliverability. Also floated: an SMS alert in addition to/instead of email, given she's often
+  out at meetings. Not decided yet — waiting on Karina.
+
 - **Intake Link — required ages + spouse age, simpler wording (built 8/30, same day as first
   ship).** The Family checkboxes on the Intake Link previously let someone check "Children" or
   "Aging parent(s)" without saying how old anyone actually is — not useful, since a 2-year-old
