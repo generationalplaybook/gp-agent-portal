@@ -8,19 +8,32 @@ import { runAnalyzer, type AnalyzerInputs } from "@/lib/analyzer";
 // advisor has a starting point without overwhelming whoever's filling this out.
 export interface IntakeFamilyInput {
   spouse: boolean;
+  spouseAge: string;
   children: boolean;
   childrenAges: string;
   dependents: boolean;
+  dependentsAges: string;
 }
 
+// Ages matter more than the checkbox itself — a 2-year-old and a 16-year-old are both
+// "Children" but call for completely different products/timelines, and what's even available
+// for an "aging parent" (guaranteed- vs. simplified-issue final expense, etc.) depends heavily
+// on how old they actually are. That's why ages are required whenever the box is checked, not
+// just a nice-to-have.
 function buildHouseholdSummary(family: IntakeFamilyInput): string | null {
   const parts: string[] = [];
-  if (family.spouse) parts.push("Spouse");
+  if (family.spouse) {
+    const age = family.spouseAge.trim();
+    parts.push(age ? `Spouse (age ${age})` : "Spouse");
+  }
   if (family.children) {
     const ages = family.childrenAges.trim();
     parts.push(ages ? `Children (ages: ${ages})` : "Children");
   }
-  if (family.dependents) parts.push("Aging parent(s) or other dependents");
+  if (family.dependents) {
+    const ages = family.dependentsAges.trim();
+    parts.push(ages ? `Aging parent(s)/dependents (ages: ${ages})` : "Aging parent(s) or other dependents");
+  }
   return parts.length > 0 ? parts.join("; ") : null;
 }
 

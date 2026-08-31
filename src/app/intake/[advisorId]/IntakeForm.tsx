@@ -110,7 +110,14 @@ const EMPTY_INPUTS: AnalyzerInputs = {
   goals: [],
 };
 
-const EMPTY_FAMILY: IntakeFamilyInput = { spouse: false, children: false, childrenAges: "", dependents: false };
+const EMPTY_FAMILY: IntakeFamilyInput = {
+  spouse: false,
+  spouseAge: "",
+  children: false,
+  childrenAges: "",
+  dependents: false,
+  dependentsAges: "",
+};
 
 export default function IntakeForm({ advisorId, advisorName }: { advisorId: string; advisorName: string }) {
   const [contact, setContact] = useState(EMPTY_CONTACT);
@@ -136,6 +143,9 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
     if (!inputs.email.trim()) req.push("Email");
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
+    if (family.spouse && !family.spouseAge.trim()) req.push("Spouse's Age");
+    if (family.children && !family.childrenAges.trim()) req.push("Ages of Children");
+    if (family.dependents && !family.dependentsAges.trim()) req.push("Age(s) of Aging Parent(s) / Other Dependents");
 
     if (req.length) {
       setMissing(req);
@@ -277,12 +287,32 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           })}
         </div>
       </Field>
+      {family.spouse && (
+        <Field label="Spouse's Age">
+          <input
+            value={family.spouseAge}
+            onChange={(e) => setFamily((f) => ({ ...f, spouseAge: e.target.value }))}
+            placeholder="e.g. 42"
+            className={inputClass + " max-w-xs"}
+          />
+        </Field>
+      )}
       {family.children && (
-        <Field label="Ages of Children" optional>
+        <Field label="Ages of Children">
           <input
             value={family.childrenAges}
             onChange={(e) => setFamily((f) => ({ ...f, childrenAges: e.target.value }))}
             placeholder="e.g. 5, 8, 14"
+            className={inputClass + " max-w-xs"}
+          />
+        </Field>
+      )}
+      {family.dependents && (
+        <Field label="Age(s) of Aging Parent(s) / Other Dependents">
+          <input
+            value={family.dependentsAges}
+            onChange={(e) => setFamily((f) => ({ ...f, dependentsAges: e.target.value }))}
+            placeholder="e.g. 72, 75"
             className={inputClass + " max-w-xs"}
           />
         </Field>
@@ -359,7 +389,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           value={inputs.otherRetirement}
           onChange={(v) => set("otherRetirement", v)}
           options={[
-            { value: "yes", label: "Yes — has other retirement accounts" },
+            { value: "yes", label: "Yes" },
             { value: "no", label: "No" },
             { value: "skip", label: "Unsure" },
           ]}
@@ -483,10 +513,10 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           value={inputs.earlyAccess}
           onChange={(v) => set("earlyAccess", v)}
           options={[
-            { value: "yes", label: "Yes — needs flexible access" },
-            { value: "no", label: "No — can wait until 59½+" },
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" },
             { value: "both", label: "Mix of both" },
-            { value: "skip", label: "Skip" },
+            { value: "skip", label: "Unsure" },
           ]}
         />
       </Field>
