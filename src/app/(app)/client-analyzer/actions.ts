@@ -14,6 +14,20 @@ async function requireUser() {
   return { supabase, user: user! };
 }
 
+// clients.full_name is derived by a DB trigger from first_name/middle_name/last_name —
+// nothing should write full_name directly. This splits a single freeform name (all the
+// analyzer collects) the same way the original name-split backfill did: first word is the
+// first name, everything after is the last name.
+function splitName(name: string): { first_name: string; last_name: string } {
+  const trimmed = name.trim();
+  const spaceIndex = trimmed.indexOf(" ");
+  if (spaceIndex === -1) return { first_name: trimmed, last_name: "" };
+  return {
+    first_name: trimmed.slice(0, spaceIndex),
+    last_name: trimmed.slice(spaceIndex + 1).trim(),
+  };
+}
+
 export async function saveAnalysisToClient(
   clientId: string,
   inputs: AnalyzerInputs,
@@ -25,7 +39,7 @@ export async function saveAnalysisToClient(
   // keep the client's own profile fields in sync instead of leaving it stuck with
   // whatever was on file before.
   const contactUpdate: Record<string, string> = {};
-  if (inputs.name.trim()) contactUpdate.full_name = inputs.name.trim();
+  if (inputs.name.trim()) Object.assign(contactUpdate, splitName(inputs.name));
   if (inputs.phone.trim()) contactUpdate.phone = inputs.phone.trim();
   if (inputs.email.trim()) contactUpdate.email = inputs.email.trim();
   if (inputs.dob) contactUpdate.birth_date = inputs.dob;
@@ -53,7 +67,7 @@ export async function saveAnalysisAsNewClient(
     .from("clients")
     .insert({
       owner_id: user.id,
-      full_name: inputs.name,
+      ...splitName(inputs.name),
       phone: inputs.phone || null,
       email: inputs.email || null,
       birth_date: inputs.dob || null,

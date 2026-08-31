@@ -12,6 +12,7 @@ import FamilySection from "./FamilySection";
 import ProductsSection from "./ProductsSection";
 import ScheduleCallCard from "./ScheduleCallCard";
 import MeetingsCard from "./MeetingsCard";
+import MarkReviewedButton from "./MarkReviewedButton";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -40,7 +41,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     supabase.from("client_tasks").select("*").eq("client_id", id).order("created_at", { ascending: true }),
     supabase
       .from("client_analyses")
-      .select("id, created_at, result")
+      .select("id, created_at, result, from_intake")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     supabase.from("client_financial_plans").select("data, updated_at").eq("client_id", id).maybeSingle(),
@@ -156,6 +157,19 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </div>
             <StageSelect clientId={client.id} stage={client.stage} />
           </div>
+          {client.intake_pending_review && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#8B1A1A] bg-[#FBEFEF] px-3 py-2.5">
+              <div className="text-xs text-[#8B1A1A]">
+                <strong>New from your Intake Link — not yet reviewed.</strong>
+                {client.household_summary && <> Household: {client.household_summary}.</>} Check the analysis
+                below and set up a meeting.
+              </div>
+              <MarkReviewedButton clientId={client.id} />
+            </div>
+          )}
+          {!client.intake_pending_review && client.household_summary && (
+            <p className="mb-4 text-xs text-[#888]">Household: {client.household_summary}</p>
+          )}
           {clientIsMinor && (
             <p className="mb-4 rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
               This client is a minor. Add their parent or legal guardian in Family below, then mark them as the

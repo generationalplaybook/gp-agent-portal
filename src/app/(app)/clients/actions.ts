@@ -52,6 +52,16 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   revalidatePath("/clients");
 }
 
+// Clears the "needs review" flag set when a client came in through an advisor's Intake Link.
+// household_summary is left in place — it's still useful context after review, just no longer
+// urgent.
+export async function markClientReviewed(clientId: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("clients").update({ intake_pending_review: false }).eq("id", clientId);
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+}
+
 export async function deleteClient(formData: FormData) {
   const { supabase } = await requireUser();
   const clientId = String(formData.get("client_id"));

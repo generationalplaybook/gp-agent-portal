@@ -9,7 +9,7 @@ export interface AdvisorInfo {
   email?: string | null;
 }
 
-export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
+function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = 612;
   const H = 792;
@@ -305,6 +305,20 @@ export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
     { maxWidth: W - 2 * M }
   );
 
+  return doc;
+}
+
+// Downloads the file straight to disk.
+export function generateClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
+  const doc = buildClientPDF(d, advisor);
   const filename = "Client_Profile_" + d.name.replace(/\s+/g, "_") + ".pdf";
   doc.save(filename);
+}
+
+// Opens the PDF in a new tab for a quick look — nothing gets saved to disk unless the person
+// chooses to from the browser's own viewer.
+export function viewClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo) {
+  const doc = buildClientPDF(d, advisor);
+  const url = doc.output("bloburl");
+  window.open(url.toString(), "_blank");
 }

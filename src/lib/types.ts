@@ -47,6 +47,13 @@ export interface Client {
   family_id: string | null;
   family_relationship: string | null;
   turned_18_notice_sent: boolean;
+  // Set true when this client was created through an advisor's public Client Intake Link —
+  // the advisor hasn't reviewed/triaged it yet. household_summary is a short plain-text note
+  // from the intake form's lightweight Family checkboxes (Spouse / Children + ages / Aging
+  // parent(s) or other dependents). Cleared (false) via "Mark Reviewed" on the client page;
+  // household_summary itself stays visible either way.
+  intake_pending_review: boolean;
+  household_summary: string | null;
   created_at: string;
   updated_at: string;
 }

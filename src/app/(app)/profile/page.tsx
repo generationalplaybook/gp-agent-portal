@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/site-url";
 import CredentialRow from "./CredentialRow";
 import ProfileInfoForm from "./ProfileInfoForm";
+import IntakeLinkCard from "./IntakeLinkCard";
 import { addCredential } from "./actions";
 
 export default async function ProfilePage() {
@@ -11,7 +13,8 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: credentials }] = await Promise.all([
+  const [siteUrl, { data: profile }, { data: credentials }] = await Promise.all([
+    getSiteUrl(),
     supabase
       .from("profiles")
       .select("first_name, middle_name, last_name, email, phone, role, scheduling_link")
@@ -33,7 +36,11 @@ export default async function ProfilePage() {
         <ProfileInfoForm profile={profile ?? null} />
       </div>
 
-      <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+      <div className="mb-5">
+        <IntakeLinkCard link={`${siteUrl}/intake/${user.id}`} />
+      </div>
+
+      <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">My Credentials</h2>
         <p className="mb-4 text-xs text-[#888]">
           Keep track of your NPN, carrier agent codes, and anything else you want handy — visible only to you
