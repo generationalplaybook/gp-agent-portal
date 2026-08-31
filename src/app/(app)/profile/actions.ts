@@ -54,12 +54,13 @@ export async function deleteCredential(credentialId: string) {
 // signed with a secret we generate here and hand to Cal.com — Cal.com sends that same secret
 // back as a signature on every webhook call so we can verify it's really them.
 //
-// NOTE: built against Cal.com's documented v1 webhook API (POST /v1/webhooks?apiKey=..., HMAC
-// SHA-256 signature in the x-cal-signature-256 header) — this is the long-standing, widely used
-// convention for Cal.com's Personal API Keys, but it's the one piece of this feature that
-// couldn't be tested against a live Cal.com account from here. If "Connect" fails, the error
-// message below comes straight from Cal.com's response, which is the fastest way to see exactly
-// what needs adjusting.
+// NOTE: originally built against Cal.com's v1 webhook API. Karina's first real "Connect" attempt
+// (8/31) confirmed v1 is decommissioned — Cal.com returned HTTP 410 telling us to migrate to v2.
+// Rebuilt this against Cal.com's official v2 docs (POST /v2/webhooks, Authorization: Bearer
+// <apiKey>, body field is `triggers` not `eventTriggers`, response is wrapped in
+// {status, data: {...}}). The webhook *delivery* itself (signature header, payload shape) is
+// unchanged between v1 and v2, so the receiver route at /api/webhooks/cal/[agentId] needed no
+// changes — only this registration call did.
 // ─────────────────────────────────────────────────────────────
 
 export async function connectCalCom(
@@ -75,12 +76,15 @@ export async function connectCalCom(
 
   let res: Response;
   try {
-    res = await fetch(`https://api.cal.com/v1/webhooks?apiKey=${encodeURIComponent(apiKey)}`, {
+    res = await fetch(`https://api.cal.com/v2/webhooks`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
         subscriberUrl,
-        eventTriggers: ["BOOKING_CREATED", "BOOKING_RESCHEDULED", "BOOKING_CANCELLED"],
+        triggers: ["BOOKING_CREATED", "BOOKING_RESCHEDULED", "BOOKING_CANCELLED"],
         active: true,
         secret,
       }),
@@ -97,8 +101,8 @@ export async function connectCalCom(
     };
   }
 
-  const data = (await res.json().catch(() => null)) as { webhook?: { id?: string } } | null;
-  const webhookId = data?.webhook?.id ?? null;
+  const data = (await res.json().catch(() => null)) as { data?: { id?: string | number } } | null;
+  const webhookId = data?.data?.id != null ? String(data.data.id) : null;
 
   await supabase
     .from("profiles")
@@ -122,10 +126,10 @@ export async function disconnectCalCom(): Promise<void> {
   // side, there's nothing more to clean up there. Either way we still clear our own record.
   if (profile?.cal_api_key && profile?.cal_webhook_id) {
     try {
-      await fetch(
-        `https://api.cal.com/v1/webhooks/${profile.cal_webhook_id}?apiKey=${encodeURIComponent(profile.cal_api_key)}`,
-        { method: "DELETE" }
-      );
+      await fetch(`https://api.cal.com/v2/webhooks/${profile.cal_webhook_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${profile.cal_api_key}` },
+      });
     } catch {
       // Ignore — see comment above.
     }
