@@ -4,6 +4,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Client detail page layout — spaced out, Pipeline Stage pinned — built 8/31.** Karina flagged
+  the page as too cramped and not using the width of the screen. Widened the page's max width
+  (1152px → 1440px) and opened up the gaps between cards and between the two columns, plus a bit
+  more padding inside every card. Separately, "Pipeline Stage" is now the first card in the
+  right-hand sidebar (was buried a few cards down) and stays pinned near the top of the screen
+  as you scroll, so it's always visible. No schema change, no other page touched — Karina's own
+  note said this deserved a dedicated pass rather than a quick patch, so worth another look if
+  the spacing still doesn't feel right once she's seen it live.
+
 - **Quote tracking on Products, resolved when a client is Issued — built 8/31.** Karina pointed
   out that while a deal's in the Quoted stage, she's often comparing 2-3 carriers, and there was
   nowhere to hold "these are candidates" without them looking like real, confirmed policies.
