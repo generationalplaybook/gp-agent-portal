@@ -4,6 +4,47 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Client Intake Link — built 8/30.** Each advisor now has one reusable public link (shown in
+  My Profile under "Your Intake Link," with a copy button) they can text/email to a client
+  before the first meeting. No login required to fill it out. It's the same question set as the
+  standalone Client Analyzer — proper First/Middle/Last name fields plus a short "Household"
+  section (check-all-that-apply: Spouse / Children (with an ages field) / Aging parent(s) or
+  other dependents — deliberately lightweight, not a full questionnaire per family member).
+  **The client never sees any recommendation** — submitting just shows "Thank you, your advisor
+  will be in touch." Behind the scenes, submitting creates a real lead owned by that advisor
+  (source "Client Intake Form") and runs the same recommendation engine on it, saving the result
+  as a normal analysis (tagged "From intake" on the client page) so the advisor walks into the
+  first meeting with scenarios already worked out.
+  New leads from intake land flagged for review — a red "Needs Review" chip with a count badge
+  now shows on the Clients list (next to the normal stage filters, not mixed into them), and
+  each matching row gets a "New from intake" badge. Opening the client shows a callout at the
+  top with their household summary and a "Mark Reviewed" button, which just clears the flag —
+  nothing else changes, and the household summary stays visible either way.
+  Family members mentioned on the intake form are **not** auto-created as separate client
+  records — the advisor still builds those manually in the existing Family section if/when they
+  want to, same as today.
+  New columns: `clients.intake_pending_review`, `clients.household_summary`,
+  `client_analyses.from_intake` (SQL below).
+
+- **"View PDF" on Client Analyses — built 8/30.** Every saved analysis on a client's page only
+  offered "Download PDF," which forces a save-to-disk even for a quick glance. Added a "View
+  PDF" button next to it that opens the same PDF in a new browser tab (no file saved unless the
+  advisor chooses to from there) — good for a quick look mid-call that you then just close out
+  of. No schema change.
+
+- **Bug fix — "Save as New Client" from the Client Analyzer was saving blank names.** Found
+  while tracing the code path the new Intake Link feature reuses. `full_name` is supposed to be
+  computed automatically by a database trigger from `first_name`/`middle_name`/`last_name` —
+  nothing should write `full_name` directly anymore (this was the rule set when the name-split
+  feature was built). Two spots in the standalone Client Analyzer's "save" actions had reverted
+  to writing `full_name` directly, and for new clients created that way, the database trigger
+  was silently wiping it back out to blank immediately after the save — meaning any client
+  created via "Save as New Client" showed up with no name in production. Fixed by splitting the
+  analyzer's single freeform name field into first/last name (same "first word is the first
+  name, the rest is the last name" rule used in the original backfill) before saving, for both
+  the "save to existing client" and "save as new client" actions. No schema change, no visible
+  UI change — just a correctness fix.
+
 - **Policy Illustration Summary — built 8/30.** Advisors can now enter the key numbers from a
   carrier's own illustration and get back a short, visual, client-facing PDF instead of handing
   someone the full dense illustration packet. New "Illustration Summary" link on every product

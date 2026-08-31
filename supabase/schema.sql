@@ -559,3 +559,22 @@ create policy "Illustrations follow client visibility"
         and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
     )
   );
+
+-- 20. Client Intake Links (added 8/30) — each advisor has one public, reusable link
+-- (/intake/{their user id}) they can send a prospect before the first meeting. No login
+-- required on that page, and it never shows the client any recommendation — submitting it
+-- creates a real lead (owner_id = the advisor whose link was used) plus a saved analysis, and
+-- flags both so the advisor can find and triage them separately from normal leads.
+-- household_summary is a short plain-text summary from the lightweight Family checkboxes
+-- (Spouse / Children (+ages) / Aging parent(s) or other dependents) — intentionally NOT a full
+-- per-family-member questionnaire, and intake never auto-creates separate family-member client
+-- records; the advisor links those manually later if they want to, using the existing Family
+-- section.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists intake_pending_review boolean not null default false;
+alter table public.clients add column if not exists household_summary text;
+alter table public.client_analyses add column if not exists from_intake boolean not null default false;
+
+create index if not exists clients_intake_pending_review_idx
+  on public.clients (owner_id, intake_pending_review)
+  where intake_pending_review = true;
