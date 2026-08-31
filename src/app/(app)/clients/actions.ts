@@ -243,6 +243,9 @@ export async function deleteMeeting(meetingId: string, clientId: string): Promis
   const { error } = await supabase.from("client_meetings").delete().eq("id", meetingId);
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
+  // Also shows up in the global Meetings tab (src/app/(app)/meetings/page.tsx) — keep that in
+  // sync too, since a delete can be triggered from either place.
+  revalidatePath("/meetings");
 }
 
 // ─────────────────────────────────────────────────────────────
