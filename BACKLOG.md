@@ -15,7 +15,10 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   it already does for phone/email/DOB/existing coverage), and saving an analysis back to a
   client keeps their profile's height/weight in sync with whatever was just entered — same as
   it already does for name/phone/email/DOB. Needs the SQL below run in Supabase before
-  uploading.
+  uploading. **Layout tightened 8/31**: Height (ft) was originally its own full-width field,
+  which looked oversized for a 1-2 digit number — now Height (ft) and Height (in) sit as a
+  compact pair on one line ("[__] ft [__] in"), with Weight next to them as its own small box,
+  on both the New Client form and the Contact Info card.
 
 - **Client detail page layout — spaced out, Pipeline Stage moved to top — built 8/31, sticky
   bug fixed 8/31.** Karina flagged the page as too cramped and not using the width of the
