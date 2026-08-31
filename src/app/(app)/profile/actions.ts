@@ -48,6 +48,53 @@ export async function deleteCredential(credentialId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Custom intake link handle — lets an advisor set a short, memorable slug (e.g. "karina") so
+// their public intake link reads /intake/karina instead of the raw profile id. The id-based
+// link keeps working forever regardless (see src/app/intake/[advisorId]/page.tsx, which tries
+// both forms), so this is purely additive. Uniqueness (case-insensitive, across ALL advisors)
+// is enforced by a DB index, not checked here first — under concurrent requests a first check
+// can race, so the update is just attempted and a unique-violation (Postgres code 23505) is
+// what actually decides whether it was taken. Matters more once this is licensed to more than
+// one company and two advisors could otherwise grab the same handle.
+// ─────────────────────────────────────────────────────────────
+
+const INTAKE_SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+export async function updateIntakeSlug(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { supabase, user } = await requireUser();
+  const raw = String(formData.get("intake_slug") || "").trim().toLowerCase();
+
+  if (!raw) {
+    // Clearing it is always allowed — falls back to the id-based link.
+    await supabase.from("profiles").update({ intake_slug: null }).eq("id", user.id);
+    revalidatePath("/profile");
+    return { ok: true };
+  }
+
+  if (raw.length < 3 || raw.length > 40 || !INTAKE_SLUG_RE.test(raw)) {
+    return {
+      ok: false,
+      error:
+        "Use 3–40 characters: lowercase letters, numbers, and hyphens only (no leading, trailing, or double hyphens).",
+    };
+  }
+
+  const { error } = await supabase.from("profiles").update({ intake_slug: raw }).eq("id", user.id);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: `"${raw}" is already taken — try another.` };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/profile");
+  return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────
 // Cal.com Auto-Sync — connects an advisor's own Cal.com account so bookings made through their
 // scheduling link create/update/remove a meeting on the right client's profile automatically.
 // This registers a webhook on Cal.com pointed at /api/webhooks/cal/[agentId] (see that route),

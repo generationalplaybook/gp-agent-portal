@@ -18,7 +18,7 @@ export default async function ProfilePage() {
     getSiteUrl(),
     supabase
       .from("profiles")
-      .select("first_name, middle_name, last_name, email, phone, role, scheduling_link, cal_api_key")
+      .select("first_name, middle_name, last_name, email, phone, role, scheduling_link, cal_api_key, intake_slug")
       .eq("id", user.id)
       .single(),
     supabase
@@ -45,7 +45,7 @@ export default async function ProfilePage() {
       <CalSyncCard connected={calConnected} />
 
       <div className="mb-5">
-        <IntakeLinkCard link={`${siteUrl}/intake/${user.id}`} />
+        <IntakeLinkCard siteUrl={siteUrl} advisorId={user.id} initialSlug={profile?.intake_slug ?? null} />
       </div>
 
       <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">

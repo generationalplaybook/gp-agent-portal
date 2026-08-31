@@ -2,19 +2,24 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import IntakeForm from "./IntakeForm";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Public, unauthenticated page — this route sits outside the (app) group, which is what makes
 // it reachable with no login (see src/app/(app)/layout.tsx: auth is enforced per-page there,
 // not by a shared middleware). Uses the admin client purely to read this one advisor's display
 // name for branding — no session exists to do it any other way.
+//
+// The URL segment can be either the advisor's raw profile id (the original link shape) or a
+// custom handle they've set on their Profile page (see intake_slug in the schema) — whichever
+// was set is what got shared, so both need to resolve. Once resolved, the *real* id is what
+// gets passed down to IntakeForm/submitIntake — nothing below this needs to know slugs exist.
 export default async function IntakePage({ params }: { params: Promise<{ advisorId: string }> }) {
-  const { advisorId } = await params;
+  const { advisorId: slugOrId } = await params;
   const admin = createAdminClient();
 
-  const { data: advisor } = await admin
-    .from("profiles")
-    .select("full_name")
-    .eq("id", advisorId)
-    .maybeSingle();
+  const { data: advisor } = UUID_RE.test(slugOrId)
+    ? await admin.from("profiles").select("id, full_name").eq("id", slugOrId).maybeSingle()
+    : await admin.from("profiles").select("id, full_name").ilike("intake_slug", slugOrId).maybeSingle();
 
   if (!advisor) notFound();
 
@@ -28,7 +33,7 @@ export default async function IntakePage({ params }: { params: Promise<{ advisor
             meeting — so we can come prepared with real options instead of starting from scratch.
           </p>
         </div>
-        <IntakeForm advisorId={advisorId} advisorName={advisor.full_name ?? "your advisor"} />
+        <IntakeForm advisorId={advisor.id} advisorName={advisor.full_name ?? "your advisor"} />
       </div>
     </div>
   );
