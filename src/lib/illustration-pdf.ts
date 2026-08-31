@@ -321,6 +321,47 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
+  } else if (data.kind === "final_expense") {
+    setFill([235, 245, 238]);
+    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    setText(GREEN);
+    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    doc.text("Guaranteed Death Benefit", M + 14, y + 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    setText(OBSIDIAN);
+    if (data.levelPremium) doc.text("$" + data.levelPremium + " — guaranteed level for life", M + 280, y + 26);
+    y += 96;
+
+    if (data.riders.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(OBSIDIAN);
+      doc.text("LIVING BENEFITS & RIDERS INCLUDED", M, y);
+      y += 16;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      data.riders.forEach((r) => {
+        doc.text("— " + r, M, y);
+        y += 14;
+      });
+      y += 8;
+    }
+
+    if (data.notes) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      doc.text(nl, M, y);
+      y += nl.length * 12 + 10;
+    }
   } else {
     // annuity
     if (data.initialPremium) {

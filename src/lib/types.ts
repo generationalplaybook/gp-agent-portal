@@ -99,7 +99,7 @@ export interface ClientMeeting {
   created_at: string;
 }
 
-export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Annuity", "Other"];
+export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Final Expense", "Annuity", "Other"];
 
 // The riders that show up often enough to offer as one-click checkboxes when logging a product.
 // Anything else (Ethos Perks, a carrier-specific endorsement, etc.) gets typed in as a custom
@@ -135,6 +135,12 @@ export interface ClientProduct {
   // to — e.g. a parent owns a juvenile policy until the covered child turns 18. Null means
   // the client on the product owns it outright.
   owner_client_id: string | null;
+  // True while this is a candidate quote being compared, not yet the confirmed policy — set
+  // automatically when a product is added while the client's pipeline stage is "Quoted".
+  // Resolved when the client moves to "Issued": the advisor picks which quote won, that one
+  // gets flipped to false, and the rest are deleted (see resolveQuotesOnIssue in
+  // src/app/(app)/clients/actions.ts).
+  is_quote: boolean;
   created_at: string;
   updated_at: string;
 }

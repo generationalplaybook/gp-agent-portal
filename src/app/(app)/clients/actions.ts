@@ -52,6 +52,25 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   revalidatePath("/clients");
 }
 
+// Moves a client to Issued once the advisor has said which tracked quote actually won —
+// keeps that one (clearing its is_quote flag) and deletes the rest outright, per Karina: once
+// a client is issued, the quotes that lost don't need to stick around.
+export async function resolveQuotesOnIssue(
+  clientId: string,
+  chosenProductId: string,
+  allQuoteProductIds: string[]
+): Promise<void> {
+  const { supabase } = await requireUser();
+  await supabase.from("clients").update({ stage: "issued" }).eq("id", clientId);
+  await supabase.from("client_products").update({ is_quote: false }).eq("id", chosenProductId);
+  const toDelete = allQuoteProductIds.filter((id) => id !== chosenProductId);
+  if (toDelete.length > 0) {
+    await supabase.from("client_products").delete().in("id", toDelete);
+  }
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+}
+
 // Clears the "needs review" flag set when a client came in through an advisor's Intake Link.
 // household_summary is left in place — it's still useful context after review, just no longer
 // urgent.
@@ -385,6 +404,12 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
   const product_name = fields.product_name.trim();
   if (!product_name) throw new Error("Product name is required.");
 
+  // A product added while the client is in the Quoted stage is a candidate, not a confirmed
+  // policy yet — flag it automatically so it can be resolved (kept vs. deleted) once the
+  // client actually moves to Issued. See resolveQuotesOnIssue below.
+  const { data: clientRow } = await supabase.from("clients").select("stage").eq("id", clientId).single();
+  const is_quote = clientRow?.stage === "quoted";
+
   const { error } = await supabase.from("client_products").insert({
     client_id: clientId,
     product_name,
@@ -400,6 +425,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     notes: fields.notes?.trim() || null,
     owner_client_id: fields.owner_client_id?.trim() || null,
     riders: fields.riders ?? [],
+    is_quote,
   });
   if (error) throw new Error(error.message);
 

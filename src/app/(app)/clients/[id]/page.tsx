@@ -155,7 +155,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </span>
               )}
             </div>
-            <StageSelect clientId={client.id} stage={client.stage} />
+            <StageSelect
+              clientId={client.id}
+              stage={client.stage}
+              quotedProducts={(products ?? [])
+                .filter((p) => p.is_quote)
+                .map((p) => ({ id: p.id, product_name: p.product_name, carrier: p.carrier, premium: p.premium }))}
+            />
           </div>
           {client.intake_pending_review && (
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#8B1A1A] bg-[#FBEFEF] px-3 py-2.5">

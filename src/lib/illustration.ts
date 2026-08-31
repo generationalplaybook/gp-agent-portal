@@ -4,7 +4,7 @@
 // a term policy has no cash value to chart, an annuity has no traditional death benefit growth,
 // so each type gets its own field shape rather than one generic form.
 
-export type IllustrationKind = "cash_value" | "term" | "annuity";
+export type IllustrationKind = "cash_value" | "term" | "final_expense" | "annuity";
 
 export interface CashValueMilestone {
   id: string;
@@ -23,9 +23,11 @@ export interface AnnuityMilestone {
   deathBenefit: string;
 }
 
-// IUL, Whole Life (including Final Expense), and "Other" all get the same cash-value-over-time
-// shape — the growth mechanics differ but what's worth showing a client is the same: cash value
-// and death benefit, guaranteed vs. non-guaranteed, at a handful of milestone ages.
+// IUL, Whole Life, and "Other" all get the same cash-value-over-time shape — the growth
+// mechanics differ but what's worth showing a client is the same: cash value and death benefit,
+// guaranteed vs. non-guaranteed, at a handful of milestone ages. Final Expense Whole Life is
+// deliberately NOT included here (see FinalExpenseIllustration below) — it doesn't have a real
+// non-guaranteed side to compare against.
 export interface CashValueIllustration {
   kind: "cash_value";
   milestones: CashValueMilestone[];
@@ -44,6 +46,18 @@ export interface TermIllustration {
   notes: string;
 }
 
+// Final Expense Whole Life is guaranteed- or simplified-issue and permanent from day one — the
+// premium and death benefit are both locked for life. Unlike an IUL (where the credited value
+// genuinely depends on index performance), there's no "non-guaranteed" side to it, so it gets
+// Term's simple, no-chart shape rather than the Guaranteed/Non-Guaranteed milestone table.
+export interface FinalExpenseIllustration {
+  kind: "final_expense";
+  deathBenefit: string;
+  levelPremium: string;
+  riders: string[];
+  notes: string;
+}
+
 export interface AnnuityIllustration {
   kind: "annuity";
   initialPremium: string;
@@ -51,10 +65,11 @@ export interface AnnuityIllustration {
   notes: string;
 }
 
-export type IllustrationData = CashValueIllustration | TermIllustration | AnnuityIllustration;
+export type IllustrationData = CashValueIllustration | TermIllustration | FinalExpenseIllustration | AnnuityIllustration;
 
 export function illustrationKindForProductType(productType: string | null | undefined): IllustrationKind {
   if (productType === "Term Life") return "term";
+  if (productType === "Final Expense") return "final_expense";
   if (productType === "Annuity") return "annuity";
   return "cash_value"; // IUL, Whole Life, Other
 }
@@ -75,6 +90,9 @@ export function emptyIllustrationFor(productType: string | null | undefined): Il
   const kind = illustrationKindForProductType(productType);
   if (kind === "term") {
     return { kind: "term", deathBenefit: "", termLength: "", levelPremium: "", riders: [], conversionDeadline: "", notes: "" };
+  }
+  if (kind === "final_expense") {
+    return { kind: "final_expense", deathBenefit: "", levelPremium: "", riders: [], notes: "" };
   }
   if (kind === "annuity") {
     return { kind: "annuity", initialPremium: "", milestones: [emptyAnnuityMilestone()], notes: "" };

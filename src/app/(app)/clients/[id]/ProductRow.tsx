@@ -253,6 +253,11 @@ export default function ProductRow({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
+        {product.is_quote && (
+          <span className="self-start rounded-full bg-[#FFF6E5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b6a00]">
+            Quote — not yet issued
+          </span>
+        )}
         {status && (
           <span
             className={`self-start rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}

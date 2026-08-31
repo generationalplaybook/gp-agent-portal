@@ -257,6 +257,30 @@ export default function IllustrationForm({
           </>
         )}
 
+        {data.kind === "final_expense" && (
+          <>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
+            <p className="mb-4 text-xs text-[#888]">
+              Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
+              life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Guaranteed Death Benefit
+                <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Guaranteed Level Premium
+                <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
+              </label>
+            </div>
+            <div className="mt-4">
+              <div className="mb-2 text-xs font-semibold text-[#666]">Riders</div>
+              <RidersField value={data.riders} onChange={(riders) => setData({ ...data, riders })} />
+            </div>
+          </>
+        )}
+
         {data.kind === "annuity" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
