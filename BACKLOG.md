@@ -4,6 +4,16 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Bug fix — Client Intake Link was requiring a login (found 8/30, right after first ship).**
+  The portal gates every page through `src/proxy.ts` (Next.js 16 renamed "middleware" to
+  "proxy" — same idea, a check that runs before every request), which redirects anyone
+  without a session to `/login` unless the path is explicitly marked public. `/intake` wasn't
+  on that list, so the brand-new public form was getting bounced to the sign-in page for
+  anyone without an advisor account — exactly what Karina hit testing her own link. Added
+  `/intake` to the proxy's public-paths list (and to the "don't bounce a logged-in advisor
+  away either" list, so an advisor can still preview their own link while signed in). No
+  schema change, no other visible change.
+
 - **Client Intake Link — built 8/30.** Each advisor now has one reusable public link (shown in
   My Profile under "Your Intake Link," with a copy button) they can text/email to a client
   before the first meeting. No login required to fill it out. It's the same question set as the
