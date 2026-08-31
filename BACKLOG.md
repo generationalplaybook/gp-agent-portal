@@ -4,14 +4,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
-- **Client detail page layout — spaced out, Pipeline Stage pinned — built 8/31.** Karina flagged
-  the page as too cramped and not using the width of the screen. Widened the page's max width
-  (1152px → 1440px) and opened up the gaps between cards and between the two columns, plus a bit
-  more padding inside every card. Separately, "Pipeline Stage" is now the first card in the
-  right-hand sidebar (was buried a few cards down) and stays pinned near the top of the screen
-  as you scroll, so it's always visible. No schema change, no other page touched — Karina's own
-  note said this deserved a dedicated pass rather than a quick patch, so worth another look if
-  the spacing still doesn't feel right once she's seen it live.
+- **Client detail page layout — spaced out, Pipeline Stage moved to top — built 8/31, sticky
+  bug fixed 8/31.** Karina flagged the page as too cramped and not using the width of the
+  screen. Widened the page's max width (1152px → 1440px) and opened up the gaps between cards
+  and between the two columns, plus a bit more padding inside every card. Separately, "Pipeline
+  Stage" is now the first card in the right-hand sidebar (was buried a few cards down). It was
+  first built as a "pinned"/sticky card that stayed glued to the screen while scrolling, but
+  Karina caught it visually overlapping and covering up the In-Person Meetings card's fields as
+  the page scrolled — that's inherent to how a sticky element behaves stacked in a column with
+  other cards below it, it paints on top of whatever scrolls past underneath. Fixed by making it
+  a normal (non-sticky) card again: it's still the first thing you see at the top of the
+  sidebar, it just won't stay glued to the screen if you scroll far down the page anymore. No
+  overlap, no schema change.
 
 - **Quote tracking on Products, resolved when a client is Issued — built 8/31.** Karina pointed
   out that while a deal's in the Quoted stage, she's often comparing 2-3 carriers, and there was
@@ -23,6 +27,16 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   keeps that one as a real product and **deletes the rest outright** (Karina's call — once a
   client's issued, the quotes that lost don't need to stick around). New column:
   `client_products.is_quote` (SQL below).
+
+- **Client Analyses — Delete and "Re-run with these answers" — built 8/31.** Karina asked
+  whether Client Analyses (saved on a client's profile) should be editable or deletable. Since
+  each saved analysis is a snapshot of the questionnaire answers and result at the time it was
+  run, true in-place editing would silently rewrite that history — so instead: **Delete** (with
+  an inline "are you sure?" confirm, matching the pattern used elsewhere in the app) removes an
+  analysis outright, and a new **Re-run** link opens the Client Analyzer pre-filled with that
+  old analysis's full set of answers so the advisor can tweak anything and save it as a brand
+  new analysis — the original stays untouched unless separately deleted. No schema change
+  (reuses the existing `client_analyses.inputs` snapshot column).
 
 - **Final Expense gets its own, simpler Illustration Summary — built 8/31.** Karina flagged that
   a Final Expense Whole Life policy was showing the same Guaranteed/Non-Guaranteed milestone
