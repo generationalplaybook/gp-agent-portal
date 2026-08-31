@@ -4,6 +4,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Phone Number and Email are now optional on the Client Analyzer — built 8/31.** Karina
+  pointed out two real cases where the analyzer was blocking her from even getting a
+  recommendation: a child on a family analysis (no phone/email of their own) and mid-call with a
+  prospect whose contact info she doesn't have yet — she still wants the recommendation and
+  talking points either way. Removed Phone and Email from the analyzer's required-fields check
+  (`handleSubmit` in `AnalyzerClient.tsx`) and labeled both fields "optional" in the UI. Nothing
+  else needed to change: `clients.phone`/`clients.email` were already nullable columns, and
+  `saveAnalysisToClient`/`saveAnalysisAsNewClient` already only wrote them when present — the
+  block was purely a front-end validation rule. Also cleaned up the two spots that would've
+  printed an empty "Phone: " / "Email: " when blank — the on-screen result summary and the PDF
+  export now both skip or dash-out whichever one is missing. Name, Date of Birth, Height, and
+  Weight are still required — those are what the recommendation logic itself actually depends on.
+
 - **Global "Meetings" tab — built 8/31.** Karina wanted every upcoming meeting in one place,
   soonest first, instead of having to open each client to see what's scheduled. New top-nav tab
   "Meetings" (`/meetings`, right after Clients) lists every meeting from `client_meetings` — both
