@@ -69,30 +69,34 @@ export default async function NewClientPage({
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-wrap items-start gap-4">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-            Height (ft)
-            <input
-              type="number"
-              name="height_ft"
-              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-            />
+            Height
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                name="height_ft"
+                className="w-14 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <span className="text-xs text-[#888]">ft</span>
+              <input
+                type="number"
+                name="height_in"
+                className="w-14 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <span className="text-xs text-[#888]">in</span>
+            </div>
           </label>
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-            Height (in)
-            <input
-              type="number"
-              name="height_in"
-              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-            Weight (lbs)
-            <input
-              type="number"
-              name="weight"
-              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-            />
+            Weight
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                name="weight"
+                className="w-16 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
+              />
+              <span className="text-xs text-[#888]">lbs</span>
+            </div>
           </label>
         </div>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">

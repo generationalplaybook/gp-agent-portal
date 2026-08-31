@@ -120,36 +120,42 @@ export default function ContactInfoForm({ client }: { client: Client }) {
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Height (ft)
-        <input
-          type="number"
-          value={heightFt}
-          onChange={(e) => setHeightFt(e.target.value)}
-          onBlur={() => save()}
-          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Height (in)
-        <input
-          type="number"
-          value={heightIn}
-          onChange={(e) => setHeightIn(e.target.value)}
-          onBlur={() => save()}
-          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Weight (lbs)
-        <input
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          onBlur={() => save()}
-          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-        />
-      </label>
+      <div className="flex flex-wrap items-start gap-4 sm:col-span-2">
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Height
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={heightFt}
+              onChange={(e) => setHeightFt(e.target.value)}
+              onBlur={() => save()}
+              className="w-14 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <span className="text-xs text-[#888]">ft</span>
+            <input
+              type="number"
+              value={heightIn}
+              onChange={(e) => setHeightIn(e.target.value)}
+              onBlur={() => save()}
+              className="w-14 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <span className="text-xs text-[#888]">in</span>
+          </div>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Weight
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              onBlur={() => save()}
+              className="w-16 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <span className="text-xs text-[#888]">lbs</span>
+          </div>
+        </label>
+      </div>
       <div className="flex items-end sm:col-span-2">
         <p className="h-4 text-xs font-semibold text-[#1E6B3C]">
           {status === "saving" && "Saving..."}
