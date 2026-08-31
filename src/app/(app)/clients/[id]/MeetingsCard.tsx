@@ -10,6 +10,10 @@ interface Meeting {
   meeting_at: string;
   location: string | null;
   notes: string | null;
+  // 'cal.com' means this row was created automatically by the Cal.com Auto-Sync webhook (see
+  // /api/webhooks/cal/[agentId]) rather than typed in here — deleting it removes it from this
+  // view only, it does NOT cancel the real booking over on Cal.com.
+  source?: "manual" | "cal.com";
 }
 
 function isPast(iso: string): boolean {
@@ -47,7 +51,14 @@ function MeetingRow({ meeting, clientId, clientName }: { meeting: Meeting; clien
   return (
     <div className={`flex items-center justify-between gap-4 border-l-2 py-3 pl-3 ${past ? "border-[#D9CFBA]" : "border-[#1E6B3C]"}`}>
       <div className={past ? "opacity-60" : ""}>
-        <div className="text-sm text-[#2E2E2E]">{meeting.location || "In-person meeting"}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-[#2E2E2E]">{meeting.location || "In-person meeting"}</span>
+          {meeting.source === "cal.com" && (
+            <span className="rounded-full bg-[#EEF3FA] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1B4F8A]">
+              Via Cal.com
+            </span>
+          )}
+        </div>
         <div className="text-xs text-[#999]">
           <LocalDateTime iso={meeting.meeting_at} />
         </div>
@@ -73,7 +84,9 @@ function MeetingRow({ meeting, clientId, clientName }: { meeting: Meeting; clien
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs text-[#8B1A1A]">Delete?</span>
+          <span className="text-xs text-[#8B1A1A]">
+            {meeting.source === "cal.com" ? "Remove from here (won't cancel on Cal.com)?" : "Delete?"}
+          </span>
           <button
             type="button"
             disabled={busy}

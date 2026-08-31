@@ -76,7 +76,7 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
-        Cal.com Scheduling Link
+        Scheduling Link
         <input
           value={schedulingLink}
           onChange={(e) => setSchedulingLink(e.target.value)}
@@ -84,9 +84,10 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
         <span className="mt-0.5 text-[11px] text-[#999]">
-          Paste the booking link for the event type you want clients scheduling into (set video — Cal Video,
-          Zoom, or Google Meet — on that event type inside Cal.com). Once saved, a &ldquo;Schedule a Call&rdquo;
-          button appears on every client&rsquo;s profile.
+          Paste the public booking link for the event you want clients scheduling into — works with Cal.com,
+          Calendly, Zoom Scheduler, or any tool that gives you a booking page (set video — Cal Video, Zoom, or
+          Google Meet — inside that tool itself). Once saved, a &ldquo;Schedule a Call&rdquo; button appears on
+          every client&rsquo;s profile.
         </span>
       </label>
       <div className="flex items-center gap-3 sm:col-span-2">

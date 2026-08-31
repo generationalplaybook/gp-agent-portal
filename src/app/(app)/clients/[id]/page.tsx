@@ -57,7 +57,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .order("created_at", { ascending: false }),
     supabase
       .from("client_meetings")
-      .select("id, meeting_at, location, notes")
+      .select("id, meeting_at, location, notes, source")
       .eq("client_id", id)
       .order("meeting_at", { ascending: true }),
   ]);
@@ -298,7 +298,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         />
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">In-Person Meetings</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Meetings &amp; Calls</h2>
           <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
         </div>
 

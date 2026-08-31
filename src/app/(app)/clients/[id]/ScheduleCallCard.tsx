@@ -19,11 +19,12 @@ export default function ScheduleCallCard({
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
         <p className="text-xs text-[#888]">
-          Add your Cal.com scheduling link in{" "}
+          Add your scheduling link in{" "}
           <a href="/profile" className="text-[#1C1C1C] underline underline-offset-2">
             My Profile
           </a>{" "}
-          to enable booking calls (with a video link) straight from client profiles.
+          to enable booking calls (with a video link) straight from client profiles. Works with
+          Cal.com, Calendly, Zoom Scheduler, or any tool with a public booking page.
         </p>
       </div>
     );
@@ -76,7 +77,7 @@ export default function ScheduleCallCard({
       </div>
       <p className="mt-2 text-[11px] text-[#999]">
         Copy the link to text or email {clientName.split(" ")[0] || "the client"} directly, or book it with them
-        live. Cal.com emails the video join link to both of you once it&rsquo;s booked.
+        live. Your scheduling tool emails the video join link to both of you once it&rsquo;s booked.
       </p>
       {showWidget && (
         <iframe
