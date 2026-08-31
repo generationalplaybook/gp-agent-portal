@@ -4,6 +4,16 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Lead Source moved to the sidebar — built 8/31.** The "Source" field (Referral, Facebook ad,
+  walk-in, etc.) used to sit in the main Contact Info card up top, next to real contact details
+  it didn't really belong with. Moved it into the Pipeline Stage card in the right sidebar,
+  right under the stage badge — clearly marked optional, saves on blur same as everywhere else.
+  Split into its own server action (`updateLeadSource`) rather than folded into the Contact Info
+  save, specifically so editing a client's name/phone/etc. can never accidentally blank out
+  their Source in the background. Confirmed for Karina: nothing on any client page is ever
+  visible to a client — the only client-facing page in the app is the public Intake form, which
+  doesn't show this or anything else on a client's profile.
+
 - **Scheduling link generalized + Cal.com Auto-Sync — built 8/31.** Karina booked a call via
   "Schedule a Call" on a client's profile and the portal showed no sign it happened — because
   that feature was only ever a link out to Cal.com; the booking itself lived entirely on Cal.com's
