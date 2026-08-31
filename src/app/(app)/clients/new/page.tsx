@@ -69,6 +69,32 @@ export default async function NewClientPage({
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Height (ft)
+            <input
+              type="number"
+              name="height_ft"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Height (in)
+            <input
+              type="number"
+              name="height_in"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Weight (lbs)
+            <input
+              type="number"
+              name="weight"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        </div>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
           Source
           <input

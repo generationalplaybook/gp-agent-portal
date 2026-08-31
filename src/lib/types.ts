@@ -54,6 +54,13 @@ export interface Client {
   // household_summary itself stays visible either way.
   intake_pending_review: boolean;
   household_summary: string | null;
+  // Captured at New Client (or added later on the profile's Contact Info card) — kept on the
+  // client record itself so it's available for underwriting conversations without needing a
+  // Client Analyzer run first. Independent of any saved analysis's own height/weight, which
+  // stays frozen at whatever it was when that analysis ran.
+  height_ft: number | null;
+  height_in: number | null;
+  weight: number | null;
   created_at: string;
   updated_at: string;
 }

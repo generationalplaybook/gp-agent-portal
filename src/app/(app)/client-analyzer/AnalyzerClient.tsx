@@ -128,6 +128,11 @@ interface PrefillClient {
   // Product names already on file for this client (from their Products section), joined into
   // a starting string for Existing Coverage — editable, not locked to what's on record.
   existingCoverage?: string;
+  // Whatever's already on file from the client's own profile (Contact Info card) — saves
+  // retyping when starting an analysis from their page. Editable either way.
+  height_ft: number | null;
+  height_in: number | null;
+  weight: number | null;
 }
 
 export default function AnalyzerClient({
@@ -154,6 +159,9 @@ export default function AnalyzerClient({
           email: prefillClient.email ?? "",
           dob: prefillClient.birth_date ?? "",
           existingCoverage: prefillClient.existingCoverage ?? "",
+          heightFt: prefillClient.height_ft?.toString() ?? "",
+          heightIn: prefillClient.height_in?.toString() ?? "",
+          weight: prefillClient.weight?.toString() ?? "",
         }
       : EMPTY;
   });

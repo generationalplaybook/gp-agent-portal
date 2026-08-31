@@ -14,6 +14,9 @@ interface Client {
   email: string | null;
   birth_date: string | null;
   source: string | null;
+  height_ft: number | null;
+  height_in: number | null;
+  weight: number | null;
 }
 
 // No "Save" button — every field saves itself as soon as you leave it (onBlur).
@@ -25,6 +28,9 @@ export default function ContactInfoForm({ client }: { client: Client }) {
   const [email, setEmail] = useState(client.email ?? "");
   const [birthDate, setBirthDate] = useState(client.birth_date ?? "");
   const [source, setSource] = useState(client.source ?? "");
+  const [heightFt, setHeightFt] = useState(client.height_ft?.toString() ?? "");
+  const [heightIn, setHeightIn] = useState(client.height_in?.toString() ?? "");
+  const [weight, setWeight] = useState(client.weight?.toString() ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,6 +45,9 @@ export default function ContactInfoForm({ client }: { client: Client }) {
     formData.set("email", email);
     formData.set("birth_date", birthDate);
     formData.set("source", source);
+    formData.set("height_ft", heightFt);
+    formData.set("height_in", heightIn);
+    formData.set("weight", weight);
     await updateContactInfo(formData);
     setStatus("saved");
     if (savedTimeout.current) clearTimeout(savedTimeout.current);
@@ -107,6 +116,36 @@ export default function ContactInfoForm({ client }: { client: Client }) {
         <input
           value={source}
           onChange={(e) => setSource(e.target.value)}
+          onBlur={() => save()}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Height (ft)
+        <input
+          type="number"
+          value={heightFt}
+          onChange={(e) => setHeightFt(e.target.value)}
+          onBlur={() => save()}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Height (in)
+        <input
+          type="number"
+          value={heightIn}
+          onChange={(e) => setHeightIn(e.target.value)}
+          onBlur={() => save()}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Weight (lbs)
+        <input
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
           onBlur={() => save()}
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />

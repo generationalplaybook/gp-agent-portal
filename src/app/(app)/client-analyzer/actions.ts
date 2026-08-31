@@ -28,6 +28,12 @@ function splitName(name: string): { first_name: string; last_name: string } {
   };
 }
 
+function parseIntOrNull(v?: string): number | null {
+  if (!v || !v.trim()) return null;
+  const n = parseInt(v.trim(), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function saveAnalysisToClient(
   clientId: string,
   inputs: AnalyzerInputs,
@@ -38,11 +44,14 @@ export async function saveAnalysisToClient(
   // Whatever the advisor typed into the analyzer is the freshest info we have —
   // keep the client's own profile fields in sync instead of leaving it stuck with
   // whatever was on file before.
-  const contactUpdate: Record<string, string> = {};
+  const contactUpdate: Record<string, string | number | null> = {};
   if (inputs.name.trim()) Object.assign(contactUpdate, splitName(inputs.name));
   if (inputs.phone.trim()) contactUpdate.phone = inputs.phone.trim();
   if (inputs.email.trim()) contactUpdate.email = inputs.email.trim();
   if (inputs.dob) contactUpdate.birth_date = inputs.dob;
+  if (inputs.heightFt.trim()) contactUpdate.height_ft = parseIntOrNull(inputs.heightFt);
+  if (inputs.heightIn.trim()) contactUpdate.height_in = parseIntOrNull(inputs.heightIn);
+  if (inputs.weight.trim()) contactUpdate.weight = parseIntOrNull(inputs.weight);
   if (Object.keys(contactUpdate).length > 0) {
     await supabase.from("clients").update(contactUpdate).eq("id", clientId);
   }
@@ -72,6 +81,9 @@ export async function saveAnalysisAsNewClient(
       email: inputs.email || null,
       birth_date: inputs.dob || null,
       stage: "lead",
+      height_ft: parseIntOrNull(inputs.heightFt),
+      height_in: parseIntOrNull(inputs.heightIn),
+      weight: parseIntOrNull(inputs.weight),
     })
     .select("id")
     .single();

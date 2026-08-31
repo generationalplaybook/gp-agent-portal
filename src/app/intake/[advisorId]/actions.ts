@@ -59,6 +59,14 @@ export async function submitIntake(
 
   const householdSummary = buildHouseholdSummary(family);
 
+  // height/weight are also carried onto the persistent client record (not just the saved
+  // analysis below), so they're on hand on the client's profile the moment the advisor reviews
+  // the intake — same reasoning as the New Client form and Contact Info card.
+  const parseIntOrNull = (v: string): number | null => {
+    const n = parseInt(v.trim(), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+
   // full_name is derived by a DB trigger from first/middle/last — never set it directly here.
   const { data: client, error: clientError } = await admin
     .from("clients")
@@ -74,6 +82,9 @@ export async function submitIntake(
       source: "Client Intake Form",
       intake_pending_review: true,
       household_summary: householdSummary,
+      height_ft: parseIntOrNull(inputs.heightFt),
+      height_in: parseIntOrNull(inputs.heightIn),
+      weight: parseIntOrNull(inputs.weight),
     })
     .select("id")
     .single();

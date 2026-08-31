@@ -15,6 +15,15 @@ async function requireUser() {
   return { supabase, user: user! };
 }
 
+// height_ft / height_in / weight are stored as integer columns on clients — this keeps a blank
+// or non-numeric form field from being sent through as anything other than null.
+function parseIntOrNull(v: FormDataEntryValue | null): number | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function createClientRecord(formData: FormData) {
   const { supabase, user } = await requireUser();
 
@@ -26,6 +35,9 @@ export async function createClientRecord(formData: FormData) {
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
   const stage = (String(formData.get("stage") || "lead") as ClientStage);
+  const height_ft = parseIntOrNull(formData.get("height_ft"));
+  const height_in = parseIntOrNull(formData.get("height_in"));
+  const weight = parseIntOrNull(formData.get("weight"));
 
   if (!first_name || !last_name)
     redirect("/clients/new?error=" + encodeURIComponent("First and last name are required."));
@@ -33,7 +45,20 @@ export async function createClientRecord(formData: FormData) {
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   const { data, error } = await supabase
     .from("clients")
-    .insert({ owner_id: user.id, first_name, middle_name, last_name, phone, email, birth_date, source, stage })
+    .insert({
+      owner_id: user.id,
+      first_name,
+      middle_name,
+      last_name,
+      phone,
+      email,
+      birth_date,
+      source,
+      stage,
+      height_ft,
+      height_in,
+      weight,
+    })
     .select("id")
     .single();
 
@@ -104,11 +129,14 @@ export async function updateContactInfo(formData: FormData) {
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
+  const height_ft = parseIntOrNull(formData.get("height_ft"));
+  const height_in = parseIntOrNull(formData.get("height_in"));
+  const weight = parseIntOrNull(formData.get("weight"));
 
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   await supabase
     .from("clients")
-    .update({ first_name, middle_name, last_name, phone, email, birth_date, source })
+    .update({ first_name, middle_name, last_name, phone, email, birth_date, source, height_ft, height_in, weight })
     .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
