@@ -275,18 +275,39 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   along in the existing `jsonb` result column, and the existing-coverage prefill just reads the
   Products table that's already there.
 
-- **Death Benefit Option explainer for advisors.** Karina wants a clear way to teach her
-  advisors the three death benefit structures — Level, Increasing, and (per her phrasing)
-  "level to increasing" — what each does and when to use which. Explicitly told not to build
-  this yet (8/27), just capture the idea. Note: the Level vs. Increasing (Option 1 vs Option 2)
-  comparison already exists as a Knowledge Base concept entry today (what it is / does /
-  agent note / client-facing explanation / highlights) — worth showing her that before
-  building anything new, since it may already cover most of this. Open questions for when we
-  pick this up: what exactly is the third "level to increasing" option (a policy that switches
-  DBO over time, which the KB only mentions in passing under a couple of NA product notes —
-  may need its own writeup), and whether she wants this as more Knowledge Base content, a
-  short training/quiz mode, or something surfaced directly inside the Client Analyzer flow
-  when a death benefit option is being chosen for an actual client.
+- **Death Benefit Option explainer for advisors — built 8/31.** Karina wanted a clear way to
+  teach her advisors the three death benefit structures — Level, Increasing, and Increasing
+  switched to Level — what each does and when to use which. The existing Knowledge Base concept
+  entry ("Death Benefit Option 1 vs Option 2") already covered Level vs. Increasing, but only
+  mentioned the switch strategy as a footnote — expanded it into one entry covering all three as
+  parallel options: Level (flat death benefit, falling cost of insurance over time — best for
+  accumulation/cost efficiency), Increasing (death benefit = face + cash value, cost of
+  insurance stays higher — best when maximizing the legacy/death benefit is the goal), and
+  Increasing-to-Level (a strategy, not a static option — grow on Increasing during accumulation,
+  switch to Level before the loan/income phase so cost of insurance starts dropping right when
+  cash value is being drawn down; common on retirement-income IULs). Includes an advisor-facing
+  technical explanation plus a short client-facing version advisors can use directly in
+  conversation. Lives in the Knowledge Base under Concepts, same place as before — no new page,
+  no schema change. Still open, not built: surfacing this directly inside the Client Analyzer
+  flow when a death benefit option is actually being chosen for a client, or a training/quiz
+  mode — only mentioned once by Karina, worth asking if she still wants either.
+
+- **Death Benefit Corridor (IRC §7702) — new Knowledge Base entry, built 8/31.** Came up when
+  Karina noticed a 5-year-old's IUL, set to Level, showing the death benefit start climbing
+  around age 35 on the illustration and asked whether that's a real thing and whether it's to
+  avoid MEC. It's real, but it's not MEC — it's a separate IRS rule (the §7702 "corridor")
+  requiring the death benefit to stay a set percentage above cash value at all times for the
+  policy to keep qualifying as life insurance for tax purposes; that required percentage is
+  highest for young insureds and tapers down with age. So even on Level, if cash value grows
+  close enough to the flat face amount, the carrier automatically raises the death benefit to
+  stay compliant — nobody elected a change, and it's a compliance floor, not something you can
+  aim at a target number. New standalone Concept entry explains this and explicitly
+  distinguishes it from MEC/the 7-pay test. Also folded into the Death Benefit Options entry:
+  for juvenile/kids' policies specifically, cash value and locked-in insurability while young
+  and healthy is almost always the real goal (not a death benefit need), so Level is the
+  standard recommendation — and if the family also wants a guaranteed target death benefit
+  number down the road, that has to be set as the face amount at issue, not left to organic
+  cash value growth or the corridor to reach on their own. No schema change.
 
 - **First / Last / Middle name split — built 8/29.** First Name / Last Name (required) and
   Middle Name (optional) are now separate fields everywhere someone's name gets entered or
