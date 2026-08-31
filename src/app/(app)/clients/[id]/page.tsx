@@ -276,10 +276,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
       {/* Sidebar: stage + analyses + financial analysis + follow-up */}
       <div className="flex flex-col gap-6">
-        {/* Pipeline Stage stays pinned at the top of the sidebar so it's visible no matter how
-            far down the page you've scrolled — the "top" offset clears the app's own 56px nav
-            bar (h-14) plus a little breathing room. */}
-        <div className="sticky top-[72px] z-10 rounded-lg border border-[#D9CFBA] bg-white p-7 shadow-sm">
+        {/* Pipeline Stage is the first card in the sidebar so it's the first thing you see.
+            (Previously this was `position: sticky`, which kept it glued to the viewport while
+            scrolling — but since it shares the same column as the cards below it, it painted
+            on top of them as they scrolled past underneath, obscuring their content. Plain
+            positioning trades "always visible" for "never overlaps.") */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Pipeline Stage</h2>
           <span
             className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
@@ -304,7 +306,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Client Analyses</h2>
           <div className="mb-3">
-            <AnalysesList analyses={analyses ?? []} advisor={advisor} />
+            <AnalysesList analyses={analyses ?? []} advisor={advisor} clientId={client.id} />
           </div>
           <a
             href={`/client-analyzer?client=${client.id}`}

@@ -134,14 +134,19 @@ export default function AnalyzerClient({
   advisor,
   existingClients = [],
   prefillClient = null,
+  prefillInputs = null,
 }: {
   advisor?: AdvisorInfo;
   existingClients?: ExistingClient[];
   prefillClient?: PrefillClient | null;
+  // A full snapshot of a past analysis's answers, from "Re-run with these answers" — takes
+  // priority over prefillClient's partial contact-only prefill when both are present.
+  prefillInputs?: AnalyzerInputs | null;
 }) {
   const router = useRouter();
-  const [inputs, setInputs] = useState<AnalyzerInputs>(() =>
-    prefillClient
+  const [inputs, setInputs] = useState<AnalyzerInputs>(() => {
+    if (prefillInputs) return prefillInputs;
+    return prefillClient
       ? {
           ...EMPTY,
           name: prefillClient.full_name,
@@ -150,8 +155,8 @@ export default function AnalyzerClient({
           dob: prefillClient.birth_date ?? "",
           existingCoverage: prefillClient.existingCoverage ?? "",
         }
-      : EMPTY
-  );
+      : EMPTY;
+  });
   const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
 
@@ -232,6 +237,12 @@ export default function AnalyzerClient({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr]">
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
+        {prefillInputs && (
+          <div className="mb-5 rounded-md border border-[#1B4F8A] bg-[#EEF3FA] px-3 py-2 text-xs text-[#1B4F8A]">
+            Starting from a previous analysis&rsquo;s answers — adjust anything below, then save. This
+            creates a brand-new analysis; the original one is untouched.
+          </div>
+        )}
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#888]">Client Info</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 

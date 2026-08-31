@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import AnalyzerClient from "./AnalyzerClient";
+import type { AnalyzerInputs } from "@/lib/analyzer";
 
 export default async function ClientAnalyzerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; reanalysis?: string }>;
 }) {
-  const { client: clientId } = await searchParams;
+  const { client: clientId, reanalysis: reanalysisId } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -49,6 +50,20 @@ export default async function ClientAnalyzerPage({
 
   const prefillClient = matchedClient ? { ...matchedClient, existingCoverage } : null;
 
+  // "Re-run with these answers" — scoped to both the analysis id AND this client id so a
+  // stray/tampered reanalysis param can't pull in another client's snapshot. A full snapshot
+  // of the old inputs takes priority over the partial contact-only prefill above.
+  let prefillInputs: AnalyzerInputs | null = null;
+  if (reanalysisId && matchedClient) {
+    const { data: oldAnalysis } = await supabase
+      .from("client_analyses")
+      .select("inputs")
+      .eq("id", reanalysisId)
+      .eq("client_id", matchedClient.id)
+      .maybeSingle();
+    prefillInputs = (oldAnalysis?.inputs as AnalyzerInputs | undefined) ?? null;
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Client Analyzer</h1>
@@ -56,6 +71,7 @@ export default async function ClientAnalyzerPage({
         advisor={advisor}
         existingClients={(clients ?? []).map((c) => ({ id: c.id, full_name: c.full_name }))}
         prefillClient={prefillClient}
+        prefillInputs={prefillInputs}
       />
     </div>
   );

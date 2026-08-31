@@ -466,3 +466,17 @@ export async function deleteProduct(productId: string, clientId: string): Promis
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
 }
+
+// ─────────────────────────────────────────────────────────────
+// Client Analyses — each saved analysis is a point-in-time snapshot (inputs + result), so we
+// don't offer in-place editing (that would silently rewrite history). Delete removes a snapshot
+// outright; "Re-run with these answers" (see client-analyzer/page.tsx's `reanalysis` param)
+// pre-fills a new analysis from an old one's inputs instead of touching the original.
+// ─────────────────────────────────────────────────────────────
+
+export async function deleteAnalysis(analysisId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_analyses").delete().eq("id", analysisId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
