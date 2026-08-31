@@ -4,6 +4,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Global "Meetings" tab — built 8/31.** Karina wanted every upcoming meeting in one place,
+  soonest first, instead of having to open each client to see what's scheduled. New top-nav tab
+  "Meetings" (`/meetings`, right after Clients) lists every meeting from `client_meetings` — both
+  manually-logged ones and Cal.com Auto-Sync rows alike — across all of Karina's clients, sorted
+  ascending by date/time, each linking back to that client's profile. Past meetings collapse into
+  a "N past meetings" details section, same pattern as the Reminders tab. Delete and "Add to
+  Calendar" both work right from this list (no need to open the client). `deleteMeeting` now also
+  revalidates `/meetings` in addition to the client page, since it can be triggered from either
+  place.
+  Raised alongside this: Karina connected Cal.com (API key accepted) but isn't seeing a booking
+  show up. Nothing in the sync code looks wrong on inspection — the two most likely explanations,
+  which need Karina to confirm: (1) auto-sync only applies to bookings made *after* a successful
+  Connect — it does not backfill anything booked earlier, including the original call from
+  before this feature existed; (2) the booking's attendee email has to exactly match an existing
+  client's email on file, or it's intentionally left unsynced rather than guessing/creating a
+  client. Waiting on Karina to try a fresh test booking with a matching client email before
+  concluding this needs a code fix.
+
 - **Custom intake link handle — built 8/31.** Karina's intake link showed her raw profile UUID
   (`.../intake/347198cb-...`) and asked if advisors could set something readable instead. Added
   a "Custom link" field on the Profile page (under the intake link card) — an advisor can set a
