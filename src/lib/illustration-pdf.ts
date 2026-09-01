@@ -563,9 +563,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       doc.setFontSize(8);
       setText(OBSIDIAN);
       const colX = [M, M + 130, M + 300];
-      const headers = ["Age", "Cash Value", "Death Benefit\n(Guaranteed from Day One)"];
+      const headers = ["Age", "Cash Value", "Death Benefit"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 160 }));
-      y += 20;
+      y += 16;
       doc.setDrawColor(217, 207, 186);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
