@@ -31,12 +31,17 @@ const inputClass = "rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outli
 // Duplicated from illustrations/[productId]/IllustrationForm.tsx rather than shared — same
 // pattern used elsewhere in this app (e.g. the two MeetingRow components) so the existing,
 // working per-product illustration flow can never be affected by changes made here.
-// Reworked 9/1 per Karina: a scenario milestone is just Age → Cash Value → Death Benefit — one
-// number each, not a Guaranteed/Non-Guaranteed grid. Cash Value shown here is the non-guaranteed
-// figure (stored in the existing cvNonGuaranteed field); Death Benefit is guaranteed from day one
-// (stored in dbGuaranteed). cvGuaranteed/dbNonGuaranteed are left blank and unused for scenarios —
-// kept in the shared type only so this stays compatible with the original per-product Illustration
-// flow, which is untouched. Capped at 5 milestones — Karina's real usage is 3-4 (e.g. 18/35/65).
+// Reworked 9/1 per Karina, twice: first to Age → Cash Value → Death Benefit (one number each,
+// not a Guaranteed/Non-Guaranteed grid), then reworked again same day into a two-part Level vs.
+// Increasing comparison — Karina found the two death benefit options can land very differently
+// (which one grows cash value faster isn't a fixed rule, it's product-specific; the reliable
+// difference is that Level pays the full elected face amount from day one while Increasing
+// starts lower and grows into that same target over years), so both tracks are entered side by
+// side at each age. Level uses the original cvNonGuaranteed/dbGuaranteed fields; Increasing uses
+// the newer cvIncreasing/dbIncreasing fields. cvGuaranteed/dbNonGuaranteed are left blank and
+// unused for scenarios — kept in the shared type only so this stays compatible with the original
+// per-product Illustration flow, which is untouched. Capped at 5 milestones — Karina's real
+// usage is 3-4 (e.g. 18/35/65).
 function CashValueMilestonesEditor({
   milestones,
   onChange,
@@ -54,7 +59,7 @@ function CashValueMilestonesEditor({
     <div className="flex flex-col gap-3">
       {milestones.map((m, i) => (
         <div key={m.id} className="rounded-md border border-[#D9CFBA] p-3">
-          <div className="grid grid-cols-[1fr_1.4fr_1.4fr_auto] items-end gap-2">
+          <div className="mb-3 flex items-end justify-between gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               {i === 0 ? "Age" : `Age (Milestone ${i + 1})`}
               <input
@@ -62,18 +67,10 @@ function CashValueMilestonesEditor({
                 onChange={(e) => update(m.id, { label: e.target.value.replace(/[^0-9]/g, "") })}
                 placeholder="e.g. 18"
                 inputMode="numeric"
-                className={inputClass}
+                className={inputClass + " max-w-[120px]"}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Cash Value
-              <DollarInput value={m.cvNonGuaranteed} onChange={(v) => update(m.id, { cvNonGuaranteed: v })} className={inputClass + " w-full"} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Death Benefit
-              <DollarInput value={m.dbGuaranteed} onChange={(v) => update(m.id, { dbGuaranteed: v })} className={inputClass + " w-full"} />
-            </label>
-            {milestones.length > 1 ? (
+            {milestones.length > 1 && (
               <button
                 type="button"
                 onClick={() => remove(m.id)}
@@ -81,9 +78,39 @@ function CashValueMilestonesEditor({
               >
                 Remove
               </button>
-            ) : (
-              <span />
             )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+                Level Death Benefit
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Cash Value
+                  <DollarInput value={m.cvNonGuaranteed} onChange={(v) => update(m.id, { cvNonGuaranteed: v })} className={inputClass + " w-full"} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Death Benefit
+                  <DollarInput value={m.dbGuaranteed} onChange={(v) => update(m.id, { dbGuaranteed: v })} className={inputClass + " w-full"} />
+                </label>
+              </div>
+            </div>
+            <div>
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+                Increasing Death Benefit
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Cash Value
+                  <DollarInput value={m.cvIncreasing ?? ""} onChange={(v) => update(m.id, { cvIncreasing: v })} className={inputClass + " w-full"} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Death Benefit
+                  <DollarInput value={m.dbIncreasing ?? ""} onChange={(v) => update(m.id, { dbIncreasing: v })} className={inputClass + " w-full"} />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       ))}
@@ -274,40 +301,10 @@ export default function ScenarioForm({
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {data.kind === "cash_value" && (
           <>
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
-            <p className="mb-2 text-xs text-[#888]">
-              The policy&rsquo;s starting face amount at issue — separate from the Death Benefit numbers entered
-              per milestone below, which show what it grows (or steps up) to at each age.
-            </p>
-            <label className="mb-5 flex max-w-[220px] flex-col gap-1 text-xs text-[#666]">
-              Face Value
-              <DollarInput
-                value={data.initialDeathBenefit ?? ""}
-                onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
-                className={inputClass}
-              />
-            </label>
-
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
-            <p className="mb-2 text-xs text-[#888]">
-              If the death benefit steps up at a later age (common on some IUL designs, especially juvenile
-              policies), note that age here so it&rsquo;s called out on the summary. Leave blank if it doesn&rsquo;t apply.
-            </p>
-            <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
-              Age it increases (optional)
-              <input
-                value={data.dbIncreaseAge ?? ""}
-                onChange={(e) => setData({ ...data, dbIncreaseAge: e.target.value.replace(/[^0-9]/g, "") })}
-                placeholder="e.g. 20"
-                inputMode="numeric"
-                className={inputClass}
-              />
-            </label>
-
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
             <p className="mb-2 text-xs text-[#888]">
-              What the client actually pays, and the bare minimum that keeps this policy from lapsing —
-              separate from the death benefit numbers above. Both optional.
+              What the client actually pays, and the bare minimum that keeps this policy from lapsing. Both
+              optional.
             </p>
             <div className="mb-5 grid max-w-md grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
@@ -328,10 +325,47 @@ export default function ScenarioForm({
               </label>
             </div>
 
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
+            <p className="mb-2 text-xs text-[#888]">
+              The policy&rsquo;s starting face amount at issue — separate from the Level/Increasing numbers entered
+              per milestone below, which show what it grows (or steps up) to at each age.
+            </p>
+            <label className="mb-5 flex max-w-[220px] flex-col gap-1 text-xs text-[#666]">
+              Face Value
+              <DollarInput
+                value={data.initialDeathBenefit ?? ""}
+                onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
+                className={inputClass}
+              />
+            </label>
+
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
+            <p className="mb-1 text-xs text-[#888]">
+              On a Level death benefit, if cash value is left untouched the policy is required to step the death
+              benefit up at a certain age (common on some IUL designs, especially juvenile policies) — note that
+              age here so it&rsquo;s called out on the summary. If the client starts taking withdrawals, the death
+              benefit stays level instead — it does not step up. Leave blank if it doesn&rsquo;t apply.
+            </p>
+            <p className="mb-2 text-xs text-[#888]">
+              Either way, the Level/Increasing election itself can be changed at any time by calling us — we
+              recommend periodic policy reviews, which we schedule as part of our service regardless.
+            </p>
+            <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
+              Age it increases (optional)
+              <input
+                value={data.dbIncreaseAge ?? ""}
+                onChange={(e) => setData({ ...data, dbIncreaseAge: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="e.g. 20"
+                inputMode="numeric"
+                className={inputClass}
+              />
+            </label>
+
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#888]">
-              For each age that matters, enter the illustrated Cash Value (non-guaranteed) and Death Benefit
-              (guaranteed from day one) — pull both straight from the carrier&rsquo;s illustration.
+              For each age that matters, enter the illustrated numbers under both death benefit options — Level
+              and Increasing — pulled straight from the carrier&rsquo;s side-by-side illustration, so the client can
+              see exactly how they compare.
             </p>
             <CashValueMilestonesEditor
               milestones={data.milestones}

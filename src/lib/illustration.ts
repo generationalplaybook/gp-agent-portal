@@ -13,6 +13,15 @@ export interface CashValueMilestone {
   cvNonGuaranteed: string;
   dbGuaranteed: string;
   dbNonGuaranteed: string;
+  // Increasing-death-benefit-option numbers — added 9/1 for the Illustration Scenarios' two-part
+  // Level vs. Increasing comparison. cvNonGuaranteed/dbGuaranteed above are already what the
+  // Scenario editor uses as this milestone's "Level" track (Level pays the full elected face
+  // amount from day one); these two are the parallel "Increasing" track (starts lower, grows
+  // into that same target over years) at the same milestone age, entered side by side so a
+  // client can see both. Optional/additive — the original per-product Illustration flow
+  // (Guaranteed/Non-Guaranteed) never sets or reads these.
+  cvIncreasing?: string;
+  dbIncreasing?: string;
 }
 
 export interface AnnuityMilestone {
@@ -96,7 +105,16 @@ function newId(): string {
 }
 
 export function emptyCashValueMilestone(): CashValueMilestone {
-  return { id: newId(), label: "", cvGuaranteed: "", cvNonGuaranteed: "", dbGuaranteed: "", dbNonGuaranteed: "" };
+  return {
+    id: newId(),
+    label: "",
+    cvGuaranteed: "",
+    cvNonGuaranteed: "",
+    dbGuaranteed: "",
+    dbNonGuaranteed: "",
+    cvIncreasing: "",
+    dbIncreasing: "",
+  };
 }
 
 export function emptyAnnuityMilestone(): AnnuityMilestone {

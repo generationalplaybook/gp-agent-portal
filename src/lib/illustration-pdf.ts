@@ -526,30 +526,6 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
   const data = input.data;
 
   if (data.kind === "cash_value") {
-    if (data.initialDeathBenefit && data.initialDeathBenefit.trim()) {
-      setFill([235, 245, 238]);
-      doc.roundedRect(M, y, W - 2 * M, 50, 4, 4, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      setText(GREEN);
-      doc.text("$" + formatMoney(data.initialDeathBenefit), M + 14, y + 30);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      doc.text("Initial Death Benefit (Face Value)", M + 14, y + 42);
-      y += 62;
-    }
-
-    if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
-      setFill([245, 240, 220]);
-      doc.roundedRect(M, y, W - 2 * M, 26, 4, 4, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(GOLD);
-      doc.text("Death benefit begins increasing at age " + data.dbIncreaseAge.trim() + ".", M + 12, y + 17);
-      y += 38;
-    }
-
     const hasMonthlyPremium = !!(data.monthlyPremium && data.monthlyPremium.trim());
     const hasMinimumPremium = !!(data.minimumPremium && data.minimumPremium.trim());
     if (hasMonthlyPremium || hasMinimumPremium) {
@@ -572,6 +548,41 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       y += 10;
     }
 
+    if (data.initialDeathBenefit && data.initialDeathBenefit.trim()) {
+      setFill([235, 245, 238]);
+      doc.roundedRect(M, y, W - 2 * M, 50, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      setText(GREEN);
+      doc.text("$" + formatMoney(data.initialDeathBenefit), M + 14, y + 30);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      doc.text("Initial Death Benefit (Face Value)", M + 14, y + 42);
+      y += 62;
+    }
+
+    if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
+      setFill([245, 240, 220]);
+      doc.roundedRect(M, y, W - 2 * M, 40, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(GOLD);
+      doc.text(
+        "If cash value is left untouched, death benefit begins increasing at age " + data.dbIncreaseAge.trim() + ".",
+        M + 12,
+        y + 16
+      );
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.text(
+        "This can be changed at any time by calling us — we recommend periodic policy reviews, which we schedule as part of our service.",
+        M + 12,
+        y + 29
+      );
+      y += 52;
+    }
+
     const milestones = data.milestones.filter((m) => m.label.trim());
     if (milestones.length === 0) {
       doc.setFont("helvetica", "italic");
@@ -580,14 +591,15 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       doc.text("No milestones entered yet.", M, y);
       y += 20;
     } else {
-      // Table
+      // Table — two-part Level vs. Increasing, same column layout as the original per-product
+      // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width).
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(OBSIDIAN);
-      const colX = [M, M + 130, M + 300];
-      const headers = ["Age", "Cash Value", "Death Benefit"];
-      headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 160 }));
-      y += 16;
+      const colX = [M, M + 105, M + 220, M + 335, M + 450];
+      const headers = ["", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
+      headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 110 }));
+      y += 20;
       doc.setDrawColor(217, 207, 186);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
@@ -602,42 +614,61 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
         doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
-        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[2], y);
+        doc.text(m.cvIncreasing ? "$" + formatMoney(m.cvIncreasing) : "—", colX[2], y);
+        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
+        doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
         y += 16;
       });
       y += 14;
 
       const xLabels = milestones.map((m) => "Age " + m.label);
 
-      // Cash value chart
+      // Cash value chart — Level solid, Increasing dashed, same legend pattern as the original
+      // per-product Illustration's Guaranteed/Non-Guaranteed charts.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(GREEN);
       doc.text("CASH VALUE OVER TIME", M, y);
-      y += 16;
+      y += 4;
+      drawLegend(doc, M + 150, y - 2.5, [
+        { label: "Level", color: GREEN },
+        { label: "Increasing", color: LIGHT_GREEN, dashed: true },
+      ]);
+      y += 12;
       drawLineChart(doc, {
         x: M,
         y,
         width: W - 2 * M,
         height: 110,
         xLabels,
-        series: [{ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: GREEN }],
+        series: [
+          { values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: GREEN },
+          { values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: LIGHT_GREEN, dashed: true },
+        ],
       });
       y += 130;
 
-      // Death benefit chart
+      // Death benefit chart — same Level/Increasing split.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(BLUE);
-      doc.text("DEATH BENEFIT OVER TIME (GUARANTEED)", M, y);
-      y += 16;
+      doc.text("DEATH BENEFIT OVER TIME", M, y);
+      y += 4;
+      drawLegend(doc, M + 150, y - 2.5, [
+        { label: "Level", color: BLUE },
+        { label: "Increasing", color: LIGHT_BLUE, dashed: true },
+      ]);
+      y += 12;
       drawLineChart(doc, {
         x: M,
         y,
         width: W - 2 * M,
         height: 110,
         xLabels,
-        series: [{ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: BLUE }],
+        series: [
+          { values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: BLUE },
+          { values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: LIGHT_BLUE, dashed: true },
+        ],
       });
       y += 130;
     }
@@ -819,6 +850,22 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     }
   }
 
+  // This generator doesn't do real multi-section pagination — everything above just keeps
+  // drawing at increasing y. The two-part Level/Increasing table plus its extra chart legend
+  // (added 9/1) made a typical cash_value page taller, and a long Notes entry on top of that can
+  // run past a single page's usable area, which used to mean "Prepared by" and the disclaimer
+  // below it would silently collide or get clipped off the bottom edge. The advisor block (line +
+  // "Prepared by" + name/contact) takes ~45pt, plus a 14pt gap, plus the 2-line disclaimer and a
+  // bottom margin — call it ~87pt of trailing content that has to fit below this point on a
+  // 792pt-tall page, so anything past y=705 doesn't have room left. Note this means even a
+  // short/typical 3-milestone cash_value scenario (measured around y≈727 with the new two-part
+  // table+legend) now spills the advisor/disclaimer block onto its own second page — that's a
+  // real, expected side effect of the added content, not a bug to chase away with tighter spacing.
+  if (y > 705) {
+    doc.addPage();
+    y = 60;
+  }
+
   if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
     doc.setDrawColor(217, 207, 186);
     doc.setLineWidth(1);
@@ -843,7 +890,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
   doc.text(
     "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
     M,
-    770,
+    Math.max(770, y + 14),
     { maxWidth: 612 - 2 * M }
   );
 
