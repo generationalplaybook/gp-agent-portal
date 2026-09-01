@@ -81,6 +81,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **"+ Add Illustration" Carrier field now shows the real underwriting carrier for
+  Ethos-brokered products, not "Ethos" — built 9/1.** Follow-up to the KB product picker above.
+  Karina picked "Accumulation IUL (via Ethos)" and the Carrier field filled in "Ethos" — she
+  pointed out it should say North American, since Ethos is just the distribution platform, not
+  the insurer actually underwriting the policy. Checked the rest of the KB's "Ethos" entries and
+  the same issue applied to five more: Ethos Protection IUL and Term With Living Benefits are
+  really Ameritas, TruStage Term Life and Final Expense Whole Life (TruStage) are really
+  TruStage, and Final Expense Whole Life — Banner Life is really Banner Life. Added a small
+  lookup in `kb-data.ts` (`ETHOS_UNDERWRITER_BY_NAME`) mapping each of those to its real carrier
+  — the picker still groups them under "Ethos" (matches how the Knowledge Base itself organizes
+  them), but selecting one now fills the Carrier field with the actual underwriter. Left "Term
+  Life Insurance" alone — the KB itself lists three possible underwriters for it (Banner Life /
+  Protective / Ameritas) with no way to know which applies, so it still shows "Ethos" rather than
+  guess wrong; flag it if you know which carrier applies to a specific client and I'll add it to
+  the list.
+
 - **"+ Add Illustration" now populates Product Name/Carrier/Type from the Knowledge Base — built
   9/1.** Follow-up to flagging this during testing. Added a derived `KB_PRODUCTS` list in
   `kb-data.ts` — every real carrier product (`group: "life"` or `"annuity"`), excluding concepts,
