@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
+import { CLIENT_STAGES, GENDER_OPTIONS, type ClientStage } from "@/lib/types";
 import { calculateAge, daysUntilNextBirthday, FAMILY_RELATIONSHIP_OPTIONS } from "@/lib/family";
 import {
   searchFamilyCandidates,
@@ -39,6 +39,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
   const [newLastName, setNewLastName] = useState("");
   const [newRelationship, setNewRelationship] = useState("");
   const [newBirthDate, setNewBirthDate] = useState("");
+  const [newGender, setNewGender] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
 
@@ -70,6 +71,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
     setNewLastName("");
     setNewRelationship("");
     setNewBirthDate("");
+    setNewGender("");
     setNewPhone("");
     setNewEmail("");
     setError("");
@@ -106,6 +108,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
         last_name: newLastName,
         relationship: newRelationship,
         birth_date: newBirthDate,
+        gender: newGender,
         phone: newPhone,
         email: newEmail,
       });
@@ -326,15 +329,32 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                 placeholder="Relationship (e.g. Spouse, Child)"
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Birthdate
-                <input
-                  type="date"
-                  value={newBirthDate}
-                  onChange={(e) => setNewBirthDate(e.target.value)}
-                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                />
-              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Birthdate
+                  <input
+                    type="date"
+                    value={newBirthDate}
+                    onChange={(e) => setNewBirthDate(e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Gender
+                  <select
+                    value={newGender}
+                    onChange={(e) => setNewGender(e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  >
+                    <option value="">Select…</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <input
                 value={newPhone}
                 onChange={(e) => setNewPhone(e.target.value)}

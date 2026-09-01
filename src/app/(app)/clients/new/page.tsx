@@ -1,5 +1,5 @@
 import { createClientRecord } from "../actions";
-import { CLIENT_STAGES } from "@/lib/types";
+import { CLIENT_STAGES, GENDER_OPTIONS } from "@/lib/types";
 import PhoneInput from "../PhoneInput";
 
 export default async function NewClientPage({
@@ -61,14 +61,31 @@ export default async function NewClientPage({
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-          Birthdate
-          <input
-            type="date"
-            name="birth_date"
-            className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Birthdate
+            <input
+              type="date"
+              name="birth_date"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Gender
+            <select
+              name="gender"
+              defaultValue=""
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            >
+              <option value="">Select…</option>
+              {GENDER_OPTIONS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="flex flex-wrap items-start gap-4">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             Height

@@ -10,6 +10,7 @@ import {
   type AnalyzerInputs,
   type Goal,
 } from "@/lib/analyzer";
+import { GENDER_OPTIONS } from "@/lib/types";
 import { submitIntake, type IntakeFamilyInput } from "./actions";
 
 function OptionGroup<T extends string>({
@@ -226,6 +227,17 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           placeholder="you@email.com"
           className={inputClass}
         />
+      </Field>
+
+      <Field label="Gender" optional>
+        <select value={inputs.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inputClass}>
+          <option value="">Select…</option>
+          {GENDER_OPTIONS.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <div className="grid grid-cols-3 gap-3">

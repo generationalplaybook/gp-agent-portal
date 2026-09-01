@@ -12,6 +12,8 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
   { value: "declined", label: "Declined", color: "#8b1a1a" },
 ];
 
+export const GENDER_OPTIONS = ["Male", "Female"];
+
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -39,6 +41,7 @@ export interface Client {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
+  gender: string | null;
   stage: ClientStage;
   source: string | null;
   follow_up_at: string | null;

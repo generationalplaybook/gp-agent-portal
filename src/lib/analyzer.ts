@@ -55,6 +55,9 @@ export interface AnalyzerInputs {
   dob: string;
   phone: string;
   email: string;
+  // Optional — captured for the client record (underwriting cares about it), but not currently
+  // used by any recommendation logic below.
+  gender?: string;
   // Freeform: what the client already has on the books (existing policies/products), so the
   // advisor isn't recommending something redundant and can see the fuller picture at a glance.
   // Auto-filled from the client's Products list when the analysis is started from their

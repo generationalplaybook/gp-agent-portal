@@ -33,6 +33,7 @@ export async function createClientRecord(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
+  const gender = String(formData.get("gender") || "").trim() || null;
   const source = String(formData.get("source") || "").trim() || null;
   const stage = (String(formData.get("stage") || "lead") as ClientStage);
   const height_ft = parseIntOrNull(formData.get("height_ft"));
@@ -53,6 +54,7 @@ export async function createClientRecord(formData: FormData) {
       phone,
       email,
       birth_date,
+      gender,
       source,
       stage,
       height_ft,
@@ -128,6 +130,7 @@ export async function updateContactInfo(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
+  const gender = String(formData.get("gender") || "").trim() || null;
   const height_ft = parseIntOrNull(formData.get("height_ft"));
   const height_in = parseIntOrNull(formData.get("height_in"));
   const weight = parseIntOrNull(formData.get("weight"));
@@ -138,7 +141,7 @@ export async function updateContactInfo(formData: FormData) {
   // clobber it with a stale value.
   await supabase
     .from("clients")
-    .update({ first_name, middle_name, last_name, phone, email, birth_date, height_ft, height_in, weight })
+    .update({ first_name, middle_name, last_name, phone, email, birth_date, gender, height_ft, height_in, weight })
     .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
@@ -340,6 +343,7 @@ export async function addNewFamilyMember(
     last_name: string;
     relationship: string;
     birth_date?: string;
+    gender?: string;
     phone?: string;
     email?: string;
   }
@@ -367,6 +371,7 @@ export async function addNewFamilyMember(
     phone: fields.phone?.trim() || null,
     email: fields.email?.trim() || null,
     birth_date: fields.birth_date?.trim() || null,
+    gender: fields.gender?.trim() || null,
     stage: "lead",
     family_id: familyId,
     family_relationship: fields.relationship.trim() || null,

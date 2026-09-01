@@ -30,7 +30,7 @@ export default async function ClientAnalyzerPage({
 
   const { data: clients } = await supabase
     .from("clients")
-    .select("id, full_name, phone, email, birth_date, height_ft, height_in, weight")
+    .select("id, full_name, phone, email, birth_date, gender, height_ft, height_in, weight")
     .order("full_name", { ascending: true });
 
   const matchedClient = clientId ? clients?.find((c) => c.id === clientId) ?? null : null;

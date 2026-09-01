@@ -49,6 +49,7 @@ export async function saveAnalysisToClient(
   if (inputs.phone.trim()) contactUpdate.phone = inputs.phone.trim();
   if (inputs.email.trim()) contactUpdate.email = inputs.email.trim();
   if (inputs.dob) contactUpdate.birth_date = inputs.dob;
+  if (inputs.gender?.trim()) contactUpdate.gender = inputs.gender.trim();
   if (inputs.heightFt.trim()) contactUpdate.height_ft = parseIntOrNull(inputs.heightFt);
   if (inputs.heightIn.trim()) contactUpdate.height_in = parseIntOrNull(inputs.heightIn);
   if (inputs.weight.trim()) contactUpdate.weight = parseIntOrNull(inputs.weight);
@@ -80,6 +81,7 @@ export async function saveAnalysisAsNewClient(
       phone: inputs.phone || null,
       email: inputs.email || null,
       birth_date: inputs.dob || null,
+      gender: inputs.gender?.trim() || null,
       stage: "lead",
       height_ft: parseIntOrNull(inputs.heightFt),
       height_in: parseIntOrNull(inputs.heightIn),

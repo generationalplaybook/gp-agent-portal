@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo } from "../actions";
+import { GENDER_OPTIONS } from "@/lib/types";
 
 interface Client {
   id: string;
@@ -13,6 +14,7 @@ interface Client {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
+  gender: string | null;
   height_ft: number | null;
   height_in: number | null;
   weight: number | null;
@@ -28,13 +30,14 @@ export default function ContactInfoForm({ client }: { client: Client }) {
   const [phone, setPhone] = useState(client.phone ?? "");
   const [email, setEmail] = useState(client.email ?? "");
   const [birthDate, setBirthDate] = useState(client.birth_date ?? "");
+  const [gender, setGender] = useState(client.gender ?? "");
   const [heightFt, setHeightFt] = useState(client.height_ft?.toString() ?? "");
   const [heightIn, setHeightIn] = useState(client.height_in?.toString() ?? "");
   const [weight, setWeight] = useState(client.weight?.toString() ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function save(overrides?: Partial<{ phone: string }>) {
+  async function save(overrides?: Partial<{ phone: string; gender: string }>) {
     setStatus("saving");
     const formData = new FormData();
     formData.set("client_id", client.id);
@@ -44,6 +47,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
     formData.set("phone", overrides?.phone ?? phone);
     formData.set("email", email);
     formData.set("birth_date", birthDate);
+    formData.set("gender", overrides?.gender ?? gender);
     formData.set("height_ft", heightFt);
     formData.set("height_in", heightIn);
     formData.set("weight", weight);
@@ -109,6 +113,24 @@ export default function ContactInfoForm({ client }: { client: Client }) {
           onBlur={() => save()}
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Gender
+        <select
+          value={gender}
+          onChange={(e) => {
+            setGender(e.target.value);
+            save({ gender: e.target.value });
+          }}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        >
+          <option value="">Select…</option>
+          {GENDER_OPTIONS.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="flex flex-wrap items-start gap-4 sm:col-span-2">
         <label className="flex flex-col gap-1 text-xs text-[#666]">

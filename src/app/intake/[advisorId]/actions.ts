@@ -78,6 +78,7 @@ export async function submitIntake(
       phone: inputs.phone.trim() || null,
       email: inputs.email.trim() || null,
       birth_date: inputs.dob || null,
+      gender: inputs.gender?.trim() || null,
       stage: "lead",
       source: "Client Intake Form",
       intake_pending_review: true,

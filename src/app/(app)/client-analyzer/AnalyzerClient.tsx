@@ -15,6 +15,7 @@ import {
   type Goal,
 } from "@/lib/analyzer";
 import { generateClientPDF, type AdvisorInfo } from "@/lib/analyzer-pdf";
+import { GENDER_OPTIONS } from "@/lib/types";
 import { saveAnalysisToClient, saveAnalysisAsNewClient } from "./actions";
 
 function OptionGroup<T extends string>({
@@ -125,6 +126,7 @@ interface PrefillClient {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
+  gender: string | null;
   // Product names already on file for this client (from their Products section), joined into
   // a starting string for Existing Coverage — editable, not locked to what's on record.
   existingCoverage?: string;
@@ -158,6 +160,7 @@ export default function AnalyzerClient({
           phone: prefillClient.phone ?? "",
           email: prefillClient.email ?? "",
           dob: prefillClient.birth_date ?? "",
+          gender: prefillClient.gender ?? "",
           existingCoverage: prefillClient.existingCoverage ?? "",
           heightFt: prefillClient.height_ft?.toString() ?? "",
           heightIn: prefillClient.height_in?.toString() ?? "",
@@ -283,6 +286,17 @@ export default function AnalyzerClient({
             placeholder="client@email.com"
             className={inputClass}
           />
+        </Field>
+
+        <Field label="Gender" optional>
+          <select value={inputs.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inputClass}>
+            <option value="">Select…</option>
+            {GENDER_OPTIONS.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <div className="grid grid-cols-3 gap-3">
