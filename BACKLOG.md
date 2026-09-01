@@ -4,6 +4,27 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Analyzer always recommends a juvenile policy for a minor client — built 9/1.** Karina ran an
+  analysis on a 6-year-old client (goal: "Build cash value / savings") and got North American
+  Builder Plus IUL 4 as the primary recommendation — an adult-oriented product. Root cause: the
+  analyzer's `goal === "college"` branch already correctly routed to the juvenile product line
+  regardless of age, but every OTHER goal branch (accumulation/default, legacy, income, etc.)
+  never checked the client's own age at all before picking a product. Fixed by adding `isMinor`
+  to the recommendation context (true when the analyzed person's own DOB makes them under 18)
+  and short-circuiting to "Accumulation IUL — Max Cash Value Juvenile" for any minor on any goal
+  other than college (college already had its own juvenile product and falls through to that
+  branch unchanged — this only fires for every *other* goal). Per Karina's standing rule ("in
+  kids situations I always recommend a juvi policy"): this is unconditional on the goal selected,
+  reflecting that the real reason is locking in insurability and all three living benefits while
+  the child still qualifies, with cash-value growth as the secondary benefit — not a goal-by-goal
+  judgment call. Also, per Karina's notes on the College Planning Juvenile product specifically:
+  added a reasons/talking-points disclosure that funding typically runs until around age 17
+  with distributions starting at 18, and that a lump sum up front increases the total but is
+  optional (confirmed with Karina directly — the Knowledge Base's existing "lump sum optional"
+  wording was correct, no KB correction needed). Verified the exact scenario from Karina's
+  screenshot (age 6, "Build cash value / savings") now returns Max Cash Value Juvenile instead
+  of Builder Plus IUL 4, and that an adult client with the same goal is unaffected.
+
 - **Phone Number and Email are now optional on the Client Analyzer — built 8/31.** Karina
   pointed out two real cases where the analyzer was blocking her from even getting a
   recommendation: a child on a family analysis (no phone/email of their own) and mid-call with a
