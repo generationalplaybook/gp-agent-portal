@@ -81,6 +81,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Gender added to every form that creates or edits a client — built 9/1.** Karina flagged this
+  was missed on the original build. Added a `gender` text column to `clients` (new SQL — see
+  delivery message), a `gender: string | null` field on the `Client` type in `types.ts`, and a
+  shared `GENDER_OPTIONS = ["Male", "Female"]` constant. Added a Gender select to all six places
+  that touch a client's info: New Client form, the Contact Info card on an existing client's
+  profile (save-on-blur, same as every other field there), the "+ Add new person" quick-create
+  on Family Linking, the public Client Intake Link form, and the Client Analyzer (both the
+  standalone tool and prefilling from an existing client's profile when starting an analysis
+  from their page). Everywhere it's optional — not a required field — same treatment as Phone/
+  Email. Also added `gender?: string` to the shared `AnalyzerInputs` type (used by both the
+  Intake form and the Analyzer) — it's captured and saved to the client record, but doesn't
+  currently feed into any recommendation logic.
+
 - **Illustration Scenario — Initial Death Benefit (Face Value) field added — built 9/1.** Karina
   pointed out the Milestones editor had nowhere to record the policy's starting face amount at
   issue — only the per-milestone Death Benefit numbers, which show what it grows or steps up to

@@ -693,3 +693,10 @@ drop trigger if exists illustration_scenarios_set_updated_at on public.illustrat
 create trigger illustration_scenarios_set_updated_at
   before update on public.illustration_scenarios
   for each row execute procedure public.set_updated_at();
+
+-- 26. Gender on the client record (added 9/1) — missed on the original build. Plain text rather
+-- than a Postgres enum so it's a one-line, no-downtime addition (same reasoning as height/weight
+-- in section 22) — the app only ever writes "Male" or "Female" through its own forms, but the
+-- column itself doesn't enforce that, so it's safe even if that list needs to grow later.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists gender text;
