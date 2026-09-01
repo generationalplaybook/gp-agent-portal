@@ -71,6 +71,23 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Knowledge Base — living benefits caveat that acceleration % varies by carrier/product —
+  built 9/1.** Karina flagged that some policies have different percentages of living benefits
+  and asked for a note on that in the riders' Knowledge Base entry. Since I don't have real
+  carrier-specific acceleration percentages or dollar caps to cite, I used AskUserQuestion rather
+  than guess or invent numbers — Karina confirmed (1) a general caveat only, no fabricated
+  specific percentages, and (2) just the existing "Living Benefits — How Claims Work" concept
+  entry, not every individual product entry. Rewrote that one entry in `src/lib/kb-data.ts` to
+  clearly separate two different questions that were being conflated: whether the rider costs
+  anything extra (no, on most IUL/term products) versus what percentage of the death benefit it
+  actually pays out (varies by carrier AND by specific product — Critical/Chronic are often
+  capped lower than Terminal, or capped at a flat dollar amount instead of a percentage). Added
+  an explicit agent-facing instruction to never quote a specific acceleration percentage from
+  memory or from a different product's cheat sheet — always pull the real number from that exact
+  policy's own illustration or contract before discussing it with a client — plus a client-facing
+  line noting the exact percentage depends on their specific policy. No SQL needed — `kb-data.ts`
+  is a static file, not database-driven.
+
 - **Illustrations decoupled from Products — built 9/1.** Karina pointed out that running an
   illustration required first "Adding a Product" — but Products is meant to mean coverage the
   client already owns, and most illustrations run mid-call are for options they haven't decided
