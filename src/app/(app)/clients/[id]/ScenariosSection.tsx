@@ -21,35 +21,33 @@ interface Scenario {
 export default function ScenariosSection({ clientId, scenarios }: { clientId: string; scenarios: Scenario[] }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
-  const [kbChoice, setKbChoice] = useState(""); // index into KB_PRODUCTS as a string, or "" for custom
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("");
   const [carrier, setCarrier] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
-  // Grouped for the <optgroup> list the same way the Knowledge Base itself groups these products
-  // (groupLabel) — not the same as the real underwriting carrier that gets filled into the
-  // Carrier field below (see the Ethos note in kb-data.ts: Ethos products are grouped under
-  // "Ethos" here but fill in their actual underwriter, e.g. North American, as the carrier).
-  const kbGroups = useMemo(() => {
-    const byGroup = new Map<string, { name: string; index: number }[]>();
-    KB_PRODUCTS.forEach((p, index) => {
-      const list = byGroup.get(p.groupLabel) ?? [];
-      list.push({ name: p.name, index });
-      byGroup.set(p.groupLabel, list);
-    });
-    return Array.from(byGroup.entries());
+  // Same pattern as the "Product name" field on Add Product below (ProductsSection.tsx) — a
+  // single free-typed field with a native <datalist> of suggestions, not a separate carrier
+  // dropdown. Changed 9/1 per Karina: the two-step "pick from a grouped dropdown, then a
+  // separate name field" was more clicking than it needed to be — one field you can type or
+  // pick from is simpler and matches what Add Product already does. Still auto-fills Carrier
+  // and Type on an exact match (typing or picking a listed name), which the Add Product
+  // datalist doesn't do — Karina never asked for that convenience to go away, just for the
+  // picker itself to work the way Add Product's does.
+  const productLookup = useMemo(() => {
+    const byName = new Map<string, (typeof KB_PRODUCTS)[number]>();
+    KB_PRODUCTS.forEach((p) => byName.set(p.name, p));
+    return byName;
   }, []);
 
-  function handleKbChoice(value: string) {
-    setKbChoice(value);
-    if (value === "") return; // "Custom / not listed" — leave whatever's typed below alone
-    const product = KB_PRODUCTS[Number(value)];
-    if (!product) return;
-    setProductName(product.name);
-    setCarrier(product.carrier);
-    setProductType(product.productType);
+  function handleProductNameChange(value: string) {
+    setProductName(value);
+    const match = productLookup.get(value);
+    if (match) {
+      setCarrier(match.carrier);
+      setProductType(match.productType);
+    }
   }
 
   async function handleCreate() {
@@ -113,31 +111,10 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
 
       {showAdd && (
         <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Product
-            <select
-              value={kbChoice}
-              onChange={(e) => handleKbChoice(e.target.value)}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            >
-              <option value="">Custom / not listed — type it in below…</option>
-              {kbGroups.map(([carrierName, products]) => (
-                <optgroup key={carrierName} label={carrierName}>
-                  {products.map((p) => (
-                    <option key={p.index} value={p.index}>
-                      {p.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
           <input
             value={productName}
-            onChange={(e) => {
-              setProductName(e.target.value);
-              setKbChoice(""); // hand-edited — no longer tracks a specific KB pick
-            }}
+            onChange={(e) => handleProductNameChange(e.target.value)}
+            list="illustration-product-suggestions"
             placeholder="Product name * (e.g. North American Builder Plus IUL 4)"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
@@ -174,7 +151,6 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
             <button
               type="button"
               onClick={() => {
-                setKbChoice("");
                 setProductName("");
                 setProductType("");
                 setCarrier("");
@@ -188,6 +164,12 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
           </div>
         </div>
       )}
+
+      <datalist id="illustration-product-suggestions">
+        {KB_PRODUCTS.map((p) => (
+          <option key={p.name} value={p.name} />
+        ))}
+      </datalist>
     </div>
   );
 }
