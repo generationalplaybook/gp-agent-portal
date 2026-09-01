@@ -196,10 +196,16 @@ interface RecommendationContext {
   horizon?: "short" | "mid" | "long" | "never";
   funding?: "monthly" | "lumpsum" | "both" | "periodic";
   earlyAccess?: "yes" | "no" | "both";
+  // True when the person being analyzed is themselves under 18 — e.g. a family analysis run
+  // directly on a child's own record (their own DOB, no phone/email). NOT set just because
+  // "College Funding" was picked as a goal — a parent planning college funding for their kid is
+  // still an adult client, and that case is handled by the goal === "college" branch below
+  // regardless of this flag.
+  isMinor: boolean;
 }
 
 function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContext): Omit<GoalRecommendation, "goal" | "goalLabel"> {
-  const { insurable, money, ageGroup, horizon, funding, earlyAccess } = ctx;
+  const { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor } = ctx;
 
   let primary = "";
   let secondary = "";
@@ -209,6 +215,34 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   let avoidReasons: string[] = [];
   let combo = "";
   let comboReasons: string[] = [];
+
+  // Advisor's own standing rule, not a goal-specific one: for any client who is themselves a
+  // minor, always recommend a juvenile policy — no matter what goal was selected. The reasoning
+  // is the same regardless of goal: a child qualifies for all three living benefits and can
+  // never be declined based on future health, so locking that in now (while cash value also
+  // happens to build the same way an adult policy's would) outweighs whatever the specific
+  // stated goal was. This runs before every other branch below, including insurability/qualified
+  // money logic, since none of that changes the answer for a minor.
+  //
+  // Exception: goal === "college" is left to fall through to its own branch further down, which
+  // already recommends the juvenile College Planning product specifically — no need to
+  // duplicate that here, just don't short-circuit past it.
+  if (isMinor && goal !== "college") {
+    primary = "North American Accumulation IUL — Max Cash Value Juvenile (via Ethos)";
+    reasons = [
+      "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness) — before any future health issue could make coverage harder or costlier to get",
+      "Builds cash value for life — same tax-deferred growth and net-zero cost loans as an adult policy",
+      "Targets $1M+ in cash value by age 65 on a modest monthly contribution",
+      "Parent owns and controls the policy — ownership transfers to the child at age 18",
+    ];
+    secondary = "North American Accumulation IUL — College Planning Juvenile — if college funding specifically is the priority";
+    talking = [
+      "This locks in your child's ability to get life insurance for the rest of their life, no matter what health issues come up later",
+      "It also builds real cash value they can use as an adult — a first home, a business, or just extra savings",
+      "The younger they start, the more time that cash value has to grow",
+    ];
+    return { primary, secondary, avoid, reasons, talking, avoidReasons, combo, comboReasons };
+  }
 
   // Final expense / burial-only clients have a fundamentally different need than every other
   // goal below — they're not replacing income, building savings, or leaving a legacy, just
@@ -336,14 +370,20 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
     } else if (goal === "college") {
       primary = "North American Accumulation IUL — College Planning Juvenile (via Ethos)";
       reasons = [
+        "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness) — before any future health issue could make coverage harder or costlier to get",
         "Cash value NOT counted as a FAFSA asset — unlike 529 plans",
-        "Distributions start at age 18 — tax-free policy loans",
+        "Premiums are typically paid in until around age 17, then tax-free policy loan distributions for college begin at 18",
+        "A lump sum up front increases what's available later, but it's optional — monthly funding alone still works",
         "No restrictions on use",
-        "Permanently locks in child's insurability",
       ];
       secondary = "Accumulation IUL — Max Cash Value Juvenile — if maximum long-term growth is the priority";
       avoid = "529 Plan";
       avoidReasons = ["529 plans count against FAFSA financial aid. IUL cash value does not appear on FAFSA and has no use restrictions"];
+      talking = [
+        "This locks in your child's ability to get life insurance for the rest of their life, no matter what health issues come up later",
+        "You fund it while they're young, and starting around age 18 they can draw on it tax-free for college — or anything else, unlike a 529",
+        "Putting in more up front grows the total, but it's not required — the monthly amount alone still works, just for a smaller total",
+      ];
     } else if (goal === "income_now") {
       primary = "Athene Activate SPIA";
       reasons = ["Income starts within 30 days", "Payments guaranteed once set", "Life only, period certain, or joint life options available"];
@@ -459,7 +499,8 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     else ageGroup = "retiree";
   }
 
-  const ctx: RecommendationContext = { insurable, money, ageGroup, horizon, funding, earlyAccess };
+  const isMinor = age !== null && age < 18;
+  const ctx: RecommendationContext = { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor };
 
   // One full recommendation block per selected goal. If no goal was selected, fall back to a
   // single general-purpose recommendation (matches the original tool's "goal skipped" behavior).
