@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT_TYPE_OPTIONS } from "@/lib/types";
+import { KB_PRODUCTS } from "@/lib/kb-data";
 import { createScenario } from "./scenarios/actions";
 
 interface Scenario {
@@ -20,11 +21,33 @@ interface Scenario {
 export default function ScenariosSection({ clientId, scenarios }: { clientId: string; scenarios: Scenario[] }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
+  const [kbChoice, setKbChoice] = useState(""); // index into KB_PRODUCTS as a string, or "" for custom
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("");
   const [carrier, setCarrier] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  // Grouped by carrier for the <optgroup> list — built once, not per render.
+  const kbGroups = useMemo(() => {
+    const byCarrier = new Map<string, { name: string; index: number }[]>();
+    KB_PRODUCTS.forEach((p, index) => {
+      const list = byCarrier.get(p.carrier) ?? [];
+      list.push({ name: p.name, index });
+      byCarrier.set(p.carrier, list);
+    });
+    return Array.from(byCarrier.entries());
+  }, []);
+
+  function handleKbChoice(value: string) {
+    setKbChoice(value);
+    if (value === "") return; // "Custom / not listed" — leave whatever's typed below alone
+    const product = KB_PRODUCTS[Number(value)];
+    if (!product) return;
+    setProductName(product.name);
+    setCarrier(product.carrier);
+    setProductType(product.productType);
+  }
 
   async function handleCreate() {
     if (!productName.trim()) {
@@ -87,9 +110,31 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
 
       {showAdd && (
         <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Product
+            <select
+              value={kbChoice}
+              onChange={(e) => handleKbChoice(e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            >
+              <option value="">Custom / not listed — type it in below…</option>
+              {kbGroups.map(([carrierName, products]) => (
+                <optgroup key={carrierName} label={carrierName}>
+                  {products.map((p) => (
+                    <option key={p.index} value={p.index}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
           <input
             value={productName}
-            onChange={(e) => setProductName(e.target.value)}
+            onChange={(e) => {
+              setProductName(e.target.value);
+              setKbChoice(""); // hand-edited — no longer tracks a specific KB pick
+            }}
             placeholder="Product name * (e.g. North American Builder Plus IUL 4)"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
@@ -126,6 +171,7 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
             <button
               type="button"
               onClick={() => {
+                setKbChoice("");
                 setProductName("");
                 setProductType("");
                 setCarrier("");

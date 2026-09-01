@@ -1,6 +1,8 @@
 // Knowledge Base data — ported verbatim from the original GP Agent Portal HTML.
 // cat/group/subgroup drive filtering; badge maps to a Tailwind class in KB_BADGE_STYLES below.
 
+import { PRODUCT_TYPE_OPTIONS } from "./types";
+
 export interface KBItem {
   cat: string;
   group: "concept" | "life" | "annuity" | "tax";
@@ -509,3 +511,32 @@ export const KB: KBItem[] =
   highlights:["Top-3 SPIA payout rates industry-wide, especially ages 65-80","Unique: payment increase option tied to qualifying medical conditions","DIA option available for locking in future income","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
 
 ];
+
+// Derived, real-product-only view of the KB — used to populate "+ Add Illustration" (and
+// anywhere else that should offer a pick from actual carrier products) instead of free-typing a
+// name. Deliberately excludes group:"concept"/"tax" entries (MEC, tax/rollover explainers, agent
+// scripts — not something you'd run an illustration on) and the two Ethos Estate Planning
+// entries (Will/Trust Estate Plan — a legal service, not an insurance product with cash
+// value/death benefit numbers to illustrate).
+export type ProductTypeOption = (typeof PRODUCT_TYPE_OPTIONS)[number];
+
+function inferProductType(item: KBItem): ProductTypeOption {
+  if (item.group === "annuity") return "Annuity";
+  if (item.subgroup === "iul") return "IUL";
+  if (/final expense/i.test(item.type)) return "Final Expense";
+  if (/whole life/i.test(item.type)) return "Whole Life";
+  if (item.subgroup === "term" || /term/i.test(item.type)) return "Term Life";
+  return "Other";
+}
+
+export interface KBProductOption {
+  name: string;
+  carrier: string;
+  productType: ProductTypeOption;
+}
+
+export const KB_PRODUCTS: KBProductOption[] = KB.filter(
+  (item) => (item.group === "life" || item.group === "annuity") && !/estate planning/i.test(item.type)
+)
+  .map((item) => ({ name: item.name, carrier: item.label, productType: inferProductType(item) }))
+  .sort((a, b) => a.carrier.localeCompare(b.carrier) || a.name.localeCompare(b.name));
