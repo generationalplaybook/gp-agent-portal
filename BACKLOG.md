@@ -26,18 +26,6 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Bugs found during testing — not yet built (Karina said don't build, just log)
 
-- **"+ Add Illustration" should populate the product name/carrier from the Knowledge Base
-  instead of free typing (flagged 9/1, testing session).** Right now `ScenariosSection.tsx`'s
-  "+ Add Illustration" mini-form is a free-text Product Name field, a Product Type dropdown
-  (`PRODUCT_TYPE_OPTIONS` — generic categories like IUL/Term/Annuity, not specific products), and
-  a free-text Carrier field — nothing pulls from the actual product list in `kb-data.ts` (each KB
-  entry already has `name`, `label` (carrier), `type`, and `cat` — e.g. North American "Builder
-  Plus IUL 4", Ethos juvenile IUL, F&G and Athene annuities, etc.). Karina wants that list reused
-  here so starting an illustration is a pick, not a retype — also cuts down on typos/naming
-  drift between what's illustrated and what's in the KB. Same idea would likely apply to the
-  original per-product "Add Product" flow too, if Karina wants consistency there. Not built yet —
-  Karina is still testing, said don't build.
-
 - **Meetings & Calls card — visual misalignment on a synced Cal.com meeting (flagged 9/1,
   screenshot on a client's page).** Karina uploaded the Cal.com Auto-Sync v2 fix and tested it
   live. Screenshot shows a client's Meetings & Calls card with a manual "Add Meeting" just used
@@ -92,6 +80,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **"+ Add Illustration" now populates Product Name/Carrier/Type from the Knowledge Base — built
+  9/1.** Follow-up to flagging this during testing. Added a derived `KB_PRODUCTS` list in
+  `kb-data.ts` — every real carrier product (`group: "life"` or `"annuity"`), excluding concepts,
+  tax/rollover entries, and the two Ethos Estate Planning entries (not insurance products, no
+  illustration numbers to enter). 44 products across North American, Ethos, F&G, Athene,
+  Ameritas, Nationwide, and Mutual of Omaha. `ScenariosSection.tsx`'s "+ Add Illustration" form
+  now has a "Product" dropdown grouped by carrier at the top — picking one auto-fills Product
+  Name, Carrier, and Product Type (inferred from each KB entry: annuities → Annuity, IUL
+  subgroup → IUL, "Final Expense"/"Whole Life" in the type text → Final Expense/Whole Life,
+  otherwise Term Life). A "Custom / not listed" option keeps the original free-typing behavior
+  for anything not in the KB — nothing is locked, all three fields stay editable after picking.
+  Did NOT touch the original "Add Product" flow on the client page — Karina's request was
+  specifically about Illustrations; can extend it there too if she wants the same treatment.
 
 - **Illustration Scenario Milestones reworked — Age / Cash Value / Death Benefit, one number
   each, plus a Death Benefit Increase Age field — built 9/1.** Karina tested the new
