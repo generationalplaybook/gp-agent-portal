@@ -36,6 +36,11 @@ export interface CashValueIllustration {
   // particular). Optional and additive: the original per-product Illustration flow never sets or
   // reads this, so existing records are unaffected. Only the Illustration Scenarios editor uses it.
   dbIncreaseAge?: string;
+  // The policy's starting face amount at issue — flagged 9/1: the milestone Death Benefit numbers
+  // show the (possibly increasing) DB at each future age, but there was nowhere to record the
+  // initial face amount the policy is actually issued at. Optional/additive, same reasoning as
+  // dbIncreaseAge above.
+  initialDeathBenefit?: string;
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,

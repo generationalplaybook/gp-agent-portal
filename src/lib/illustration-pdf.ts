@@ -526,6 +526,20 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
   const data = input.data;
 
   if (data.kind === "cash_value") {
+    if (data.initialDeathBenefit && data.initialDeathBenefit.trim()) {
+      setFill([235, 245, 238]);
+      doc.roundedRect(M, y, W - 2 * M, 50, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      setText(GREEN);
+      doc.text("$" + data.initialDeathBenefit.trim(), M + 14, y + 30);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      doc.text("Initial Death Benefit (Face Value)", M + 14, y + 42);
+      y += 62;
+    }
+
     if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
       setFill([245, 240, 220]);
       doc.roundedRect(M, y, W - 2 * M, 26, 4, 4, "F");
