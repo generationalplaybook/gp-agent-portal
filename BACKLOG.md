@@ -81,6 +81,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Advisor data isolation — Admin no longer sees every advisor's clients — built 9/1.** Karina
+  noticed one of her advisors' leads showing up in her own portal and flagged it as wrong:
+  "peoples leads should not show up in each others leaders." I checked and this wasn't a bug —
+  it was the original, deliberate design: `role = 'admin'` on a profile meant two things at
+  once — (1) can invite/manage the team from `/admin/invite`, and (2) bypasses every
+  client-ownership check in RLS to see and manage every advisor's clients, notes, tasks,
+  reminders, analyses, financial plans, products, meetings, and illustrations. I laid out three
+  options; Karina explained the reasoning that settled it: her advisors are independent agents
+  operating under her brokerage, not employees, so each advisor's book of business is legally
+  and practically their own — nobody else, including her logged in as Admin, should be able to
+  browse into it. Built option 3, full lockdown: removed the admin-bypass clause from all 10
+  RLS policies that gate client-owned data (`clients` ×2, `client_notes`, `client_tasks`,
+  `reminders`, `client_analyses`, `client_financial_plans`, `client_products`,
+  `client_meetings`, `product_illustrations`, `illustration_scenarios`) — every one of them now
+  checks `owner_id = auth.uid()` (or `agent_id = auth.uid()` for reminders/meetings) with no
+  role-based exception at all. Admin keeps ability (1) — inviting and managing the team is
+  untouched, only the client-visibility bypass is gone. Updated the explanatory copy on
+  `/admin/invite` (used to say making someone Admin gave them "full access to every client" —
+  no longer true, now says Admin only adds team management). Deliberately left
+  `advisor_credentials` alone (NPN/carrier codes — back-office compliance data, not book of
+  business, and arguably something Karina as brokerage owner should still be able to see) and
+  `calendar_connections` alone (never had an admin bypass to begin with). This is a real
+  security/schema change — see the delivery message for the exact SQL to run in Supabase
+  BEFORE uploading the code, since the data each advisor can see changes the moment the
+  policies update.
+
 - **"+ Add Illustration" Product field simplified to match "Add Product"'s picker — built 9/1.**
   Karina compared screenshots of the two side by side: "Add Product" (`ProductsSection.tsx`,
   pre-existing) is one free-typed "Product name" field with a native `<datalist>` of suggestions

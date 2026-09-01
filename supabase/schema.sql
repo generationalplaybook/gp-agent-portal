@@ -73,23 +73,14 @@ create index if not exists clients_follow_up_at_idx on public.clients(follow_up_
 
 alter table public.clients enable row level security;
 
-create policy "Agents see their own clients, admins see all"
+create policy "Agents see their own clients"
   on public.clients for select
-  using (
-    owner_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (owner_id = auth.uid());
 
-create policy "Agents manage their own clients, admins manage all"
+create policy "Agents manage their own clients"
   on public.clients for all
-  using (
-    owner_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  )
-  with check (
-    owner_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
 
 -- keep updated_at current
 create or replace function public.set_updated_at()
@@ -126,14 +117,14 @@ create policy "Notes follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = client_notes.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = client_notes.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -159,14 +150,14 @@ create policy "Tasks follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = client_tasks.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = client_tasks.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -188,16 +179,10 @@ create index if not exists reminders_remind_at_idx on public.reminders(remind_at
 
 alter table public.reminders enable row level security;
 
-create policy "Agents see their own reminders, admins see all"
+create policy "Agents see their own reminders"
   on public.reminders for all
-  using (
-    agent_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  )
-  with check (
-    agent_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (agent_id = auth.uid())
+  with check (agent_id = auth.uid());
 
 -- ─────────────────────────────────────────────────────────────
 -- 6. Client Analyses (saved Client Analyzer runs, one client has many)
@@ -220,14 +205,14 @@ create policy "Analyses follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = client_analyses.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = client_analyses.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -248,14 +233,14 @@ create policy "Financial plans follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = client_financial_plans.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = client_financial_plans.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -312,7 +297,7 @@ create policy "Agents manage only their own calendar connection"
 -- family_id is just a shared grouping key (a random uuid), not a foreign key to another
 -- table — every client that shares the same family_id is considered part of one household.
 -- No new RLS policy needed: a family member is still just a row in clients, already governed
--- by the existing "owner sees their own, admin sees all" policy above.
+-- by the existing "owner sees their own" policy above.
 alter table public.clients add column if not exists family_id uuid;
 alter table public.clients add column if not exists family_relationship text;
 
@@ -350,14 +335,14 @@ create policy "Products follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = client_products.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = client_products.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -509,16 +494,11 @@ create index if not exists client_meetings_client_id_idx on public.client_meetin
 alter table public.client_meetings enable row level security;
 
 drop policy if exists "Agents see their own meetings, admins see all" on public.client_meetings;
-create policy "Agents see their own meetings, admins see all"
+drop policy if exists "Agents see their own meetings" on public.client_meetings;
+create policy "Agents see their own meetings"
   on public.client_meetings for all
-  using (
-    agent_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  )
-  with check (
-    agent_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (agent_id = auth.uid())
+  with check (agent_id = auth.uid());
 
 -- ─────────────────────────────────────────────────────────────
 -- 19. Policy Illustration Summaries (added 8/30) — advisor-entered highlights from a carrier's
@@ -549,14 +529,14 @@ create policy "Illustrations follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = product_illustrations.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = product_illustrations.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -678,14 +658,14 @@ create policy "Illustration scenarios follow client visibility"
     exists (
       select 1 from public.clients c
       where c.id = illustration_scenarios.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   )
   with check (
     exists (
       select 1 from public.clients c
       where c.id = illustration_scenarios.client_id
-        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+        and c.owner_id = auth.uid()
     )
   );
 
@@ -700,3 +680,170 @@ create trigger illustration_scenarios_set_updated_at
 -- column itself doesn't enforce that, so it's safe even if that list needs to grow later.
 -- ─────────────────────────────────────────────────────────────
 alter table public.clients add column if not exists gender text;
+
+-- ─────────────────────────────────────────────────────────────
+-- 27. Remove the Admin "see every advisor's clients" bypass (added 9/1) — Karina's advisors are
+-- independent agents under her brokerage, not employees, so each advisor's book of business is
+-- their own, not something the brokerage (or Karina, logged in as Admin) can browse into. Admin
+-- previously meant two separate things: (a) can invite/manage the team via /admin/invite, and
+-- (b) bypasses every client-ownership check to see/manage every advisor's clients, notes, tasks,
+-- reminders, analyses, financial plans, products, meetings, illustrations, and scenarios. This
+-- section removes (b) only — Admin keeps (a). Every advisor (Karina included, if she's ever
+-- logged in under an agent account working her own clients) now only sees rows where
+-- owner_id/agent_id is their own auth.uid(), full stop, with no role-based exception anywhere.
+-- advisor_credentials (NPN/carrier codes — back-office compliance data, not book-of-business) and
+-- calendar_connections (never had an admin bypass) are deliberately left untouched.
+-- ─────────────────────────────────────────────────────────────
+
+drop policy if exists "Agents see their own clients, admins see all" on public.clients;
+drop policy if exists "Agents see their own clients" on public.clients;
+create policy "Agents see their own clients"
+  on public.clients for select
+  using (owner_id = auth.uid());
+
+drop policy if exists "Agents manage their own clients, admins manage all" on public.clients;
+drop policy if exists "Agents manage their own clients" on public.clients;
+create policy "Agents manage their own clients"
+  on public.clients for all
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
+
+drop policy if exists "Notes follow client visibility" on public.client_notes;
+create policy "Notes follow client visibility"
+  on public.client_notes for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_notes.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_notes.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Tasks follow client visibility" on public.client_tasks;
+create policy "Tasks follow client visibility"
+  on public.client_tasks for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_tasks.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_tasks.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Agents see their own reminders, admins see all" on public.reminders;
+drop policy if exists "Agents see their own reminders" on public.reminders;
+create policy "Agents see their own reminders"
+  on public.reminders for all
+  using (agent_id = auth.uid())
+  with check (agent_id = auth.uid());
+
+drop policy if exists "Analyses follow client visibility" on public.client_analyses;
+create policy "Analyses follow client visibility"
+  on public.client_analyses for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_analyses.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_analyses.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Financial plans follow client visibility" on public.client_financial_plans;
+create policy "Financial plans follow client visibility"
+  on public.client_financial_plans for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_financial_plans.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_financial_plans.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Products follow client visibility" on public.client_products;
+create policy "Products follow client visibility"
+  on public.client_products for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_products.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = client_products.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Agents see their own meetings, admins see all" on public.client_meetings;
+drop policy if exists "Agents see their own meetings" on public.client_meetings;
+create policy "Agents see their own meetings"
+  on public.client_meetings for all
+  using (agent_id = auth.uid())
+  with check (agent_id = auth.uid());
+
+drop policy if exists "Illustrations follow client visibility" on public.product_illustrations;
+create policy "Illustrations follow client visibility"
+  on public.product_illustrations for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = product_illustrations.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = product_illustrations.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Illustration scenarios follow client visibility" on public.illustration_scenarios;
+create policy "Illustration scenarios follow client visibility"
+  on public.illustration_scenarios for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = illustration_scenarios.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = illustration_scenarios.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
