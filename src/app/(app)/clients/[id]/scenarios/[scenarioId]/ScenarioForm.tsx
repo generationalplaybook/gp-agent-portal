@@ -11,7 +11,9 @@ import {
   type CashValueMilestone,
   type AnnuityMilestone,
 } from "@/lib/illustration";
-import { generateIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
+import { generateScenarioIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
+
+const MAX_CASH_VALUE_MILESTONES = 5;
 import { saveScenario, convertScenarioToProduct, deleteScenario } from "../actions";
 
 interface Scenario {
@@ -29,6 +31,12 @@ const inputClass = "rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outli
 // Duplicated from illustrations/[productId]/IllustrationForm.tsx rather than shared — same
 // pattern used elsewhere in this app (e.g. the two MeetingRow components) so the existing,
 // working per-product illustration flow can never be affected by changes made here.
+// Reworked 9/1 per Karina: a scenario milestone is just Age → Cash Value → Death Benefit — one
+// number each, not a Guaranteed/Non-Guaranteed grid. Cash Value shown here is the non-guaranteed
+// figure (stored in the existing cvNonGuaranteed field); Death Benefit is guaranteed from day one
+// (stored in dbGuaranteed). cvGuaranteed/dbNonGuaranteed are left blank and unused for scenarios —
+// kept in the shared type only so this stays compatible with the original per-product Illustration
+// flow, which is untouched. Capped at 5 milestones — Karina's real usage is 3-4 (e.g. 18/35/65).
 function CashValueMilestonesEditor({
   milestones,
   onChange,
@@ -46,58 +54,50 @@ function CashValueMilestonesEditor({
     <div className="flex flex-col gap-3">
       {milestones.map((m, i) => (
         <div key={m.id} className="rounded-md border border-[#D9CFBA] p-3">
-          <div className="mb-2 flex items-center gap-2">
-            <input
-              value={m.label}
-              onChange={(e) => update(m.id, { label: e.target.value })}
-              placeholder={`Milestone ${i + 1} — e.g. Age 18`}
-              className={inputClass + " flex-1"}
-            />
-            {milestones.length > 1 && (
+          <div className="grid grid-cols-[1fr_1.4fr_1.4fr_auto] items-end gap-2">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              {i === 0 ? "Age" : `Age (Milestone ${i + 1})`}
+              <input
+                value={m.label}
+                onChange={(e) => update(m.id, { label: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="e.g. 18"
+                inputMode="numeric"
+                className={inputClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Cash Value
+              <DollarInput value={m.cvNonGuaranteed} onChange={(v) => update(m.id, { cvNonGuaranteed: v })} className={inputClass + " w-full"} />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Death Benefit
+              <DollarInput value={m.dbGuaranteed} onChange={(v) => update(m.id, { dbGuaranteed: v })} className={inputClass + " w-full"} />
+            </label>
+            {milestones.length > 1 ? (
               <button
                 type="button"
                 onClick={() => remove(m.id)}
-                className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]"
+                className="mb-1.5 text-xs text-[#8B1A1A] underline hover:text-[#6b1414]"
               >
                 Remove
               </button>
+            ) : (
+              <span />
             )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Cash Value — Guaranteed
-              <DollarInput value={m.cvGuaranteed} onChange={(v) => update(m.id, { cvGuaranteed: v })} className={inputClass + " w-full"} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Cash Value — Non-Guaranteed
-              <DollarInput
-                value={m.cvNonGuaranteed}
-                onChange={(v) => update(m.id, { cvNonGuaranteed: v })}
-                className={inputClass + " w-full"}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Death Benefit — Guaranteed
-              <DollarInput value={m.dbGuaranteed} onChange={(v) => update(m.id, { dbGuaranteed: v })} className={inputClass + " w-full"} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Death Benefit — Non-Guaranteed
-              <DollarInput
-                value={m.dbNonGuaranteed}
-                onChange={(v) => update(m.id, { dbNonGuaranteed: v })}
-                className={inputClass + " w-full"}
-              />
-            </label>
           </div>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => onChange([...milestones, emptyCashValueMilestone()])}
-        className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
-      >
-        + Add Milestone
-      </button>
+      {milestones.length < MAX_CASH_VALUE_MILESTONES ? (
+        <button
+          type="button"
+          onClick={() => onChange([...milestones, emptyCashValueMilestone()])}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add Milestone
+        </button>
+      ) : (
+        <p className="text-xs text-[#999]">Maximum of {MAX_CASH_VALUE_MILESTONES} milestones.</p>
+      )}
     </div>
   );
 }
@@ -205,7 +205,7 @@ export default function ScenarioForm({
   }
 
   function handleDownload() {
-    generateIllustrationPDF({
+    generateScenarioIllustrationPDF({
       clientName,
       productName,
       carrier: carrier.trim() || null,
@@ -274,10 +274,26 @@ export default function ScenarioForm({
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {data.kind === "cash_value" && (
           <>
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
+            <p className="mb-2 text-xs text-[#888]">
+              If the death benefit steps up at a later age (common on some IUL designs, especially juvenile
+              policies), note that age here so it&rsquo;s called out on the summary. Leave blank if it doesn&rsquo;t apply.
+            </p>
+            <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
+              Age it increases (optional)
+              <input
+                value={data.dbIncreaseAge ?? ""}
+                onChange={(e) => setData({ ...data, dbIncreaseAge: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="e.g. 20"
+                inputMode="numeric"
+                className={inputClass}
+              />
+            </label>
+
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#888]">
-              Enter cash value and death benefit at whichever ages matter for this scenario — pull the numbers
-              straight from the carrier&rsquo;s illustration.
+              For each age that matters, enter the illustrated Cash Value (non-guaranteed) and Death Benefit
+              (guaranteed from day one) — pull both straight from the carrier&rsquo;s illustration.
             </p>
             <CashValueMilestonesEditor
               milestones={data.milestones}

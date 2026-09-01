@@ -32,6 +32,10 @@ export interface CashValueIllustration {
   kind: "cash_value";
   milestones: CashValueMilestone[];
   notes: string;
+  // Age the death benefit starts stepping up (common on some IUL designs — juvenile policies in
+  // particular). Optional and additive: the original per-product Illustration flow never sets or
+  // reads this, so existing records are unaffected. Only the Illustration Scenarios editor uses it.
+  dbIncreaseAge?: string;
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,

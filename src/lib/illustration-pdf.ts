@@ -473,3 +473,344 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
   const filename = "Illustration_" + input.clientName.replace(/\s+/g, "_") + "_" + input.productName.replace(/\s+/g, "_") + ".pdf";
   doc.save(filename);
 }
+
+// Duplicated from generateIllustrationPDF above rather than shared — same pattern used throughout
+// this app (see CashValueMilestonesEditor duplication note in ScenarioForm.tsx) so the original,
+// already-working per-product Illustration Summary PDF can never be affected by scenario-specific
+// changes. Only the cash_value layout actually differs (Age/Cash Value/Death Benefit, one number
+// each, plus an optional "death benefit increases at age X" callout) — term/final_expense/annuity
+// are identical to the original. Used only by the Illustration Scenarios editor.
+export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const W = 612;
+  const M = 50;
+  let y = 0;
+
+  const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
+  const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+
+  // Header
+  setFill(OBSIDIAN);
+  doc.rect(0, 0, W, 70, "F");
+  setText(WARM);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("GENERATIONAL PLAYBOOK", M, 28);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  setText(SAND);
+  doc.text("Policy Illustration Summary  ·  GenerationalPlaybook.com", M, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  setText(WARM);
+  doc.text(input.productName, M, 60);
+  y = 95;
+
+  // Client / product info box
+  setFill([245, 240, 232]);
+  doc.roundedRect(M, y, W - 2 * M, 60, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, M + 14, y + 22);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(CHARCOAL);
+  doc.text(
+    [input.productType, input.carrier].filter(Boolean).join("  ·  ") || "—",
+    M + 14,
+    y + 38
+  );
+  y += 78;
+
+  const data = input.data;
+
+  if (data.kind === "cash_value") {
+    if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
+      setFill([245, 240, 220]);
+      doc.roundedRect(M, y, W - 2 * M, 26, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(GOLD);
+      doc.text("Death benefit begins increasing at age " + data.dbIncreaseAge.trim() + ".", M + 12, y + 17);
+      y += 38;
+    }
+
+    const milestones = data.milestones.filter((m) => m.label.trim());
+    if (milestones.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      setText(GRAY);
+      doc.text("No milestones entered yet.", M, y);
+      y += 20;
+    } else {
+      // Table
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText(OBSIDIAN);
+      const colX = [M, M + 130, M + 300];
+      const headers = ["Age", "Cash Value", "Death Benefit\n(Guaranteed from Day One)"];
+      headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 160 }));
+      y += 20;
+      doc.setDrawColor(217, 207, 186);
+      doc.setLineWidth(1);
+      doc.line(M, y, W - M, y);
+      y += 14;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      milestones.forEach((m) => {
+        setText(OBSIDIAN);
+        doc.setFont("helvetica", "bold");
+        doc.text("Age " + m.label, colX[0], y);
+        doc.setFont("helvetica", "normal");
+        setText(CHARCOAL);
+        doc.text(m.cvNonGuaranteed ? "$" + m.cvNonGuaranteed : "—", colX[1], y);
+        doc.text(m.dbGuaranteed ? "$" + m.dbGuaranteed : "—", colX[2], y);
+        y += 16;
+      });
+      y += 14;
+
+      const xLabels = milestones.map((m) => "Age " + m.label);
+
+      // Cash value chart
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(GREEN);
+      doc.text("CASH VALUE OVER TIME", M, y);
+      y += 16;
+      drawLineChart(doc, {
+        x: M,
+        y,
+        width: W - 2 * M,
+        height: 110,
+        xLabels,
+        series: [{ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: GREEN }],
+      });
+      y += 130;
+
+      // Death benefit chart
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(BLUE);
+      doc.text("DEATH BENEFIT OVER TIME (GUARANTEED)", M, y);
+      y += 16;
+      drawLineChart(doc, {
+        x: M,
+        y,
+        width: W - 2 * M,
+        height: 110,
+        xLabels,
+        series: [{ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: BLUE }],
+      });
+      y += 130;
+    }
+
+    if (data.notes) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      doc.text(nl, M, y);
+      y += nl.length * 12 + 10;
+    }
+  } else if (data.kind === "term") {
+    setFill([235, 245, 238]);
+    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    setText(GREEN);
+    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    doc.text("Death Benefit", M + 14, y + 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    setText(OBSIDIAN);
+    if (data.termLength) doc.text(data.termLength + " term", M + 280, y + 26);
+    if (data.levelPremium) doc.text("$" + data.levelPremium + " level premium", M + 280, y + 44);
+    if (data.conversionDeadline) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      setText(CHARCOAL);
+      doc.text("Convertible without exam until " + data.conversionDeadline, M + 280, y + 60);
+    }
+    y += 96;
+
+    if (data.riders.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(OBSIDIAN);
+      doc.text("LIVING BENEFITS & RIDERS INCLUDED", M, y);
+      y += 16;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      data.riders.forEach((r) => {
+        doc.text("— " + r, M, y);
+        y += 14;
+      });
+      y += 8;
+    }
+
+    if (data.notes) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      doc.text(nl, M, y);
+      y += nl.length * 12 + 10;
+    }
+  } else if (data.kind === "final_expense") {
+    setFill([235, 245, 238]);
+    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    setText(GREEN);
+    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    doc.text("Guaranteed Death Benefit", M + 14, y + 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    setText(OBSIDIAN);
+    if (data.levelPremium) doc.text("$" + data.levelPremium + " — guaranteed level for life", M + 280, y + 26);
+    y += 96;
+
+    if (data.riders.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(OBSIDIAN);
+      doc.text("LIVING BENEFITS & RIDERS INCLUDED", M, y);
+      y += 16;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      data.riders.forEach((r) => {
+        doc.text("— " + r, M, y);
+        y += 14;
+      });
+      y += 8;
+    }
+
+    if (data.notes) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      doc.text(nl, M, y);
+      y += nl.length * 12 + 10;
+    }
+  } else {
+    // annuity
+    if (data.initialPremium) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      setText(GOLD);
+      doc.text("Initial Premium: $" + data.initialPremium, M, y);
+      y += 22;
+    }
+
+    const milestones = data.milestones.filter((m) => m.label.trim());
+    if (milestones.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      setText(GRAY);
+      doc.text("No milestones entered yet.", M, y);
+      y += 20;
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText(OBSIDIAN);
+      const colX = [M, M + 140, M + 290, M + 430];
+      const headers = ["", "Accumulation Value", "Income Value", "Death Benefit"];
+      headers.forEach((h, i) => doc.text(h, colX[i], y));
+      y += 16;
+      doc.setDrawColor(217, 207, 186);
+      doc.setLineWidth(1);
+      doc.line(M, y, W - M, y);
+      y += 14;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      milestones.forEach((m) => {
+        setText(OBSIDIAN);
+        doc.setFont("helvetica", "bold");
+        doc.text(m.label, colX[0], y);
+        doc.setFont("helvetica", "normal");
+        setText(CHARCOAL);
+        doc.text(m.accumulationValue ? "$" + m.accumulationValue : "—", colX[1], y);
+        doc.text(m.incomeValue ? "$" + m.incomeValue : "—", colX[2], y);
+        doc.text(m.deathBenefit ? "$" + m.deathBenefit : "—", colX[3], y);
+        y += 16;
+      });
+      y += 14;
+
+      const xLabels = milestones.map((m) => m.label);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(GOLD);
+      doc.text("PROJECTED VALUE OVER TIME", M, y);
+      y += 4;
+      drawLegend(doc, M + 175, y - 2.5, [
+        { label: "Accumulation Value", color: GOLD },
+        { label: "Income Value", color: BLUE },
+      ]);
+      y += 12;
+      drawLineChart(doc, {
+        x: M,
+        y,
+        width: W - 2 * M,
+        height: 120,
+        xLabels,
+        series: [
+          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: GOLD },
+          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: BLUE },
+        ],
+      });
+      y += 140;
+    }
+
+    if (data.notes) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      doc.text(nl, M, y);
+      y += nl.length * 12 + 10;
+    }
+  }
+
+  if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
+    doc.setDrawColor(217, 207, 186);
+    doc.setLineWidth(1);
+    doc.line(M, y, W - M, y);
+    y += 16;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text("Prepared by", M, y);
+    y += 13;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    const advisorLine = [input.advisor.name, input.advisor.phone, input.advisor.email].filter(Boolean).join("   ·   ");
+    doc.text(advisorLine, M, y);
+    y += 16;
+  }
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  setText(GRAY);
+  doc.text(
+    "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
+    M,
+    770,
+    { maxWidth: 612 - 2 * M }
+  );
+
+  const filename = "Illustration_" + input.clientName.replace(/\s+/g, "_") + "_" + input.productName.replace(/\s+/g, "_") + ".pdf";
+  doc.save(filename);
+}
