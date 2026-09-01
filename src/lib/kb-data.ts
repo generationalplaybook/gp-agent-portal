@@ -529,14 +529,41 @@ function inferProductType(item: KBItem): ProductTypeOption {
   return "Other";
 }
 
+// Ethos is a distribution platform, not an insurance carrier — it brokers products actually
+// underwritten by North American, Ameritas, TruStage, Banner Life, etc. The KB's own "Ethos"
+// label is still the right way to browse/group these (that's how the Knowledge Base itself
+// organizes them), but "Ethos" is the wrong thing to put in an illustration's Carrier field —
+// flagged 9/1 when Karina picked "Accumulation IUL (via Ethos)" and got Carrier: Ethos instead
+// of Carrier: North American. Only entries with a single, unambiguous real underwriter are
+// listed here — "Term Life Insurance" names three possible underwriters in the KB itself
+// (Banner Life / Protective / Ameritas) with no way to know which applies, so it's deliberately
+// left out and keeps showing "Ethos" as its carrier.
+const ETHOS_UNDERWRITER_BY_NAME: Record<string, string> = {
+  "Accumulation IUL (via Ethos)": "North American",
+  "Ethos Protection IUL": "Ameritas",
+  "Term With Living Benefits": "Ameritas",
+  "TruStage Term Life": "TruStage",
+  "Final Expense Whole Life (TruStage)": "TruStage",
+  "Final Expense Whole Life — Banner Life": "Banner Life",
+};
+
+function inferCarrier(item: KBItem): string {
+  if (item.label === "Ethos") return ETHOS_UNDERWRITER_BY_NAME[item.name] ?? item.label;
+  return item.label;
+}
+
 export interface KBProductOption {
   name: string;
+  // The real underwriting carrier — goes in the Carrier field when this product is picked.
   carrier: string;
+  // How this product is grouped/browsed in the picker — matches the Knowledge Base's own
+  // organization (e.g. still "Ethos"), which can differ from `carrier` above.
+  groupLabel: string;
   productType: ProductTypeOption;
 }
 
 export const KB_PRODUCTS: KBProductOption[] = KB.filter(
   (item) => (item.group === "life" || item.group === "annuity") && !/estate planning/i.test(item.type)
 )
-  .map((item) => ({ name: item.name, carrier: item.label, productType: inferProductType(item) }))
-  .sort((a, b) => a.carrier.localeCompare(b.carrier) || a.name.localeCompare(b.name));
+  .map((item) => ({ name: item.name, carrier: inferCarrier(item), groupLabel: item.label, productType: inferProductType(item) }))
+  .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel) || a.name.localeCompare(b.name));

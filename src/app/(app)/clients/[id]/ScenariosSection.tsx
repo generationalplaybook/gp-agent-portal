@@ -28,15 +28,18 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
-  // Grouped by carrier for the <optgroup> list — built once, not per render.
+  // Grouped for the <optgroup> list the same way the Knowledge Base itself groups these products
+  // (groupLabel) — not the same as the real underwriting carrier that gets filled into the
+  // Carrier field below (see the Ethos note in kb-data.ts: Ethos products are grouped under
+  // "Ethos" here but fill in their actual underwriter, e.g. North American, as the carrier).
   const kbGroups = useMemo(() => {
-    const byCarrier = new Map<string, { name: string; index: number }[]>();
+    const byGroup = new Map<string, { name: string; index: number }[]>();
     KB_PRODUCTS.forEach((p, index) => {
-      const list = byCarrier.get(p.carrier) ?? [];
+      const list = byGroup.get(p.groupLabel) ?? [];
       list.push({ name: p.name, index });
-      byCarrier.set(p.carrier, list);
+      byGroup.set(p.groupLabel, list);
     });
-    return Array.from(byCarrier.entries());
+    return Array.from(byGroup.entries());
   }, []);
 
   function handleKbChoice(value: string) {
