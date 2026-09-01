@@ -114,3 +114,18 @@ export function parseMoney(str: string | undefined | null): number {
   const n = parseFloat(String(str).replace(/[^0-9.-]/g, ""));
   return isNaN(n) ? 0 : n;
 }
+
+// Every dollar figure on an Illustration/Scenario PDF is free-typed by an advisor into a plain
+// DollarInput (no forced formatting there — see DollarInput.tsx's own comment on why). One
+// advisor types "50000", another types "50,000" — so two PDFs for the same numbers could come
+// out looking different depending on who typed it. Flagged 9/1: Karina wants every PDF to look
+// the same regardless of advisor typing habits. This re-formats through parseMoney at PDF-render
+// time only (nothing stored changes) — always "50,000", or "50,000.25" if real cents were
+// entered. Blank/non-numeric input passes through untouched so a "—" placeholder upstream still
+// works.
+export function formatMoney(str: string | undefined | null): string {
+  if (!str || !String(str).trim()) return "";
+  const n = parseMoney(str);
+  const hasCents = Math.round(n * 100) % 100 !== 0;
+  return n.toLocaleString("en-US", hasCents ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {});
+}

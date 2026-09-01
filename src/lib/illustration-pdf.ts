@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { IllustrationData } from "./illustration";
-import { parseMoney } from "./illustration";
+import { parseMoney, formatMoney } from "./illustration";
 
 type RGB = [number, number, number];
 
@@ -206,10 +206,10 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
         doc.text(m.label, colX[0], y);
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
-        doc.text(m.cvGuaranteed ? "$" + m.cvGuaranteed : "—", colX[1], y);
-        doc.text(m.cvNonGuaranteed ? "$" + m.cvNonGuaranteed : "—", colX[2], y);
-        doc.text(m.dbGuaranteed ? "$" + m.dbGuaranteed : "—", colX[3], y);
-        doc.text(m.dbNonGuaranteed ? "$" + m.dbNonGuaranteed : "—", colX[4], y);
+        doc.text(m.cvGuaranteed ? "$" + formatMoney(m.cvGuaranteed) : "—", colX[1], y);
+        doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[2], y);
+        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
+        doc.text(m.dbNonGuaranteed ? "$" + formatMoney(m.dbNonGuaranteed) : "—", colX[4], y);
         y += 16;
       });
       y += 14;
@@ -279,7 +279,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     setText(GREEN);
-    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     setText(CHARCOAL);
@@ -288,7 +288,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFontSize(11);
     setText(OBSIDIAN);
     if (data.termLength) doc.text(data.termLength + " term", M + 280, y + 26);
-    if (data.levelPremium) doc.text("$" + data.levelPremium + " level premium", M + 280, y + 44);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
     if (data.conversionDeadline) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -327,7 +327,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     setText(GREEN);
-    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     setText(CHARCOAL);
@@ -335,7 +335,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     setText(OBSIDIAN);
-    if (data.levelPremium) doc.text("$" + data.levelPremium + " — guaranteed level for life", M + 280, y + 26);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
     y += 96;
 
     if (data.riders.length > 0) {
@@ -368,7 +368,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       setText(GOLD);
-      doc.text("Initial Premium: $" + data.initialPremium, M, y);
+      doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
       y += 22;
     }
 
@@ -400,9 +400,9 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
         doc.text(m.label, colX[0], y);
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
-        doc.text(m.accumulationValue ? "$" + m.accumulationValue : "—", colX[1], y);
-        doc.text(m.incomeValue ? "$" + m.incomeValue : "—", colX[2], y);
-        doc.text(m.deathBenefit ? "$" + m.deathBenefit : "—", colX[3], y);
+        doc.text(m.accumulationValue ? "$" + formatMoney(m.accumulationValue) : "—", colX[1], y);
+        doc.text(m.incomeValue ? "$" + formatMoney(m.incomeValue) : "—", colX[2], y);
+        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[3], y);
         y += 16;
       });
       y += 14;
@@ -532,7 +532,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
       setText(GREEN);
-      doc.text("$" + data.initialDeathBenefit.trim(), M + 14, y + 30);
+      doc.text("$" + formatMoney(data.initialDeathBenefit), M + 14, y + 30);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       setText(CHARCOAL);
@@ -579,8 +579,8 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
         doc.text("Age " + m.label, colX[0], y);
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
-        doc.text(m.cvNonGuaranteed ? "$" + m.cvNonGuaranteed : "—", colX[1], y);
-        doc.text(m.dbGuaranteed ? "$" + m.dbGuaranteed : "—", colX[2], y);
+        doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
+        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[2], y);
         y += 16;
       });
       y += 14;
@@ -634,7 +634,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     setText(GREEN);
-    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     setText(CHARCOAL);
@@ -643,7 +643,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFontSize(11);
     setText(OBSIDIAN);
     if (data.termLength) doc.text(data.termLength + " term", M + 280, y + 26);
-    if (data.levelPremium) doc.text("$" + data.levelPremium + " level premium", M + 280, y + 44);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
     if (data.conversionDeadline) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -682,7 +682,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     setText(GREEN);
-    doc.text(data.deathBenefit ? "$" + data.deathBenefit : "—", M + 14, y + 34);
+    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     setText(CHARCOAL);
@@ -690,7 +690,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     setText(OBSIDIAN);
-    if (data.levelPremium) doc.text("$" + data.levelPremium + " — guaranteed level for life", M + 280, y + 26);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
     y += 96;
 
     if (data.riders.length > 0) {
@@ -723,7 +723,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       setText(GOLD);
-      doc.text("Initial Premium: $" + data.initialPremium, M, y);
+      doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
       y += 22;
     }
 
@@ -755,9 +755,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
         doc.text(m.label, colX[0], y);
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
-        doc.text(m.accumulationValue ? "$" + m.accumulationValue : "—", colX[1], y);
-        doc.text(m.incomeValue ? "$" + m.incomeValue : "—", colX[2], y);
-        doc.text(m.deathBenefit ? "$" + m.deathBenefit : "—", colX[3], y);
+        doc.text(m.accumulationValue ? "$" + formatMoney(m.accumulationValue) : "—", colX[1], y);
+        doc.text(m.incomeValue ? "$" + formatMoney(m.incomeValue) : "—", colX[2], y);
+        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[3], y);
         y += 16;
       });
       y += 14;
