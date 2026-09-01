@@ -304,6 +304,30 @@ export default function ScenarioForm({
               />
             </label>
 
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
+            <p className="mb-2 text-xs text-[#888]">
+              What the client actually pays, and the bare minimum that keeps this policy from lapsing —
+              separate from the death benefit numbers above. Both optional.
+            </p>
+            <div className="mb-5 grid max-w-md grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Monthly Premium
+                <DollarInput
+                  value={data.monthlyPremium ?? ""}
+                  onChange={(v) => setData({ ...data, monthlyPremium: v })}
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Minimum to Avoid Lapse
+                <DollarInput
+                  value={data.minimumPremium ?? ""}
+                  onChange={(v) => setData({ ...data, minimumPremium: v })}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#888]">
               For each age that matters, enter the illustrated Cash Value (non-guaranteed) and Death Benefit

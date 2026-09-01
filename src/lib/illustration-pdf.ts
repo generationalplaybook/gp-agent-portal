@@ -550,6 +550,28 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       y += 38;
     }
 
+    const hasMonthlyPremium = !!(data.monthlyPremium && data.monthlyPremium.trim());
+    const hasMinimumPremium = !!(data.minimumPremium && data.minimumPremium.trim());
+    if (hasMonthlyPremium || hasMinimumPremium) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText(GRAY);
+      doc.text("POLICY PREMIUM", M, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      setText(OBSIDIAN);
+      if (hasMonthlyPremium) {
+        doc.text("Monthly Premium: $" + formatMoney(data.monthlyPremium) + "/mo", M, y);
+        y += 14;
+      }
+      if (hasMinimumPremium) {
+        doc.text("Minimum to Avoid Lapse: $" + formatMoney(data.minimumPremium) + "/mo", M, y);
+        y += 14;
+      }
+      y += 10;
+    }
+
     const milestones = data.milestones.filter((m) => m.label.trim());
     if (milestones.length === 0) {
       doc.setFont("helvetica", "italic");

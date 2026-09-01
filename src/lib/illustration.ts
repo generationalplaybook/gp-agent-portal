@@ -41,6 +41,14 @@ export interface CashValueIllustration {
   // initial face amount the policy is actually issued at. Optional/additive, same reasoning as
   // dbIncreaseAge above.
   initialDeathBenefit?: string;
+  // Policy Premium — added 9/1: what the client actually pays vs. the bare minimum that keeps
+  // the policy from lapsing, called out as their own section (deliberately separate from Initial
+  // Death Benefit above — Karina's call, different setting/topic even though both are single
+  // up-front numbers). Mirrors client_products.minimum_premium's "Minimum to avoid lapse"
+  // labeling for consistency with the Products tab. Optional/additive, same reasoning as the
+  // fields above — the original per-product Illustration flow doesn't have or need these.
+  monthlyPremium?: string;
+  minimumPremium?: string;
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,
