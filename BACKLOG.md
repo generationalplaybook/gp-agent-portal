@@ -81,6 +81,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration Scenario — Policy Premium section added (Monthly Premium + Minimum to Avoid
+  Lapse) — built 9/1.** Karina wanted a picture of what the client actually pays vs. the bare
+  minimum that keeps the policy from lapsing, for a scenario she needed to send out that night.
+  She initially considered putting it next to Face Value but decided against it — different
+  topic, deserves its own section — so it's a new standalone "Policy Premium" section in
+  `ScenarioForm.tsx` (cash_value products only), sitting between Death Benefit Increase and
+  Milestones, with two optional DollarInput fields: Monthly Premium and Minimum to Avoid Lapse.
+  The "Minimum to Avoid Lapse" label matches the existing wording on the Products tab
+  (`client_products.minimum_premium`) for consistency. Stored as `monthlyPremium` /
+  `minimumPremium` on the shared `CashValueIllustration` type in `illustration.ts` — optional
+  and additive, same pattern as Initial Death Benefit and Death Benefit Increase, so the
+  original per-product Illustration flow is unaffected. Shows on the Scenario PDF
+  (`generateScenarioIllustrationPDF`) as a small "POLICY PREMIUM" block right after the Death
+  Benefit Increase callout and before the milestones table. No SQL needed — this is all stored
+  inside the existing `data` JSONB column, same as every other scenario field.
+
 - **Illustration/Scenario PDFs — dollar figures now always show commas, no matter who typed
   them — built 9/1.** Karina sent a PDF another advisor generated (Royal Hammock, Accumulation
   IUL via Ethos) where every number was missing commas — `$153661` instead of `$153,661` — and
