@@ -81,6 +81,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration Scenario — Initial Death Benefit (Face Value) field added — built 9/1.** Karina
+  pointed out the Milestones editor had nowhere to record the policy's starting face amount at
+  issue — only the per-milestone Death Benefit numbers, which show what it grows or steps up to
+  at each future age (and can differ a lot from the initial face amount, especially with a Death
+  Benefit Increase age set). Added a new "Initial Death Benefit" section above Death Benefit
+  Increase in `ScenarioForm.tsx`, a single Face Value dollar field. Same pattern as the earlier
+  additions: stored as an optional `initialDeathBenefit` field on the shared `CashValueIllustration`
+  type in `illustration.ts`, so the original per-product Illustration flow is unaffected. Shows
+  on the PDF as a highlighted stat at the top of the summary (before the milestones table),
+  same treatment as the Death Benefit Increase callout below it.
+
 - **"+ Add Illustration" Carrier field now shows the real underwriting carrier for
   Ethos-brokered products, not "Ethos" — built 9/1.** Follow-up to the KB product picker above.
   Karina picked "Accumulation IUL (via Ethos)" and the Carrier field filled in "Ethos" — she
