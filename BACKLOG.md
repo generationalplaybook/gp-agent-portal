@@ -81,6 +81,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **"+ Add Illustration" Product field simplified to match "Add Product"'s picker — built 9/1.**
+  Karina compared screenshots of the two side by side: "Add Product" (`ProductsSection.tsx`,
+  pre-existing) is one free-typed "Product name" field with a native `<datalist>` of suggestions
+  — type or pick, no separate carrier/grouping step. The Illustrations picker I'd built earlier
+  tonight was a two-step "Product" dropdown (grouped by carrier) plus a separate Product Name
+  field below it — more clicking than Add Product needs. Rebuilt `ScenariosSection.tsx` to match:
+  one "Product name" field with an `<datalist id="illustration-product-suggestions">` built from
+  `KB_PRODUCTS`. Kept the Carrier/Type auto-fill from earlier (Add Product's own datalist doesn't
+  auto-fill anything, but Karina never asked for that to go away) — it now fires off an exact
+  match on the typed/picked name instead of a dropdown selection. Functionally: same 44 products,
+  same real-underwriter-for-Ethos-products carrier logic, just one field instead of two.
+
 - **Illustration Scenario PDF — removed "(Guaranteed from Day One)" from the Death Benefit
   column header — built 9/1.** Karina reviewed a generated PDF (August Sneed's Accumulation IUL)
   and asked for that parenthetical removed from the milestones table. Column now just reads
