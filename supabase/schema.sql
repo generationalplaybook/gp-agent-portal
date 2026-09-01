@@ -637,3 +637,59 @@ alter table public.profiles add column if not exists intake_slug text;
 create unique index if not exists profiles_intake_slug_idx
   on public.profiles (lower(intake_slug))
   where intake_slug is not null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 25. Illustration Scenarios (added 9/1) — a lightweight, exploratory "let's see the numbers"
+-- record, deliberately NOT tied to a client_products row. Running an illustration used to
+-- require first creating a real Product (client_products), even for options the client hadn't
+-- committed to — but Products is meant to mean "coverage this client already owns" (see its own
+-- section comment above), so that forced "just exploring" numbers to look like real coverage.
+-- This table exists so an advisor can run/compare as many hypothetical scenarios as they want
+-- for a client with zero effect on their Products list, then promote exactly one to a real
+-- Product once the client actually decides (see convertScenarioToProduct in
+-- src/app/(app)/clients/[id]/scenarios/actions.ts, which creates the client_products row AND
+-- copies this scenario's numbers into that product's own product_illustrations row — the
+-- existing per-product Illustration Summary page and PDF are completely unchanged by this).
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.illustration_scenarios (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  product_name text not null,
+  product_type text, -- freeform label: Term Life, Whole Life, IUL, Final Expense, Annuity, Other
+  carrier text,
+  data jsonb not null, -- IllustrationData — same shape src/lib/illustration.ts already defines
+  notes text,
+  -- Set once this scenario is promoted to a real Product — see convertScenarioToProduct. A
+  -- scenario is never deleted on conversion (so the history of "here's how we got here" stays
+  -- intact); this just marks it resolved and links to the resulting product.
+  converted_product_id uuid references public.client_products(id) on delete set null,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists illustration_scenarios_client_id_idx on public.illustration_scenarios(client_id);
+
+alter table public.illustration_scenarios enable row level security;
+
+create policy "Illustration scenarios follow client visibility"
+  on public.illustration_scenarios for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = illustration_scenarios.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = illustration_scenarios.client_id
+        and (c.owner_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+    )
+  );
+
+drop trigger if exists illustration_scenarios_set_updated_at on public.illustration_scenarios;
+create trigger illustration_scenarios_set_updated_at
+  before update on public.illustration_scenarios
+  for each row execute procedure public.set_updated_at();

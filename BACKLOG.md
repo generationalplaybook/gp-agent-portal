@@ -2,7 +2,100 @@
 
 Things Karina has asked to defer to a future build, so they don't get lost.
 
+## Requested, not yet built — Compare with client-specific PDF
+
+- **Client-specific product comparison, downloadable as a PDF — discussed 9/1, NOT built yet.**
+  Karina wants to pick 2-3 of a client's own saved Illustration Scenarios (see the Illustrations
+  rework below, which this depends on) and get one side-by-side PDF built from their real
+  numbers, ready to send when a client is torn between options. This is deliberately different
+  from the existing `/compare` page, which stays as a generic, client-agnostic Knowledge-Base
+  comparison (no PDF export) for "explain the difference between these two products in general."
+  Sequencing: this was intentionally NOT started yet — it depends on the Illustrations rework
+  (just built, see below) actually being live and used first. Build this next once Karina's
+  ready.
+
+## Bugs found during testing — not yet built (Karina said don't build, just log)
+
+- **Meetings & Calls card — visual misalignment on a synced Cal.com meeting (flagged 9/1,
+  screenshot on a client's page).** Karina uploaded the Cal.com Auto-Sync v2 fix and tested it
+  live. Screenshot shows a client's Meetings & Calls card with a manual "Add Meeting" just used
+  (confirmation banner showing, client name "Alex"), and below it an existing meeting row whose
+  location is a raw `https://app.cal.com/video/...` link dated Sep 1, 2026, 11:00 AM — this is
+  almost certainly a Cal.com-synced booking (that URL shape matches what the webhook receiver
+  writes into `location`, not something anyone would type by hand). Karina called this row a
+  "misalignment" without more detail yet. One concrete thing already visible in the screenshot:
+  the blue "Via Cal.com" badge that `MeetingRow.tsx`/`meetings/MeetingRow.tsx` renders whenever
+  `meeting.source === "cal.com"` is NOT showing next to that row, even though the URL strongly
+  suggests this meeting did come from Cal.com — so either the badge isn't rendering when it
+  should, or (less likely) this row is actually a manually-added meeting where someone pasted a
+  Cal.com link into Location by hand, in which case there's no bug there at all. Still need to
+  confirm with Karina exactly what "misalignment" means before touching anything — could be the
+  missing badge, or something purely visual (e.g. how "Add to Calendar"/"Delete" line up against
+  the two-line text block on the left). NOT fixed yet — Karina explicitly said not to build,
+  just log this for now.
+
+- **A call booked with Karina prior to Cal.com Auto-Sync being connected still doesn't show on
+  that client's Meetings & Calls card (flagged 9/1, same test).** Karina confirmed this is a
+  DIFFERENT, older booking than the Sep 1 one above — not a new test booking. This one is
+  expected, not a bug: Cal.com's webhook only fires the moment a booking is created/rescheduled/
+  cancelled, so connecting the integration later can never retroactively pull in something
+  booked before the webhook existed (there is no "backfill" — see the original design note in
+  the Cal.com Auto-Sync entry below). The Sep 1 entry in the note above (a real `app.cal.com`
+  video link, dated the same day as this test) is good evidence the sync itself is working
+  correctly for anything booked going forward. No fix needed for this specific missing meeting —
+  if Karina wants that old call to show up in the CRM, the only option is to add it manually via
+  "Add Meeting" on that client's page, same as any pre-existing meeting from before this feature
+  existed.
+
+- **Clickable meeting location links (flagged 9/1, same test session).** In Meetings & Calls
+  (both the per-client card and the global Meetings tab), the Location field always renders as
+  plain text — e.g. `https://app.cal.com/video/...` shows as text, not a link. Karina wants a
+  pasted-in URL to be clickable. Small/low-risk change (`MeetingRow.tsx` in both
+  `clients/[id]/` and `meetings/`). Not built yet — Karina is still testing, hasn't said go.
+
+- **Should a minor's Client Profile PDF also show a Parent/Guardian contact? (raised 9/1,
+  discussion only, NOT built — Karina said "dnt build yet, im still testing").** Karina uploaded
+  the exported Client Profile PDF for August Sneed (age 6) and pointed out Phone/Email both show
+  as blank "—" since the child has neither on file — a dead end for whoever's actually going to
+  call, sign, or pay. Proposed approach, pending Karina's go-ahead: piggyback on the existing
+  Family Linking feature (`FamilySection.tsx`, `family_id`/`family_relationship` on `clients`,
+  `FAMILY_RELATIONSHIP_OPTIONS` already includes "Parent") — auto-prefill a Parent/Guardian
+  name/phone/email from a linked family member with that relationship, same way Height/Weight
+  already prefill from the client record, AND add explicit optional Parent/Guardian fields
+  directly on the Analyzer (visible when `isMinor`) so it still works even if Family Linking
+  hasn't been set up for that client yet. Would need: new fields on `AnalyzerInputs`, prefill
+  logic in `AnalyzerClient.tsx`/`client-analyzer/page.tsx` (pull from a linked "Parent" family
+  member when starting an analysis from a client's page), and a new line in
+  `analyzer-pdf.ts`/the on-screen result. Sized as a real feature (form + prefill + PDF), not a
+  one-liner — do NOT start this until Karina confirms she wants it built this way.
+
 ## Requested, not yet built
+
+- **Illustrations decoupled from Products — built 9/1.** Karina pointed out that running an
+  illustration required first "Adding a Product" — but Products is meant to mean coverage the
+  client already owns, and most illustrations run mid-call are for options they haven't decided
+  on at all. Root cause confirmed in code: `product_illustrations` was a 1:1 child of
+  `client_products` (`product_id` foreign key), and the illustration logic itself never actually
+  needed anything from the Product record beyond a name/type/carrier label — none of Products'
+  real-policy fields (issue date, face amount, actual premium) are used by the illustration or
+  its PDF. Built a new, separate "Illustrations" section on the client page, above Products —
+  new `illustration_scenarios` table (client_id, product_name, product_type, carrier, data
+  jsonb, notes, `converted_product_id`), completely independent of `client_products`. Flow: "+
+  Add Illustration" → pick product type/name/carrier → lands on its own scenario page
+  (`/clients/[id]/scenarios/[scenarioId]`, adapted from the existing per-product
+  IllustrationForm — same milestone editors, same PDF generator, all duplicated rather than
+  shared so the existing per-product illustration flow can't be affected by this at all) → enter
+  numbers, Save, Download PDF, same as before. Once the client actually decides, a "This Is What
+  They're Going With →" button (with an inline confirm) promotes that one scenario to a real
+  Product: creates the `client_products` row (same `is_quote`-while-Quoted-stage logic as the
+  normal Add Product flow, riders carried over automatically for Term/Final Expense) AND copies
+  the scenario's numbers into that new product's own `product_illustrations` row, so the
+  existing "Illustration Summary" page/PDF on the Product itself works immediately with zero
+  re-entry. The scenario is never deleted on conversion — it's marked resolved
+  (`converted_product_id` set) and stays as a record of how the client got there, with a link
+  back to the now-official version. New SQL required — see delivery message. Compare-with-PDF
+  (discussed same day, see the section above) is the natural next step on top of this, but was
+  deliberately NOT started yet — Karina asked for this piece first.
 
 - **Analyzer always recommends a juvenile policy for a minor client — built 9/1.** Karina ran an
   analysis on a 6-year-old client (goal: "Build cash value / savings") and got North American
