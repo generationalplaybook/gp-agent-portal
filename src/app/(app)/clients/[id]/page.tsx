@@ -10,6 +10,7 @@ import ContactInfoForm from "./ContactInfoForm";
 import DeleteClientButton from "./DeleteClientButton";
 import FamilySection from "./FamilySection";
 import ProductsSection from "./ProductsSection";
+import ScenariosSection from "./ScenariosSection";
 import ScheduleCallCard from "./ScheduleCallCard";
 import MeetingsCard from "./MeetingsCard";
 import SourceField from "./SourceField";
@@ -32,6 +33,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     { data: reminders },
     { data: products },
     { data: meetings },
+    { data: scenarios },
   ] = await Promise.all([
     supabase.from("clients").select("*").eq("id", id).single(),
     supabase
@@ -61,6 +63,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .select("id, meeting_at, location, notes, source")
       .eq("client_id", id)
       .order("meeting_at", { ascending: true }),
+    supabase
+      .from("illustration_scenarios")
+      .select("id, product_name, product_type, carrier, converted_product_id")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (error || !client) notFound();
@@ -194,6 +201,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
           <FamilySection clientId={client.id} members={familyMembers} />
+        </div>
+
+        {/* Illustrations — exploratory scenarios, not yet real coverage. Comes before Products
+            since this is the "let's see the numbers" step that precedes it. */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Illustrations</h2>
+          <ScenariosSection clientId={client.id} scenarios={scenarios ?? []} />
         </div>
 
         {/* Products — coverage this client already owns, with conversion windows at a glance */}

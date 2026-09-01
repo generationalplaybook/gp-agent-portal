@@ -166,3 +166,21 @@ export interface ProductIllustration {
   created_at: string;
   updated_at: string;
 }
+
+// A lightweight, exploratory "let's see the numbers" record — deliberately NOT tied to a
+// ClientProduct. Lets an advisor run/compare numbers for options a client hasn't committed to
+// yet without it showing up as real coverage in Products. See the schema comment (section 25)
+// and src/app/(app)/clients/[id]/scenarios/actions.ts for the full "promote to a real Product"
+// flow via converted_product_id.
+export interface IllustrationScenario {
+  id: string;
+  client_id: string;
+  product_name: string;
+  product_type: string | null;
+  carrier: string | null;
+  data: unknown;
+  notes: string | null;
+  converted_product_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
