@@ -81,6 +81,26 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration/Scenario PDFs — dollar figures now always show commas, no matter who typed
+  them — built 9/1.** Karina sent a PDF another advisor generated (Royal Hammock, Accumulation
+  IUL via Ethos) where every number was missing commas — `$153661` instead of `$153,661` — and
+  said "everythg needs to be same across all advisors and my account." Root cause: Cash Value,
+  Death Benefit, Initial Death Benefit, Premium, and Income fields on both the Illustration and
+  Scenario forms are all plain free-typed `DollarInput` fields (see that component's own
+  comment — no forced formatting by design, just a `$` shown next to the box) — so whether a
+  number ends up with commas has only ever depended on whether that particular advisor happened
+  to type them. Rather than trying to make every advisor type the same way, fixed it where it
+  actually matters — the generated PDF — by always re-formatting every dollar value through a
+  new `formatMoney()` helper (`illustration.ts`) at the moment the PDF is drawn, regardless of
+  how it was typed or already saved. `$153661` and `$153,661` and `$153,661.00` all render as
+  `$153,661` now (cents are kept only if actually entered, e.g. `$1,234.50`). Applied to every
+  dollar figure across both `generateIllustrationPDF` and `generateScenarioIllustrationPDF` —
+  milestone tables, Initial Death Benefit, Initial Premium, and the "$X level premium" callouts.
+  Nothing stored changes and no SQL is needed — this only touches how numbers are drawn onto the
+  PDF, so it fixes every existing illustration retroactively the next time its PDF is
+  (re)generated, not just new ones. Chart axis labels ($500K etc.) were already computed from
+  the parsed number, not the raw typed string, so they weren't affected by this bug.
+
 - **Advisor data isolation — Admin no longer sees every advisor's clients — built 9/1.** Karina
   noticed one of her advisors' leads showing up in her own portal and flagged it as wrong:
   "peoples leads should not show up in each others leaders." I checked and this wasn't a bug —
