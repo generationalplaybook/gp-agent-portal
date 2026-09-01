@@ -2,6 +2,16 @@
 
 Things Karina has asked to defer to a future build, so they don't get lost.
 
+## Low priority — someday, not urgent
+
+- **Quick links — flagged 9/1, NOT important right now but needs to be addressed at some point.**
+  Karina asked for this to be logged as a low-priority item, not built. Still need to clarify
+  with her exactly what "quick links" should mean before building anything — options include: a
+  small row/panel of shortcuts to frequently-used pages or actions (e.g. New Client, Client
+  Analyzer, Knowledge Base) shown on a dashboard or nav bar, quick-jump links out from a client's
+  page to their own sub-pages (Illustrations, Analyses, Meetings), or something else entirely.
+  Ask Karina what she has in mind when this gets picked up.
+
 ## Requested, not yet built — Compare with client-specific PDF
 
 - **Client-specific product comparison, downloadable as a PDF — discussed 9/1, NOT built yet.**
@@ -15,6 +25,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   ready.
 
 ## Bugs found during testing — not yet built (Karina said don't build, just log)
+
+- **"+ Add Illustration" should populate the product name/carrier from the Knowledge Base
+  instead of free typing (flagged 9/1, testing session).** Right now `ScenariosSection.tsx`'s
+  "+ Add Illustration" mini-form is a free-text Product Name field, a Product Type dropdown
+  (`PRODUCT_TYPE_OPTIONS` — generic categories like IUL/Term/Annuity, not specific products), and
+  a free-text Carrier field — nothing pulls from the actual product list in `kb-data.ts` (each KB
+  entry already has `name`, `label` (carrier), `type`, and `cat` — e.g. North American "Builder
+  Plus IUL 4", Ethos juvenile IUL, F&G and Athene annuities, etc.). Karina wants that list reused
+  here so starting an illustration is a pick, not a retype — also cuts down on typos/naming
+  drift between what's illustrated and what's in the KB. Same idea would likely apply to the
+  original per-product "Add Product" flow too, if Karina wants consistency there. Not built yet —
+  Karina is still testing, said don't build.
 
 - **Meetings & Calls card — visual misalignment on a synced Cal.com meeting (flagged 9/1,
   screenshot on a client's page).** Karina uploaded the Cal.com Auto-Sync v2 fix and tested it
@@ -70,6 +92,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **Illustration Scenario Milestones reworked — Age / Cash Value / Death Benefit, one number
+  each, plus a Death Benefit Increase Age field — built 9/1.** Karina tested the new
+  Illustrations feature (see the decoupling entry below) and hit a wall: the Milestones editor
+  asked for 4 numbers per milestone (Cash Value Guaranteed/Non-Guaranteed, Death Benefit
+  Guaranteed/Non-Guaranteed), but she only works from one number per age — so she ended up typing
+  all three of her milestones ("Age 18 $13,635, Age 35 $66,836, Age 65 $567,695") into a single
+  label field with the actual dollar fields left blank. We talked through it before building.
+  Her direction: each milestone is just Age, Cash Value (the non-guaranteed figure — dropped the
+  guaranteed column entirely), and Death Benefit (guaranteed from day one — dropped the
+  non-guaranteed column). Rebuilt `CashValueMilestonesEditor` in `ScenarioForm.tsx` as one row
+  per milestone: Age / Cash Value / Death Benefit side by side. Capped "+ Add Milestone" at 5 —
+  Karina said her real usage is usually 3-4 (typically ages 18, 35, 65). Also added a new "Death
+  Benefit Increase" field above the milestones (age it steps up, optional) — some IUL designs,
+  especially juvenile ones, start level and increase later, and she wants that called out on the
+  summary regardless of whether the client is a child or an adult. Under the hood this reuses the
+  existing `CashValueMilestone` fields (`cvNonGuaranteed` for Cash Value, `dbGuaranteed` for
+  Death Benefit) rather than a new data shape, and the new `dbIncreaseAge` field was added as
+  *optional* on the shared `CashValueIllustration` type in `illustration.ts` — so the original
+  per-product Illustration flow (Products → Illustration Summary) is completely unaffected; it
+  never sets or reads that field. The "Download PDF Summary" button on a scenario now calls a new
+  `generateScenarioIllustrationPDF` (duplicated from the original `generateIllustrationPDF` in
+  `illustration-pdf.ts`, same reasoning as the editor duplication) — same Age/Cash Value/Death
+  Benefit table and single-line charts, plus a highlighted "Death benefit begins increasing at
+  age X" callout when that field is set. Term/Final Expense/Annuity scenarios are unchanged. No
+  SQL needed — `illustration_scenarios.data` is jsonb, no schema migration required.
 
 - **Knowledge Base — living benefits caveat that acceleration % varies by carrier/product —
   built 9/1.** Karina flagged that some policies have different percentages of living benefits
