@@ -81,6 +81,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration Scenario PDF — removed "(Guaranteed from Day One)" from the Death Benefit
+  column header — built 9/1.** Karina reviewed a generated PDF (August Sneed's Accumulation IUL)
+  and asked for that parenthetical removed from the milestones table. Column now just reads
+  "Death Benefit" in `generateScenarioIllustrationPDF` (`illustration-pdf.ts`) — scoped to just
+  the Scenario PDF, not the original per-product Illustration Summary PDF (separate function,
+  untouched). Left the "DEATH BENEFIT OVER TIME (GUARANTEED)" chart title as-is since she didn't
+  flag that one — say the word if that should go too. Purely a label change — the underlying
+  data/field mapping (Death Benefit = guaranteed, Cash Value = non-guaranteed) is unchanged.
+
 - **Gender added to every form that creates or edits a client — built 9/1.** Karina flagged this
   was missed on the original build. Added a `gender` text column to `clients` (new SQL — see
   delivery message), a `gender: string | null` field on the `Client` type in `types.ts`, and a
