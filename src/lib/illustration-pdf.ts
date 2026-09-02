@@ -527,8 +527,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
 
   if (data.kind === "cash_value") {
     const hasMonthlyPremium = !!(data.monthlyPremium && data.monthlyPremium.trim());
-    const hasMinimumPremium = !!(data.minimumPremium && data.minimumPremium.trim());
-    if (hasMonthlyPremium || hasMinimumPremium) {
+    const hasMinimumPremiumLevel = !!(data.minimumPremium && data.minimumPremium.trim());
+    const hasMinimumPremiumIncreasing = !!(data.minimumPremiumIncreasing && data.minimumPremiumIncreasing.trim());
+    if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(GRAY);
@@ -541,24 +542,61 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
         doc.text("Monthly Premium: $" + formatMoney(data.monthlyPremium) + "/mo", M, y);
         y += 14;
       }
-      if (hasMinimumPremium) {
-        doc.text("Minimum to Avoid Lapse: $" + formatMoney(data.minimumPremium) + "/mo", M, y);
+      // Minimum to avoid lapse varies by election (cost of insurance differs between Level and
+      // Increasing) — label each line with its election whenever at least one side is filled in,
+      // same two-part convention as everywhere else in this rework, so the number is never
+      // ambiguous about which election it belongs to.
+      if (hasMinimumPremiumLevel) {
+        doc.text("Minimum to Avoid Lapse (Level): $" + formatMoney(data.minimumPremium) + "/mo", M, y);
+        y += 14;
+      }
+      if (hasMinimumPremiumIncreasing) {
+        doc.text(
+          "Minimum to Avoid Lapse (Increasing): $" + formatMoney(data.minimumPremiumIncreasing) + "/mo",
+          M,
+          y
+        );
         y += 14;
       }
       y += 10;
     }
 
-    if (data.initialDeathBenefit && data.initialDeathBenefit.trim()) {
-      setFill([235, 245, 238]);
-      doc.roundedRect(M, y, W - 2 * M, 50, 4, 4, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      setText(GREEN);
-      doc.text("$" + formatMoney(data.initialDeathBenefit), M + 14, y + 30);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      doc.text("Initial Death Benefit (Face Value)", M + 14, y + 42);
+    // Initial Death Benefit — Level and Increasing each get their own green box, side by side
+    // when both are filled in (a carrier can quote a different starting face amount for each
+    // election), full-width when only one is (keeps older, single-election scenarios looking the
+    // same as before this split).
+    const hasInitialDbLevel = !!(data.initialDeathBenefit && data.initialDeathBenefit.trim());
+    const hasInitialDbIncreasing = !!(data.initialDeathBenefitIncreasing && data.initialDeathBenefitIncreasing.trim());
+    if (hasInitialDbLevel || hasInitialDbIncreasing) {
+      const both = hasInitialDbLevel && hasInitialDbIncreasing;
+      const boxW = both ? (W - 2 * M - 12) / 2 : W - 2 * M;
+      const drawInitialDbBox = (x: number, amount: string, label: string) => {
+        // Re-set the fill immediately before each rect, not once up front: jsPDF's text draws
+        // (setText below) use the same underlying fill color as shapes, so drawing this box's own
+        // label text would otherwise clobber the light-green fill before the second box gets to
+        // use it — bit us on the first render of this two-box layout (second box came out
+        // near-black, the leftover CHARCOAL label-text color from the first box's draw).
+        setFill([235, 245, 238]);
+        doc.roundedRect(x, y, boxW, 50, 4, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(both ? 15 : 18);
+        setText(GREEN);
+        doc.text("$" + formatMoney(amount), x + 14, y + 30);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        setText(CHARCOAL);
+        doc.text(label, x + 14, y + 42);
+      };
+      if (hasInitialDbLevel) {
+        drawInitialDbBox(M, data.initialDeathBenefit as string, both ? "Initial Death Benefit (Level)" : "Initial Death Benefit (Face Value)");
+      }
+      if (hasInitialDbIncreasing) {
+        drawInitialDbBox(
+          both ? M + boxW + 12 : M,
+          data.initialDeathBenefitIncreasing as string,
+          both ? "Initial Death Benefit (Increasing)" : "Initial Death Benefit (Increasing, Face Value)"
+        );
+      }
       y += 62;
     }
 

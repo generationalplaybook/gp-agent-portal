@@ -303,41 +303,74 @@ export default function ScenarioForm({
           <>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
             <p className="mb-2 text-xs text-[#888]">
-              What the client actually pays, and the bare minimum that keeps this policy from lapsing. Both
-              optional.
+              What the client actually pays, and the bare minimum that keeps this policy from lapsing. The
+              minimum to avoid lapse differs by election — cost of insurance isn&rsquo;t the same under Level vs.
+              Increasing — so enter both from the carrier&rsquo;s illustration. All optional.
             </p>
-            <div className="mb-5 grid max-w-md grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Monthly Premium
-                <DollarInput
-                  value={data.monthlyPremium ?? ""}
-                  onChange={(v) => setData({ ...data, monthlyPremium: v })}
-                  className={inputClass}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Minimum to Avoid Lapse
-                <DollarInput
-                  value={data.minimumPremium ?? ""}
-                  onChange={(v) => setData({ ...data, minimumPremium: v })}
-                  className={inputClass}
-                />
-              </label>
+            <label className="mb-3 flex max-w-[220px] flex-col gap-1 text-xs text-[#666]">
+              Monthly Premium
+              <DollarInput
+                value={data.monthlyPremium ?? ""}
+                onChange={(v) => setData({ ...data, monthlyPremium: v })}
+                className={inputClass}
+              />
+            </label>
+            <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
+              <div>
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Level</div>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Minimum to Avoid Lapse
+                  <DollarInput
+                    value={data.minimumPremium ?? ""}
+                    onChange={(v) => setData({ ...data, minimumPremium: v })}
+                    className={inputClass + " w-full"}
+                  />
+                </label>
+              </div>
+              <div>
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Increasing</div>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Minimum to Avoid Lapse
+                  <DollarInput
+                    value={data.minimumPremiumIncreasing ?? ""}
+                    onChange={(v) => setData({ ...data, minimumPremiumIncreasing: v })}
+                    className={inputClass + " w-full"}
+                  />
+                </label>
+              </div>
             </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
             <p className="mb-2 text-xs text-[#888]">
-              The policy&rsquo;s starting face amount at issue — separate from the Level/Increasing numbers entered
-              per milestone below, which show what it grows (or steps up) to at each age.
+              The policy&rsquo;s starting face amount at issue under each election — separate from the
+              Level/Increasing numbers entered per milestone below, which show what it grows (or steps up) to at
+              each age. Carriers can quote a different starting face amount for Level vs. Increasing even though
+              both work toward the same eventual target.
             </p>
-            <label className="mb-5 flex max-w-[220px] flex-col gap-1 text-xs text-[#666]">
-              Face Value
-              <DollarInput
-                value={data.initialDeathBenefit ?? ""}
-                onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
-                className={inputClass}
-              />
-            </label>
+            <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
+              <div>
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Level</div>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Face Value
+                  <DollarInput
+                    value={data.initialDeathBenefit ?? ""}
+                    onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
+                    className={inputClass + " w-full"}
+                  />
+                </label>
+              </div>
+              <div>
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Increasing</div>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Face Value
+                  <DollarInput
+                    value={data.initialDeathBenefitIncreasing ?? ""}
+                    onChange={(v) => setData({ ...data, initialDeathBenefitIncreasing: v })}
+                    className={inputClass + " w-full"}
+                  />
+                </label>
+              </div>
+            </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
             <p className="mb-1 text-xs text-[#888]">

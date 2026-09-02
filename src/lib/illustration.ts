@@ -48,16 +48,26 @@ export interface CashValueIllustration {
   // The policy's starting face amount at issue — flagged 9/1: the milestone Death Benefit numbers
   // show the (possibly increasing) DB at each future age, but there was nowhere to record the
   // initial face amount the policy is actually issued at. Optional/additive, same reasoning as
-  // dbIncreaseAge above.
+  // dbIncreaseAge above. 9/2: split into a Level/Increasing pair, same as the milestone fields —
+  // carriers can quote a different starting face amount for each election even though both are
+  // working toward the same eventual target, so initialDeathBenefit is now specifically the
+  // "Level" starting face and initialDeathBenefitIncreasing is the parallel "Increasing" one.
   initialDeathBenefit?: string;
+  initialDeathBenefitIncreasing?: string;
   // Policy Premium — added 9/1: what the client actually pays vs. the bare minimum that keeps
   // the policy from lapsing, called out as their own section (deliberately separate from Initial
   // Death Benefit above — Karina's call, different setting/topic even though both are single
   // up-front numbers). Mirrors client_products.minimum_premium's "Minimum to avoid lapse"
   // labeling for consistency with the Products tab. Optional/additive, same reasoning as the
   // fields above — the original per-product Illustration flow doesn't have or need these.
+  // monthlyPremium stays a single figure — what the client chooses to actually pay doesn't change
+  // with the Level/Increasing election. minimumPremium DOES vary by election (cost of insurance
+  // differs between the two), so 9/2 split it the same way as initialDeathBenefit above:
+  // minimumPremium is the "Level" minimum, minimumPremiumIncreasing (added 9/2) is the parallel
+  // "Increasing" one.
   monthlyPremium?: string;
   minimumPremium?: string;
+  minimumPremiumIncreasing?: string;
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,
