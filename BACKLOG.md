@@ -26,6 +26,70 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Bugs found during testing — not yet built (Karina said don't build, just log)
 
+- **Knowledge Base — Level vs. Increasing Death Benefit concept; existing "Death Benefit
+  Increase" field needs a caveat, not a rename (flagged 9/1, discuss before building — CORE
+  MODEL CORRECTED 9/1, see bottom of this entry before building).** Karina explained the
+  mechanics/strategy: on a Level death benefit, cash value grows faster (less going to cost of
+  insurance) — good for a client prioritizing accumulation while younger — but the death benefit
+  itself IS forced to step up automatically at a certain age if the client never touches
+  (withdraws from) the cash value (IRS corridor requirement) — confirmed this is exactly what
+  the existing `dbIncreaseAge` field on the Scenario editor represents, so no rename needed,
+  just a clearer caveat. If the client DOES start taking withdrawals, the death benefit instead
+  stays level — it does not step up. Karina also wants it noted that the Level/Increasing
+  election itself can be changed anytime by calling the carrier (annual review or otherwise),
+  not just at issue.
+  Two concrete to-dos once she says build: (1) update the `dbIncreaseAge` field's helper text on
+  `ScenarioForm.tsx` (currently: "If the death benefit steps up at a later age... note that age
+  here...") to add the "only if cash value is left untouched — withdrawals keep it level
+  instead" caveat, plus a line noting the Level/Increasing election can be changed anytime by
+  calling the carrier; likely also touches the PDF callout text in `illustration-pdf.ts`
+  ("Death benefit begins increasing at age X.") so the client-facing summary doesn't overstate
+  it as unconditional. (2) add a new `KB` "concept" entry in `kb-data.ts` (group: "concept"),
+  same shape as the existing MEC / 7 Pay Test / Policy Loans entries (what/does/agent/client/
+  highlights) — the fuller explanation lives there, the form field just gets a short accurate
+  caveat.
+  **CORRECTION (still 9/1):** the "Increasing = more premium to cost of insurance = slower cash
+  value growth" claim above is NOT reliably true — Karina ran an actual side-by-side illustration
+  and found the opposite in that case (Increasing's cash value grew faster than Level's). The
+  cash-value-growth comparison is product/carrier-specific and should never be asserted as a
+  blanket rule in the KB copy — it needs an actual side-by-side run to know for a given product.
+  The real, universal distinction is WHEN the client has the full death benefit: Level pays the
+  full elected face amount from day one; Increasing starts lower and grows into that same target
+  amount over years (in her live case, a $250k target isn't reached under Increasing until the
+  client's mid-30s, vs. immediately under Level). That reframes the decision around the client's
+  actual need for full coverage NOW (health risk, being the sole/primary breadwinner, dependents)
+  vs. being able to let coverage ramp up while prioritizing something else early on — not around
+  which option grows cash value faster. Concrete case in front of her today: a 40-year-old father
+  with a personal/family history of stroke — she's recommending Level so he has the full death
+  benefit immediately given real, elevated near-term mortality risk, with the option to switch to
+  Increasing later once that risk picture changes. The KB concept card should teach advisors to
+  verify cash-value growth per product rather than assume it, and frame the Level-vs-Increasing
+  decision primarily around timing of full coverage vs. current health/mortality risk — the
+  juvenile-policy example from earlier (start Level for accumulation, switch to Increasing once a
+  real insurance need emerges) is still a valid *example* of that same day-one-vs-later tradeoff,
+  just not for the cash-value-growth reason originally given.
+  **Status update 9/1**: to-do (1) above — the `dbIncreaseAge` caveat on the form and PDF — is now
+  built, along with a full two-part Level/Increasing Scenario rework (see "Illustration Scenario
+  — two-part Level vs. Increasing death benefit comparison" near the top of this file). To-do (2),
+  the standalone Knowledge Base "concept" card, is still NOT built — that wasn't part of what
+  Karina authorized building tonight, just the illustration form/PDF pieces. Don't build the KB
+  card yet — still logged here for whenever she's ready.
+
+- **Illustration Scenario — Riders section: free/included vs. at-cost, plus an
+  approval-pending note (flagged 9/1, don't build yet).** While testing Policy Premium, Karina
+  started describing another gap: a Riders section on the cash_value Scenario editor showing
+  which riders are automatically applied at no cost, with a note that exactly which ones apply
+  is only confirmed at underwriting approval — not guaranteed at illustration time. She also
+  wants a separate section for riders the client would pay extra for ("at-cost riders" — asked
+  if that's a real thing; confirmed yes, e.g. Waiver of Premium, Guaranteed Insurability, Child
+  Term, Return of Premium, an annuity's income rider — as opposed to the free/included type like
+  Accelerated Death Benefit riders, which is most of what's in `COMMON_RIDER_OPTIONS` today).
+  Relevant existing pieces: `RidersField.tsx` + `COMMON_RIDER_OPTIONS` (`types.ts`) already do a
+  checkbox-plus-custom-chip riders picker, but only on the term/final_expense branches of
+  `ScenarioForm.tsx` — there's no riders section at all on the cash_value (IUL/Whole Life)
+  branch yet, and no free-vs-at-cost split anywhere. Karina said she's still going through her
+  notes and may add more to this — don't build any of it yet, just log it.
+
 - **Meetings & Calls card — visual misalignment on a synced Cal.com meeting (flagged 9/1,
   screenshot on a client's page).** Karina uploaded the Cal.com Auto-Sync v2 fix and tested it
   live. Screenshot shows a client's Meetings & Calls card with a manual "Add Meeting" just used
@@ -80,6 +144,49 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **Illustration Scenario — two-part Level vs. Increasing death benefit comparison, Policy
+  Premium moved to the top, Death Benefit Increase caveat added — built 9/1, same night as the
+  Policy Premium section below (Karina needed this for an email going out that day).** Follow-up
+  to the "Level vs. Increasing Death Benefit concept" and "Policy Premium ordering" entries below
+  (both logged earlier tonight as "don't build yet, discuss first") — after the discussion,
+  Karina said "let's build what we have talked about... I do need to get this email out today."
+  Three changes, all on the cash_value branch:
+  (1) **Reordered sections** in `ScenarioForm.tsx` and `generateScenarioIllustrationPDF`
+  (`illustration-pdf.ts`) so Policy Premium (Monthly Premium + Minimum to Avoid Lapse) is now
+  first, ahead of Initial Death Benefit and Death Benefit Increase — matches the standalone
+  "Policy Premium ordering" ask below.
+  (2) **Death Benefit Increase caveat**: the helper text under `dbIncreaseAge` now explains the
+  real mechanic Karina described — the step-up only fires if cash value is left untouched
+  (withdrawals keep the death benefit level instead) — plus a line noting the Level/Increasing
+  election can be changed anytime by calling in, with periodic reviews scheduled as part of the
+  service anyway. Same two-line caveat now also renders in the PDF's gold callout box (grew from
+  26pt to 40pt tall to fit the second line).
+  (3) **Two-part Milestones**: each milestone in the Cash Value Milestones editor is now entered
+  as two side-by-side sub-blocks, "Level Death Benefit" and "Increasing Death Benefit" (Cash
+  Value + Death Benefit each), so an advisor pulling numbers off a carrier's own side-by-side
+  illustration can enter both at once. Added `cvIncreasing?`/`dbIncreasing?` as new optional
+  fields on `CashValueMilestone` (`illustration.ts`) — additive, existing
+  `cvNonGuaranteed`/`dbGuaranteed` keep serving as the "Level" track so nothing about the
+  original per-product Illustration flow (Guaranteed/Non-Guaranteed) changes or reads these new
+  fields. The PDF's milestones table grew from 3 columns to 5 (blank / Cash Value Level / Cash
+  Value Increasing / Death Benefit Level / Death Benefit Increasing), and both charts (cash value
+  and death benefit) now plot two series with a small legend — Level as a solid line, Increasing
+  as a dashed line — copied from the same dual-series pattern the original per-product PDF
+  already used for Guaranteed vs. Non-Guaranteed, to keep the visual language consistent and
+  minimize risk of a new bug. The "DEATH BENEFIT OVER TIME (GUARANTEED)" chart title was
+  shortened to "DEATH BENEFIT OVER TIME" since it's no longer a guaranteed-only view.
+  **Known side effect, worth knowing about**: the wider table header and taller gold callout make
+  a typical cash_value scenario PDF taller than before — even an ordinary 3-milestone scenario
+  with no notes now runs long enough that the "Prepared by" advisor line and the legal disclaimer
+  spill onto their own second page instead of sharing page 1. This was a real bug in an earlier
+  pass tonight — the disclaimer either overlapped the advisor line or vanished off the bottom
+  edge in some cases — now fixed with a proper page-break: once there's no longer room for both
+  blocks before the page bottom, jsPDF starts a fresh page for them rather than squeezing or
+  clipping. Verified with rendered PDFs for both a short/typical case and a long-Notes case —
+  both now show the advisor line and disclaimer cleanly on their own page, nothing overlapping or
+  cut off. No SQL needed — `cvIncreasing`/`dbIncreasing` live inside the existing `data` JSONB
+  column on `illustration_scenarios`, same as every other additive scenario field tonight.
 
 - **Illustration Scenario — Policy Premium section added (Monthly Premium + Minimum to Avoid
   Lapse) — built 9/1.** Karina wanted a picture of what the client actually pays vs. the bare
