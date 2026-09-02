@@ -164,6 +164,29 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **DollarInput — auto-formats with commas on blur, portal-wide — built 9/2.** Karina spotted
+  "55000" (no commas) sitting right next to "50,000" (with commas) on the same Final Expense
+  budget-options card and said commas "need to autofill, that needs to happen across all areas of
+  portal." `DollarInput` (`clients/[id]/DollarInput.tsx`) is the one shared component behind
+  every dollar figure in the app — Illustrations, Scenarios, and Products all use it — so this
+  was a single-file fix that reaches everywhere at once, exactly what "across all areas" needed.
+  Doesn't reformat while actively typing (reformatting mid-keystroke fights the cursor and is a
+  well-known way to introduce new bugs — digits landing in the wrong place, cursor jumping)
+  instead formats on blur (tabbing or clicking away), the same pattern the Client Analyzer's
+  separate `CurrencyInput` component already used — this brings the rest of the portal in line
+  with a pattern that was already proven there rather than inventing a second convention. Reuses
+  `formatMoney()` from `illustration.ts`, the exact same helper the PDF generator already
+  formats every dollar figure through, so what an advisor sees on screen now always matches what
+  ends up on the PDF — "91.50" stays "91.50" (cents kept only when actually entered), "55000"
+  becomes "55,000".
+  Verified by bundling the real `DollarInput.tsx` component (not a reimplementation) into an
+  isolated test page with esbuild and driving it with Playwright/Chromium — typed "55000",
+  "91.50", "10000", "100.35", and "1234567" into the field, blurred, and confirmed both the
+  visible input and the value passed to `onChange` (i.e. what actually gets saved) came out
+  correctly formatted in every case. Test scaffolding was temporary (outside the project, not
+  included in any delivered zip) — the only lasting change is the four-line formatting addition
+  to `DollarInput.tsx` itself.
+
 - **Illustration Scenario (Final Expense) — up to 3 face-value/premium budget options on the
   same scenario — built 9/2.** Karina asked for this while reviewing a TruStage Final Expense
   scenario: "sometimes people have room in their budget, so I want to enter more, should be able
