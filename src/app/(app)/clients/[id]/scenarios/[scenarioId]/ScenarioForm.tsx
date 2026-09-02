@@ -11,6 +11,7 @@ import {
   type IllustrationData,
   type CashValueMilestone,
   type AnnuityMilestone,
+  type FinalExpenseIllustration,
 } from "@/lib/illustration";
 import { generateScenarioIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
 
@@ -216,6 +217,126 @@ function AnnuityMilestonesEditor({
       >
         + Add Milestone
       </button>
+    </div>
+  );
+}
+
+const MAX_FINAL_EXPENSE_OPTIONS = 3;
+
+// Final Expense budget options — added 9/2. Karina wants to show a client more than one
+// face-value/premium pairing on the same scenario ("sometimes people have room in their
+// budget, so I want to enter more" — at least 3 total). Final Expense pricing is a
+// straightforward face-value-to-premium table per carrier (guaranteed/simplified issue, no
+// cash value or Level/Increasing complexity like IUL) — so unlike the cash_value Milestones
+// editor, this isn't an age-by-age table, just up to 3 flat Death Benefit + Level Premium
+// pairs. Fixed at 3 (not an open-ended "+ Add" list like Milestones) since that's what was
+// actually asked for; deathBenefit/levelPremium on FinalExpenseIllustration stay the primary
+// (first) option so every existing Final Expense scenario is unaffected. Options 2 and 3 use
+// local show/hide state (not just "is there data") so a newly-added, still-empty option row
+// doesn't disappear the moment it's added.
+function FinalExpenseOptionsEditor({
+  data,
+  setData,
+}: {
+  data: FinalExpenseIllustration;
+  setData: (d: FinalExpenseIllustration) => void;
+}) {
+  const hasOption2 = !!((data.deathBenefit2 && data.deathBenefit2.trim()) || (data.levelPremium2 && data.levelPremium2.trim()));
+  const hasOption3 = !!((data.deathBenefit3 && data.deathBenefit3.trim()) || (data.levelPremium3 && data.levelPremium3.trim()));
+  const [showOption2, setShowOption2] = useState(hasOption2);
+  const [showOption3, setShowOption3] = useState(hasOption3);
+
+  function removeOption2() {
+    setShowOption2(false);
+    setData({ ...data, deathBenefit2: "", levelPremium2: "" });
+  }
+  function removeOption3() {
+    setShowOption3(false);
+    setData({ ...data, deathBenefit3: "", levelPremium3: "" });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Guaranteed Death Benefit
+          <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Guaranteed Level Premium
+          <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
+        </label>
+      </div>
+
+      {showOption2 && (
+        <div className="rounded-md border border-[#D9CFBA] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Budget Option 2</div>
+            <button type="button" onClick={removeOption2} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
+              Remove
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Guaranteed Death Benefit
+              <DollarInput
+                value={data.deathBenefit2 ?? ""}
+                onChange={(v) => setData({ ...data, deathBenefit2: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Guaranteed Level Premium
+              <DollarInput
+                value={data.levelPremium2 ?? ""}
+                onChange={(v) => setData({ ...data, levelPremium2: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {showOption3 && (
+        <div className="rounded-md border border-[#D9CFBA] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Budget Option 3</div>
+            <button type="button" onClick={removeOption3} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
+              Remove
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Guaranteed Death Benefit
+              <DollarInput
+                value={data.deathBenefit3 ?? ""}
+                onChange={(v) => setData({ ...data, deathBenefit3: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Guaranteed Level Premium
+              <DollarInput
+                value={data.levelPremium3 ?? ""}
+                onChange={(v) => setData({ ...data, levelPremium3: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {!showOption2 || !showOption3 ? (
+        <button
+          type="button"
+          onClick={() => (!showOption2 ? setShowOption2(true) : setShowOption3(true))}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add another budget option
+        </button>
+      ) : (
+        <p className="text-xs text-[#999]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} budget options.</p>
+      )}
     </div>
   );
 }
@@ -496,18 +617,11 @@ export default function ScenarioForm({
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
             <p className="mb-4 text-xs text-[#888]">
               Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
-              life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here.
+              life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here. Some clients have room to
+              spend more than the minimum — add up to 2 more face-value/premium options below so they can see what
+              a bigger budget buys.
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Guaranteed Death Benefit
-                <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Guaranteed Level Premium
-                <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
-              </label>
-            </div>
+            <FinalExpenseOptionsEditor data={data} setData={setData} />
             <div className="mt-4">
               <div className="mb-2 text-xs font-semibold text-[#666]">Riders</div>
               <RidersField value={data.riders} onChange={(riders) => setData({ ...data, riders })} />

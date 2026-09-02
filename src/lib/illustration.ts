@@ -103,6 +103,17 @@ export interface FinalExpenseIllustration {
   kind: "final_expense";
   deathBenefit: string;
   levelPremium: string;
+  // Second and third budget options — added 9/2. Karina wants to show a client more than one
+  // face-value/premium pairing on the same scenario ("sometimes people have room in their
+  // budget, so I want to enter more" — at least 3 total). Final Expense pricing is a
+  // straightforward face-value-to-premium table per carrier, so unlike cash_value's Milestones
+  // this isn't an age-by-age table — just up to 3 flat pairs. deathBenefit/levelPremium above
+  // stay the primary (first) option, optional/additive like everywhere else in this app, so
+  // every existing Final Expense scenario is unaffected.
+  deathBenefit2?: string;
+  levelPremium2?: string;
+  deathBenefit3?: string;
+  levelPremium3?: string;
   riders: string[];
   notes: string;
 }

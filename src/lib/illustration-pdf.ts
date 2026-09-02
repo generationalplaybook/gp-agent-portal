@@ -816,21 +816,66 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "final_expense") {
-    setFill([235, 245, 238]);
-    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    setText(GREEN);
-    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    setText(CHARCOAL);
-    doc.text("Guaranteed Death Benefit", M + 14, y + 50);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    setText(OBSIDIAN);
-    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
-    y += 96;
+    // Budget options — added 9/2. Karina wants to show a client more than one face-value/premium
+    // pairing on the same scenario. With just the one (original) option, keep the exact original
+    // single big box — full backward compatibility for every existing Final Expense PDF. With 2
+    // or 3, switch to smaller boxes side by side so there's room for each pairing.
+    const hasOption2 = !!((data.deathBenefit2 && data.deathBenefit2.trim()) || (data.levelPremium2 && data.levelPremium2.trim()));
+    const hasOption3 = !!((data.deathBenefit3 && data.deathBenefit3.trim()) || (data.levelPremium3 && data.levelPremium3.trim()));
+
+    if (!hasOption2 && !hasOption3) {
+      setFill([235, 245, 238]);
+      doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      setText(GREEN);
+      doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      doc.text("Guaranteed Death Benefit", M + 14, y + 50);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      setText(OBSIDIAN);
+      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
+      y += 96;
+    } else {
+      const options: { label: string; db?: string; prem?: string }[] = [
+        { label: "Option 1", db: data.deathBenefit, prem: data.levelPremium },
+      ];
+      if (hasOption2) options.push({ label: "Option 2", db: data.deathBenefit2, prem: data.levelPremium2 });
+      if (hasOption3) options.push({ label: "Option 3", db: data.deathBenefit3, prem: data.levelPremium3 });
+
+      const gap = 12;
+      const boxW = (W - 2 * M - gap * (options.length - 1)) / options.length;
+      options.forEach((opt, i) => {
+        const x = M + i * (boxW + gap);
+        setFill([235, 245, 238]);
+        doc.roundedRect(x, y, boxW, 78, 4, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        setText(GRAY);
+        doc.text(opt.label.toUpperCase(), x + 12, y + 16);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        setText(GREEN);
+        doc.text(opt.db ? "$" + formatMoney(opt.db) : "—", x + 12, y + 38);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        setText(CHARCOAL);
+        doc.text("Guaranteed Death Benefit", x + 12, y + 50);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        setText(OBSIDIAN);
+        // Deliberately just "$X/mo" here, not the fuller "— guaranteed for life" phrasing the
+        // single-option box above uses — bug caught while testing: that longer phrase wraps to a
+        // second line in these narrower 3-across boxes and spills below the box's fixed height.
+        // The intro paragraph above already establishes everything here is guaranteed/locked for
+        // life, so it isn't lost by shortening this line.
+        doc.text(opt.prem ? "$" + formatMoney(opt.prem) + "/mo" : "—", x + 12, y + 66, { maxWidth: boxW - 24 });
+      });
+      y += 96;
+    }
 
     if (data.riders.length > 0) {
       doc.setFont("helvetica", "bold");
