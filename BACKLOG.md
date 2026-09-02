@@ -26,6 +26,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Bugs found during testing — not yet built (Karina said don't build, just log)
 
+- **Highlight that Ethos products come with Will & Trust options for adults — flagged 9/2,
+  placement undecided, don't build yet.** Karina flagged this while wrapping up tonight's IUL
+  illustration work, unsure herself where it should go ("I don't know where this would go").
+  Checked the Knowledge Base before logging this, since it looked like it might already be
+  covered — it is, extensively: nearly every Ethos product entry in `kb-data.ts` (Term, Term With
+  Living Benefits, TruStage Term, both Final Expense entries, Accumulation IUL via Ethos, Athene
+  IUL) already lists "FREE Will & Trust included — can be gifted if not needed" in both its
+  `does` and `highlights` arrays, and there are two dedicated KB cards for it — "Will Estate Plan"
+  ($249 value) and "Trust Estate Plan" ($449 value, includes everything in the Will plan plus a
+  Revocable Living Trust) — each already noting "NOT available for juvenile policies," i.e.
+  already scoped to adults only, matching Karina's "for adults" framing exactly.
+  So the Knowledge Base itself isn't missing anything here — what's actually open is whether this
+  needs to surface somewhere ELSE, beyond the internal KB an advisor references. Candidates to
+  ask Karina about next time this comes up: (a) the client-facing Illustration/Scenario PDF, so
+  it shows up on the document a client actually sees; (b) a reminder on the Scenario/Illustration
+  form itself when the carrier is Ethos, so an advisor doesn't forget to mention it; (c) nothing
+  further — the KB coverage may already be exactly what she was thinking of, and she just wanted
+  to confirm it existed. Don't build anything until she says which surface she means.
+
 - **Knowledge Base — Level vs. Increasing Death Benefit concept; existing "Death Benefit
   Increase" field needs a caveat, not a rename (flagged 9/1, discuss before building — CORE
   MODEL CORRECTED 9/1, see bottom of this entry before building).** Karina explained the
@@ -144,6 +163,42 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **Illustration Scenario — compare a second monthly premium (e.g. $100/mo vs $200/mo) on the
+  same Scenario — built 9/2.** Karina asked to show a client what the same policy looks like at
+  two different budgets, "opens up more room for data entry" once a second premium is typed in —
+  same interaction pattern as the Level/Increasing split. Discussed scope before building since
+  crossing this with Level/Increasing would mean 4 tracks per milestone (Level-A, Increasing-A,
+  Level-B, Increasing-B) — too much to type per age and too wide a table. Went with the simpler
+  option instead, confirmed with Karina: Premium B is its own single track, NOT crossed with the
+  election.
+  New optional field `premiumB` on `CashValueIllustration` — a "Compare to a second premium"
+  DollarInput next to Monthly Premium in `ScenarioForm.tsx`. Filling it in is the on/off switch
+  for the whole feature: blank, and everything (form and PDF) looks exactly like it did before
+  this existed. Filled in, and a third sub-block opens up on each Milestone card, labeled with
+  the actual amount (e.g. "at $200/mo") via the existing `formatMoney()` helper, bound to two new
+  optional fields on `CashValueMilestone`: `cvPremiumB` / `dbPremiumB`.
+  On the PDF (`illustration-pdf.ts`): Policy Premium block gets a "Compare to: $X/mo" line. The
+  Milestones table grows from 5 to 7 columns when premiumB is set (label + Level/Increasing/
+  Premium-B for both Cash Value and Death Benefit) — font size and column widths shrink a size to
+  keep it fitting the same page width; with premiumB blank the table is byte-for-byte the
+  original 5-column layout. Both charts (Cash Value, Death Benefit) get a third line for Premium
+  B — solid gold, legend labeled with the actual dollar amount — alongside the existing solid
+  Level / dashed Increasing lines.
+  **Also fixed while in this code, an open item from a few messages earlier**: Karina had asked
+  whether leaving one side (Level or Increasing) entirely blank would error or "make the PDF make
+  sense" — I'd tested it and found it didn't error, but the chart used to draw a flat line sitting
+  at $0 with that side's name still in the legend, which reads to a client as "this pays $0"
+  rather than "we didn't enter this side." Fixed for all three possible tracks now (Level,
+  Increasing, and the new Premium B): a track only gets a line + legend entry on the chart if at
+  least one milestone actually has a number for it. The table was never affected by this — a
+  blank cell there already showed a plain "—", which was always clear.
+  Verified with three rendered PDFs: no `premiumB` at all (pixel-identical to the pre-9/2
+  layout), `premiumB` filled in with all three tracks populated (7-column table, 3-line charts,
+  correct dollar-amount legend labels), and `premiumB` filled in with Level left entirely blank
+  (confirms the flat-$0-line fix — Level shows "—" in the table and doesn't appear on the chart
+  or legend at all). No SQL needed — `premiumB`/`cvPremiumB`/`dbPremiumB` all live inside the
+  existing `data` JSONB column, same as every other additive scenario field.
 
 - **Illustration Scenario — Initial Death Benefit and Minimum to Avoid Lapse split into Level /
   Increasing, same as the Milestones table — built 9/2.** Direct follow-up to the two-part
