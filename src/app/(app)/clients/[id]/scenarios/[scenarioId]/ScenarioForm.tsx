@@ -7,6 +7,7 @@ import RidersField from "../../RidersField";
 import {
   emptyCashValueMilestone,
   emptyAnnuityMilestone,
+  formatMoney,
   type IllustrationData,
   type CashValueMilestone,
   type AnnuityMilestone,
@@ -45,9 +46,15 @@ const inputClass = "rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outli
 function CashValueMilestonesEditor({
   milestones,
   onChange,
+  premiumB,
 }: {
   milestones: CashValueMilestone[];
   onChange: (m: CashValueMilestone[]) => void;
+  // The second premium to compare, from Policy Premium above — added 9/2. A filled-in value is
+  // the on/off switch for a third "at $[premiumB]/mo" sub-block per milestone (see the comment
+  // on CashValueMilestone.cvPremiumB in illustration.ts). Blank/undefined means this editor looks
+  // exactly like it did before this feature existed.
+  premiumB?: string;
 }) {
   function update(id: string, patch: Partial<CashValueMilestone>) {
     onChange(milestones.map((m) => (m.id === id ? { ...m, ...patch } : m)));
@@ -55,6 +62,8 @@ function CashValueMilestonesEditor({
   function remove(id: string) {
     onChange(milestones.filter((m) => m.id !== id));
   }
+  const hasPremiumB = !!(premiumB && premiumB.trim());
+  const premiumBLabel = hasPremiumB ? `at $${formatMoney(premiumB)}/mo` : "";
   return (
     <div className="flex flex-col gap-3">
       {milestones.map((m, i) => (
@@ -80,7 +89,7 @@ function CashValueMilestonesEditor({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className={"grid gap-4 " + (hasPremiumB ? "grid-cols-3" : "grid-cols-2")}>
             <div>
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
                 Level Death Benefit
@@ -111,6 +120,23 @@ function CashValueMilestonesEditor({
                 </label>
               </div>
             </div>
+            {hasPremiumB && (
+              <div>
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+                  {premiumBLabel}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1 text-xs text-[#666]">
+                    Cash Value
+                    <DollarInput value={m.cvPremiumB ?? ""} onChange={(v) => update(m.id, { cvPremiumB: v })} className={inputClass + " w-full"} />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[#666]">
+                    Death Benefit
+                    <DollarInput value={m.dbPremiumB ?? ""} onChange={(v) => update(m.id, { dbPremiumB: v })} className={inputClass + " w-full"} />
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -307,14 +333,33 @@ export default function ScenarioForm({
               minimum to avoid lapse differs by election — cost of insurance isn&rsquo;t the same under Level vs.
               Increasing — so enter both from the carrier&rsquo;s illustration. All optional.
             </p>
-            <label className="mb-3 flex max-w-[220px] flex-col gap-1 text-xs text-[#666]">
-              Monthly Premium
-              <DollarInput
-                value={data.monthlyPremium ?? ""}
-                onChange={(v) => setData({ ...data, monthlyPremium: v })}
-                className={inputClass}
-              />
-            </label>
+            <div className="mb-5 grid max-w-md grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Monthly Premium
+                <DollarInput
+                  value={data.monthlyPremium ?? ""}
+                  onChange={(v) => setData({ ...data, monthlyPremium: v })}
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Compare to a second premium (optional)
+                <DollarInput
+                  value={data.premiumB ?? ""}
+                  onChange={(v) => setData({ ...data, premiumB: v })}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            {data.premiumB && data.premiumB.trim() ? (
+              <p className="mb-3 text-xs text-[#888]">
+                A third &ldquo;at $
+                {formatMoney(data.premiumB)}
+                /mo&rdquo; column opened up on Milestones below — enter what cash value and death benefit look
+                like at that premium so the client can compare both budgets side by side. Leave this blank
+                again to remove it.
+              </p>
+            ) : null}
             <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
               <div>
                 <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Level</div>
@@ -403,6 +448,7 @@ export default function ScenarioForm({
             <CashValueMilestonesEditor
               milestones={data.milestones}
               onChange={(milestones) => setData({ ...data, milestones })}
+              premiumB={data.premiumB}
             />
           </>
         )}
