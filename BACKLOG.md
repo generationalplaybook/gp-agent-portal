@@ -145,6 +145,37 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration Scenario — Initial Death Benefit and Minimum to Avoid Lapse split into Level /
+  Increasing, same as the Milestones table — built 9/2.** Direct follow-up to the two-part
+  rework below: Karina tested the intake side and wanted the same Level/Increasing split carried
+  into the two single up-front numbers that were still one field each. Two changes, both on the
+  cash_value branch:
+  (1) **Initial Death Benefit** now has a Level Face Value and an Increasing Face Value, entered
+  side by side (a carrier can quote a different starting face amount for each election even
+  though both grow toward the same eventual target). Added `initialDeathBenefitIncreasing?`
+  alongside the existing `initialDeathBenefit` on `CashValueIllustration` (`illustration.ts`) —
+  `initialDeathBenefit` is now specifically the "Level" value, same additive pattern as every
+  other field in this rework. On the PDF, this now draws as two green boxes side by side when
+  both are filled in ("Initial Death Benefit (Level)" / "(Increasing)"); if only the Level value
+  is present (any scenario saved before this build), it still renders as one full-width box
+  labeled "Initial Death Benefit (Face Value)" exactly as before — fully backward compatible.
+  (2) **Minimum to Avoid Lapse** (under Policy Premium) is now also split Level/Increasing — cost
+  of insurance differs by election, so the bare minimum that avoids lapse isn't one number.
+  Monthly Premium stayed a single field (what the client actually chooses to pay doesn't change
+  with the election, only asked about the minimum). Added `minimumPremiumIncreasing?` alongside
+  the existing `minimumPremium` (now the "Level" value). PDF shows "Minimum to Avoid Lapse
+  (Level): $X/mo" and "(Increasing): $Y/mo" as separate lines, each only if filled in.
+  **Bug caught and fixed during testing tonight**: the first render of the new side-by-side
+  Initial Death Benefit boxes came out with the second (Increasing) box solid dark instead of
+  light green — root cause was that jsPDF draws text glyphs using the same underlying fill color
+  as shapes, so drawing the first box's label text after its rect (in dark charcoal) silently
+  changed the fill color that the second box's rect then inherited. Fixed by re-setting the fill
+  color immediately before each box's rect instead of once up front — verified with a rendered
+  PDF showing both boxes correctly light green, and a second rendered PDF confirming the
+  single-box/single-line backward-compatible case still looks exactly like it did before this
+  build. No SQL needed — both new fields live inside the existing `data` JSONB column, same as
+  every other additive scenario field.
+
 - **Illustration Scenario — two-part Level vs. Increasing death benefit comparison, Policy
   Premium moved to the top, Death Benefit Increase caveat added — built 9/1, same night as the
   Policy Premium section below (Karina needed this for an email going out that day).** Follow-up
