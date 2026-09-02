@@ -164,6 +164,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Illustration Scenario (Final Expense) — up to 3 face-value/premium budget options on the
+  same scenario — built 9/2.** Karina asked for this while reviewing a TruStage Final Expense
+  scenario: "sometimes people have room in their budget, so I want to enter more, should be able
+  to enter another face value and premium, at least 3 total." Final Expense pricing is a
+  straightforward face-value-to-premium table per carrier (guaranteed/simplified issue, no cash
+  value or Level/Increasing complexity like IUL), so unlike the cash_value Milestones editor this
+  isn't an age-by-age table — just up to 3 flat Death Benefit + Level Premium pairs, fixed at 3
+  (not an open-ended "+ Add" list) since that's what was actually asked for.
+  Added `deathBenefit2`/`levelPremium2` and `deathBenefit3`/`levelPremium3` as optional fields on
+  `FinalExpenseIllustration` (`illustration.ts`) — the existing `deathBenefit`/`levelPremium`
+  stay Option 1, so every existing Final Expense scenario is unaffected. New
+  `FinalExpenseOptionsEditor` component in `ScenarioForm.tsx` shows Option 1 same as always, plus
+  a "+ Add another budget option" button that reveals Option 2, then Option 3, each in its own
+  bordered card with a Remove link (removing clears that option's data too, not just hides it).
+  On the PDF (`illustration-pdf.ts`): with only Option 1 filled in, the summary looks byte-for-
+  byte like it always has — the original single big green box. With 2 or 3 options, it switches
+  to that many smaller boxes side by side, each showing its death benefit and "$X/mo" premium.
+  **Bug caught and fixed during testing, before this went out**: the first version of the
+  3-across boxes reused the single-box version's longer premium phrasing ("$X/mo — guaranteed
+  for life"), which wrapped to a second line in the narrower boxes and spilled text below the
+  box's fixed height — confirmed via a rendered PDF crop showing "life" sitting on white
+  background outside the green box. Fixed by shortening the multi-option boxes' premium line to
+  just "$X/mo" (the intro paragraph above the boxes already says everything here is guaranteed
+  for life, so nothing is lost) — re-verified with fresh renders of 1, 2, and 3-option scenarios,
+  all clean. No SQL needed — all four new fields live inside the existing `data` JSONB column.
+
 - **Illustration Scenario — compare a second monthly premium (e.g. $100/mo vs $200/mo) on the
   same Scenario — built 9/2.** Karina asked to show a client what the same policy looks like at
   two different budgets, "opens up more room for data entry" once a second premium is typed in —
