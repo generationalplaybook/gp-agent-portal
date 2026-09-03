@@ -79,7 +79,7 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666]">
-        NPN <span className="font-normal text-[#999]">(National Producer Number)</span>
+        NPN
         <input
           value={npn}
           onChange={(e) => setNpn(e.target.value)}
