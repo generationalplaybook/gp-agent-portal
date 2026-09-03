@@ -75,6 +75,36 @@ export interface Profile {
   scheduling_link?: string | null;
 }
 
+// Carrier Logins + State Licenses (added 9/3) — a private, per-advisor replacement for the messy
+// personal spreadsheet Karina was keeping her broker/carrier portal logins in. Lives on My
+// Profile, not on any client — this is the same info regardless of which client she's working
+// on. Deliberately no expiration/renewal/status fields on StateLicense — that's compliance data
+// already tracked authoritatively in SureLC; this is organization/quick-access only.
+export interface CarrierLogin {
+  id: string;
+  agent_id: string;
+  company: string;
+  username: string | null;
+  password: string | null;
+  agent_number: string | null;
+  agency_number: string | null;
+  profile_code: string | null;
+  link: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StateLicense {
+  id: string;
+  agent_id: string;
+  state: string;
+  license_number: string | null;
+  is_resident: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Client {
   id: string;
   owner_id: string;

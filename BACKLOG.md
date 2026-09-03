@@ -93,6 +93,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   the standalone Knowledge Base "concept" card, is still NOT built — that wasn't part of what
   Karina authorized building tonight, just the illustration form/PDF pieces. Don't build the KB
   card yet — still logged here for whenever she's ready.
+  **BUILT 9/3**: turned out a KB entry on this exact topic already existed —
+  "Death Benefit Options — Level vs. Increasing vs. Increasing-to-Level" in `kb-data.ts` (added at
+  some point after 9/1, alongside the Scenario rework, without this backlog entry getting
+  updated to say so) — and it still stated the disproven "Level always grows cash value faster"
+  claim as blanket fact. Rather than add a second, conflicting card on the same topic, revised
+  that entry in place: added the CORRECTED reasoning as the lead explanation (cost-of-insurance
+  mechanics don't reliably predict which option's cash value grows faster — verify per actual
+  product illustration, never assert from memory), reframed the primary decision driver around
+  WHEN the client has full coverage (Level = day one, Increasing = grows into the same target over
+  years) vs. their current health/mortality risk, and added Karina's concrete case (40-year-old
+  father with a stroke history → Level, for full immediate coverage given elevated near-term
+  risk) to the agent guidance. Also tightened the DBO-change language to "anytime by calling the
+  carrier" per Karina's exact framing. No SQL, no other files touched — this is a single KB data
+  entry.
 
 - **Illustration Scenario — Riders section: free/included vs. at-cost, plus an
   approval-pending note (flagged 9/1, don't build yet).** While testing Policy Premium, Karina
@@ -163,6 +177,31 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **Carrier Logins + State Licenses — private per-advisor reference on My Profile — discussed
+  9/3, BUILT 9/3.** Karina was tracking her own broker/carrier portal logins (F&G, North
+  American, Ethos, Athene, Nationwide, WinFlex, Mutual of Omaha) in a messy personal spreadsheet
+  and wanted it saved properly, with the links "accessible quickly." Confirmed this belongs on My
+  Profile, not on client profiles — it's the same info regardless of which client she's working
+  on. Sketched a layout first (published as a design canvas) before building, per Karina's
+  request, using her real spreadsheet rows as the sample data.
+  New "Carrier & Licensing" card on `/profile`, below My Credentials, with two tabs:
+  - **Carrier Logins**: Company, Username, Password, Agent #, Agency #, Profile Code (freeform —
+    a code, a note, or a URL), and Link (the portal login URL). Sorted alphabetically by company.
+    Password is masked (••••••••) with a click-to-reveal toggle rather than shown plain. Link and
+    Profile Code render as a compact "Open ↗" button when they're a URL (some of Karina's are
+    hundreds of characters) instead of printing the raw text.
+  - **State Licenses**: State, License #, a Resident-state flag, and freeform Notes — deliberately
+    NO expiration/renewal/status fields. Karina's call when asked: "that's tracked in SureLC,
+    this portal is more so organization" — duplicating compliance dates here risks a second,
+    silently-stale copy diverging from the real system of record. Kept intentionally lean.
+  New tables `carrier_logins` and `state_licenses` (`supabase/schema.sql` section 31,
+  `migration_add_carrier_licensing.sql`), both private per-advisor (RLS: `agent_id = auth.uid()`),
+  same ownership pattern as `advisor_credentials`. Full CRUD (add/edit/delete, inline row editing)
+  in `CarrierLoginsTab.tsx` / `StateLicensesTab.tsx`, tab switcher in `CarrierAndLicensingCard.tsx`,
+  actions in `profile/actions.ts`.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_carrier_licensing.sql`.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

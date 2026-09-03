@@ -48,6 +48,102 @@ export async function deleteCredential(credentialId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Carrier Logins — a private, per-advisor replacement for the spreadsheet Karina was tracking
+// her broker/carrier portal logins in (company, username, password, agent/agency numbers,
+// profile code, portal link). Nothing here is client data.
+// ─────────────────────────────────────────────────────────────
+
+export async function addCarrierLogin(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const company = String(formData.get("company") || "").trim();
+  if (!company) return;
+
+  await supabase.from("carrier_logins").insert({
+    agent_id: user.id,
+    company,
+    username: String(formData.get("username") || "").trim() || null,
+    password: String(formData.get("password") || "").trim() || null,
+    agent_number: String(formData.get("agent_number") || "").trim() || null,
+    agency_number: String(formData.get("agency_number") || "").trim() || null,
+    profile_code: String(formData.get("profile_code") || "").trim() || null,
+    link: String(formData.get("link") || "").trim() || null,
+  });
+  revalidatePath("/profile");
+}
+
+export async function updateCarrierLogin(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id"));
+  const company = String(formData.get("company") || "").trim();
+  if (!company) return;
+
+  await supabase
+    .from("carrier_logins")
+    .update({
+      company,
+      username: String(formData.get("username") || "").trim() || null,
+      password: String(formData.get("password") || "").trim() || null,
+      agent_number: String(formData.get("agent_number") || "").trim() || null,
+      agency_number: String(formData.get("agency_number") || "").trim() || null,
+      profile_code: String(formData.get("profile_code") || "").trim() || null,
+      link: String(formData.get("link") || "").trim() || null,
+    })
+    .eq("id", id);
+  revalidatePath("/profile");
+}
+
+export async function deleteCarrierLogin(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("carrier_logins").delete().eq("id", id);
+  revalidatePath("/profile");
+}
+
+// ─────────────────────────────────────────────────────────────
+// State Licenses — deliberately just State + License # + a resident flag + freeform notes. NO
+// expiration/renewal/status fields: that's compliance data already tracked authoritatively in
+// SureLC (Karina, 9/3) — duplicating it here would just be a second copy that goes stale.
+// ─────────────────────────────────────────────────────────────
+
+export async function addStateLicense(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const state = String(formData.get("state") || "").trim();
+  if (!state) return;
+
+  await supabase.from("state_licenses").insert({
+    agent_id: user.id,
+    state,
+    license_number: String(formData.get("license_number") || "").trim() || null,
+    is_resident: formData.get("is_resident") === "on",
+    notes: String(formData.get("notes") || "").trim() || null,
+  });
+  revalidatePath("/profile");
+}
+
+export async function updateStateLicense(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id"));
+  const state = String(formData.get("state") || "").trim();
+  if (!state) return;
+
+  await supabase
+    .from("state_licenses")
+    .update({
+      state,
+      license_number: String(formData.get("license_number") || "").trim() || null,
+      is_resident: formData.get("is_resident") === "on",
+      notes: String(formData.get("notes") || "").trim() || null,
+    })
+    .eq("id", id);
+  revalidatePath("/profile");
+}
+
+export async function deleteStateLicense(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("state_licenses").delete().eq("id", id);
+  revalidatePath("/profile");
+}
+
+// ─────────────────────────────────────────────────────────────
 // Custom intake link handle — lets an advisor set a short, memorable slug (e.g. "karina") so
 // their public intake link reads /intake/karina instead of the raw profile id. The id-based
 // link keeps working forever regardless (see src/app/intake/[advisorId]/page.tsx, which tries

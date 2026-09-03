@@ -5,6 +5,7 @@ import CredentialRow from "./CredentialRow";
 import ProfileInfoForm from "./ProfileInfoForm";
 import IntakeLinkCard from "./IntakeLinkCard";
 import CalSyncCard from "./CalSyncCard";
+import CarrierAndLicensingCard from "./CarrierAndLicensingCard";
 import { addCredential } from "./actions";
 
 export default async function ProfilePage() {
@@ -14,19 +15,22 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [siteUrl, { data: profile }, { data: credentials }] = await Promise.all([
-    getSiteUrl(),
-    supabase
-      .from("profiles")
-      .select("first_name, middle_name, last_name, email, phone, role, scheduling_link, cal_api_key, intake_slug")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("advisor_credentials")
-      .select("id, label, code")
-      .eq("agent_id", user.id)
-      .order("created_at", { ascending: true }),
-  ]);
+  const [siteUrl, { data: profile }, { data: credentials }, { data: carrierLogins }, { data: stateLicenses }] =
+    await Promise.all([
+      getSiteUrl(),
+      supabase
+        .from("profiles")
+        .select("first_name, middle_name, last_name, email, phone, role, scheduling_link, cal_api_key, intake_slug")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("advisor_credentials")
+        .select("id, label, code")
+        .eq("agent_id", user.id)
+        .order("created_at", { ascending: true }),
+      supabase.from("carrier_logins").select("*").eq("agent_id", user.id).order("company", { ascending: true }),
+      supabase.from("state_licenses").select("*").eq("agent_id", user.id).order("state", { ascending: true }),
+    ]);
 
   const calConnected = !!profile?.cal_api_key;
   // cal_api_key never gets passed to a Client Component below — everything passed to one gets
@@ -83,6 +87,8 @@ export default async function ProfilePage() {
           ))}
         </div>
       </div>
+
+      <CarrierAndLicensingCard carrierLogins={carrierLogins ?? []} stateLicenses={stateLicenses ?? []} />
     </div>
   );
 }
