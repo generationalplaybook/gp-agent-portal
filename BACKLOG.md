@@ -220,6 +220,21 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   either time. Gave Karina her exact old values inline in chat (NPN 21383480; CA 4422472; GA
   3862688; WI 21383480; NV 4240448) so she can re-enter them into the new fields without needing
   the old UI first.
+  **Update 9/3 (again)**: Karina flagged the single "Agent #" field was too narrow — most carriers
+  issue a separate agent ID per product line, and her own F&G row had "Annuities 000763473 / Life
+  000756492" crammed into one box. Split `carrier_logins.agent_number` into `life_agent_number`
+  and `annuity_agent_number` — two fields, two columns, in the add form, inline edit, and the
+  table header (`CarrierLoginsTab.tsx`, `types.ts`, `profile/actions.ts`). Schema: `schema.sql`
+  section 33 has an idempotent rename (old `agent_number` → `life_agent_number`, since her live
+  table already has real data in it) plus the new `annuity_agent_number` column as a safety net —
+  safe to run whether or not her table already has the old column. Standalone migration for her to
+  run: `migration_split_agent_numbers.sql`. After running it, her existing agent numbers land in
+  Life Agent # (a reasonable guess, since that's what most of her entries were) — she'll want to
+  spot-check each row and move any that were actually annuity numbers into the new field, then
+  fill in the annuity numbers she has. Also widened the whole My Profile page
+  (`mx-auto max-w-2xl` → `max-w-4xl` in `profile/page.tsx`) per "this entire profile sections
+  should be stretched out wider in general" — mainly so the Carrier Logins table (now 8 columns)
+  has room to breathe.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

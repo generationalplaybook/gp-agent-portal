@@ -86,7 +86,8 @@ export interface CarrierLogin {
   company: string;
   username: string | null;
   password: string | null;
-  agent_number: string | null;
+  life_agent_number: string | null;
+  annuity_agent_number: string | null;
   agency_number: string | null;
   profile_code: string | null;
   link: string | null;

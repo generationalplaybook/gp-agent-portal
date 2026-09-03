@@ -1012,8 +1012,13 @@ create table if not exists public.carrier_logins (
   company text not null,
   username text,
   password text,
-  agent_number text,
-  agency_number text,
+  -- Most carriers issue a SEPARATE agent ID per product line — Karina's own F&G row has
+  -- "Annuities 000763473 / Life 000756492" as two distinct numbers under one company. Split so
+  -- each has its own field instead of cramming both into one text box (added 9/3 — see section 33
+  -- below for the migration that renames the original single `agent_number` on an existing table).
+  life_agent_number text,
+  annuity_agent_number text,
+  agency_number text, -- the agency/GA/IMO's own number with that carrier, distinct from the agent's personal number above
   profile_code text, -- freeform: a code, a note, or a URL — whatever that carrier's portal calls it
   link text, -- the portal login URL
   created_at timestamptz not null default now(),
@@ -1069,3 +1074,32 @@ create trigger state_licenses_set_updated_at
 -- list, so it gets its own field on Your Info instead of sharing the generic label/code shape.
 -- ─────────────────────────────────────────────────────────────
 alter table public.profiles add column if not exists npn text;
+
+-- ─────────────────────────────────────────────────────────────
+-- 33. Split carrier_logins.agent_number into life_agent_number + annuity_agent_number (added 9/3)
+-- — most carriers issue a separate agent ID per product line (Karina's own F&G row has
+-- "Annuities 000763473 / Life 000756492"). The create table statement in section 31 above was
+-- edited in place to define the two new columns directly, but Karina's live database already ran
+-- that create table before this split existed, so her real carrier_logins table still has the old
+-- single `agent_number` column — with real data in it. This block detects that case and renames
+-- the old column to `life_agent_number` (an arbitrary but reasonable choice — it can be
+-- re-sorted per-row afterward) so no data is lost, then adds `annuity_agent_number` as a normal
+-- safety net for everyone else. Idempotent either way: safe to run on a fresh database (where
+-- section 31 already created the new columns and there's no old one to rename) or on Karina's
+-- live one.
+-- ─────────────────────────────────────────────────────────────
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'carrier_logins' and column_name = 'agent_number'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'carrier_logins' and column_name = 'life_agent_number'
+  ) then
+    alter table public.carrier_logins rename column agent_number to life_agent_number;
+  end if;
+end $$;
+
+alter table public.carrier_logins add column if not exists life_agent_number text;
+alter table public.carrier_logins add column if not exists annuity_agent_number text;

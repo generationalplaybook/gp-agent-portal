@@ -15,7 +15,8 @@ type Draft = {
   company: string;
   username: string;
   password: string;
-  agent_number: string;
+  life_agent_number: string;
+  annuity_agent_number: string;
   agency_number: string;
   profile_code: string;
   link: string;
@@ -26,7 +27,8 @@ function draftFrom(login: CarrierLogin): Draft {
     company: login.company,
     username: login.username ?? "",
     password: login.password ?? "",
-    agent_number: login.agent_number ?? "",
+    life_agent_number: login.life_agent_number ?? "",
+    annuity_agent_number: login.annuity_agent_number ?? "",
     agency_number: login.agency_number ?? "",
     profile_code: login.profile_code ?? "",
     link: login.link ?? "",
@@ -56,9 +58,15 @@ function EditFields({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
         className={inputClass}
       />
       <input
-        value={draft.agent_number}
-        onChange={(e) => setDraft({ ...draft, agent_number: e.target.value })}
-        placeholder="Agent #"
+        value={draft.life_agent_number}
+        onChange={(e) => setDraft({ ...draft, life_agent_number: e.target.value })}
+        placeholder="Life Agent #"
+        className={inputClass}
+      />
+      <input
+        value={draft.annuity_agent_number}
+        onChange={(e) => setDraft({ ...draft, annuity_agent_number: e.target.value })}
+        placeholder="Annuity Agent #"
         className={inputClass}
       />
       <input
@@ -137,7 +145,7 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8DF] py-2.5 text-xs last:border-0">
-      <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-7">
+      <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-8">
         <div className="col-span-2 font-semibold text-[#1C1C1C] sm:col-span-1">{login.company}</div>
         <div className="text-[#666]">{login.username || <span className="text-[#C9C0AE]">—</span>}</div>
         <div className="flex items-center gap-1.5 text-[#666]">
@@ -160,7 +168,8 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
             <span className="text-[#C9C0AE]">—</span>
           )}
         </div>
-        <div className="text-[#666]">{login.agent_number || <span className="text-[#C9C0AE]">—</span>}</div>
+        <div className="text-[#666]">{login.life_agent_number || <span className="text-[#C9C0AE]">—</span>}</div>
+        <div className="text-[#666]">{login.annuity_agent_number || <span className="text-[#C9C0AE]">—</span>}</div>
         <div className="text-[#666]">{login.agency_number || <span className="text-[#C9C0AE]">—</span>}</div>
         <div className="truncate text-[#666]" title={login.profile_code ?? undefined}>
           {isUrl(login.profile_code) ? (
@@ -218,7 +227,8 @@ const EMPTY_DRAFT: Draft = {
   company: "",
   username: "",
   password: "",
-  agent_number: "",
+  life_agent_number: "",
+  annuity_agent_number: "",
   agency_number: "",
   profile_code: "",
   link: "",
@@ -270,11 +280,12 @@ export default function CarrierLoginsTab({ logins }: { logins: CarrierLogin[] })
 
       {logins.length > 0 && (
         <div>
-          <div className="hidden gap-x-3 border-b border-[#D9CFBA] pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#888] sm:grid sm:grid-cols-7">
+          <div className="hidden gap-x-3 border-b border-[#D9CFBA] pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#888] sm:grid sm:grid-cols-8">
             <div>Company</div>
             <div>Username</div>
             <div>Password</div>
-            <div>Agent #</div>
+            <div>Life Agent #</div>
+            <div>Annuity #</div>
             <div>Agency #</div>
             <div>Profile</div>
             <div>Link</div>

@@ -30,7 +30,7 @@ export default async function ProfilePage() {
   const profileForForm = profile ? { ...profile, cal_api_key: null } : null;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-4xl">
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">My Profile</h1>
 
       <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
