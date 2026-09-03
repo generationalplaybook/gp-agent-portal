@@ -21,12 +21,13 @@ export async function updateMyProfile(formData: FormData) {
   const middle_name = String(formData.get("middle_name") || "").trim() || null;
   const last_name = String(formData.get("last_name") || "").trim() || null;
   const phone = String(formData.get("phone") || "").trim() || null;
+  const npn = String(formData.get("npn") || "").trim() || null;
   const scheduling_link = String(formData.get("scheduling_link") || "").trim() || null;
 
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   await supabase
     .from("profiles")
-    .update({ first_name, middle_name, last_name, phone, scheduling_link })
+    .update({ first_name, middle_name, last_name, phone, npn, scheduling_link })
     .eq("id", user.id);
   revalidatePath("/profile");
 }

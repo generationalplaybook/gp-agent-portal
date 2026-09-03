@@ -10,6 +10,7 @@ interface Profile {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  npn: string | null;
   scheduling_link: string | null;
 }
 
@@ -18,6 +19,7 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
   const [middleName, setMiddleName] = useState(profile?.middle_name ?? "");
   const [lastName, setLastName] = useState(profile?.last_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [npn, setNpn] = useState(profile?.npn ?? "");
   const [schedulingLink, setSchedulingLink] = useState(profile?.scheduling_link ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,6 +32,7 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
     formData.set("middle_name", middleName);
     formData.set("last_name", lastName);
     formData.set("phone", phone);
+    formData.set("npn", npn);
     formData.set("scheduling_link", schedulingLink);
     await updateMyProfile(formData);
     setStatus("saved");
@@ -67,12 +70,20 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
         Phone
         <PhoneInput defaultValue={phone} onValueChange={setPhone} className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]" />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
         Email
         <input
           disabled
           value={profile?.email ?? ""}
           className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#888]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        NPN <span className="font-normal text-[#999]">(National Producer Number)</span>
+        <input
+          value={npn}
+          onChange={(e) => setNpn(e.target.value)}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">

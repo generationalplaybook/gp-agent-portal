@@ -1060,3 +1060,12 @@ drop trigger if exists state_licenses_set_updated_at on public.state_licenses;
 create trigger state_licenses_set_updated_at
   before update on public.state_licenses
   for each row execute procedure public.set_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
+-- 32. NPN on the advisor's own profile (added 9/3) — Karina had been storing her National
+-- Producer Number as a generic entry in My Credentials, alongside carrier agent codes and state
+-- license numbers now that both of those have proper homes (My Credentials, Carrier Logins,
+-- State Licenses — section 31). NPN is a single, one-per-advisor identifier, not a repeatable
+-- list, so it gets its own field on Your Info instead of sharing the generic label/code shape.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists npn text;

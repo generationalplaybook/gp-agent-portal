@@ -202,6 +202,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   actions in `profile/actions.ts`.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_carrier_licensing.sql`.
+  **Update 9/3**: Karina flagged she'd already been storing her state license numbers (and her
+  NPN) as generic entries in My Credentials — with State Licenses now built, those state entries
+  are redundant, and NPN specifically deserves its own field (a single one-per-advisor value, not
+  a repeatable list). Added `profiles.npn` (`migration_add_npn.sql`) and a dedicated "NPN
+  (National Producer Number)" field on Your Info (`ProfileInfoForm.tsx`), next to Email. My
+  Credentials itself is untouched — it stays as the generic catch-all for anything that isn't NPN
+  or a carrier/state number. Karina still needs to manually re-add her state numbers under the
+  new State Licenses tab and remove the old My Credentials entries for NPN and each state — I
+  can't move her live data myself, only ship the code/schema.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

@@ -20,7 +20,7 @@ export default async function ProfilePage() {
       getSiteUrl(),
       supabase
         .from("profiles")
-        .select("first_name, middle_name, last_name, email, phone, role, scheduling_link, cal_api_key, intake_slug")
+        .select("first_name, middle_name, last_name, email, phone, npn, role, scheduling_link, cal_api_key, intake_slug")
         .eq("id", user.id)
         .single(),
       supabase
