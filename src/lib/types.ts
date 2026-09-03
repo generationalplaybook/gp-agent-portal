@@ -14,6 +14,21 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
 
 export const GENDER_OPTIONS = ["Male", "Female"];
 
+// Offered as a plain dropdown rather than derived from state, since several states span more
+// than one zone (Texas, Florida, Tennessee, Kentucky, Indiana, Michigan, and others) and Arizona
+// doesn't observe daylight saving — city/state are just reference context, the timezone itself
+// is always an explicit pick. Values are IANA zone ids, the only thing Intl.DateTimeFormat (and
+// so src/lib/timezone.ts) actually understands.
+export const US_TIMEZONE_OPTIONS: { value: string; label: string }[] = [
+  { value: "America/New_York", label: "Eastern" },
+  { value: "America/Chicago", label: "Central" },
+  { value: "America/Denver", label: "Mountain" },
+  { value: "America/Phoenix", label: "Mountain — Arizona (no daylight saving)" },
+  { value: "America/Los_Angeles", label: "Pacific" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+];
+
 // Team / Recruits — Karina's own words for the pipeline: "Lead" (watching the intro calls,
 // progressing through the early conversation), "Studying" (actively studying for their license
 // exam), "Licensed" (active, appointed agent). Deliberately flat, just 3 stages — no
@@ -99,6 +114,12 @@ export interface Client {
   // the client's own id, since health information is more sensitive than the general Intake
   // form (which does use the advisor's own id/slug). See MedicalCondition below.
   medical_report_token: string;
+  // City/state are reference context (also just useful to have on file); timezone is the
+  // explicit IANA zone id an advisor picks — see US_TIMEZONE_OPTIONS above and
+  // src/lib/timezone.ts for how it's turned into "N hours ahead/behind you."
+  city: string | null;
+  state: string | null;
+  timezone: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -126,7 +147,6 @@ export interface MedicalCondition {
   condition_name: string;
   onset_date: string | null;
   current_status: string | null;
-  treating_physician: string | null;
   latest_report_date: string | null;
   latest_report_summary: string | null;
   hospitalizations: string | null;

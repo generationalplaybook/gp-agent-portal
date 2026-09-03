@@ -978,3 +978,19 @@ alter table public.clients alter column medical_report_token set default gen_ran
 alter table public.clients alter column medical_report_token set not null;
 
 create unique index if not exists clients_medical_report_token_idx on public.clients(medical_report_token);
+
+-- ─────────────────────────────────────────────────────────────
+-- 30. Client city/state + timezone (added 9/3) — Karina's use case: before calling or emailing a
+-- client, or booking something with them, know how many hours apart you are. `timezone` is an
+-- explicit selection (an IANA zone id, e.g. "America/Chicago") rather than inferred from state,
+-- since several states span more than one zone (Texas, Florida, Tennessee, Kentucky, Indiana,
+-- Michigan, and others) and Arizona doesn't observe daylight saving — city/state are just
+-- reference context to help pick the right one; the app never tries to derive a timezone from
+-- them. See src/lib/types.ts (US_TIMEZONE_OPTIONS) for the offered list and src/lib/timezone.ts
+-- for how the "N hours ahead/behind you" comparison is computed (live, against whatever timezone
+-- the advisor's own device currently reports — so it's already correct while traveling, same as
+-- every other date/time on the portal; see LocalDateTime.tsx).
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists city text;
+alter table public.clients add column if not exists state text;
+alter table public.clients add column if not exists timezone text;

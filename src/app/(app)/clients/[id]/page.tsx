@@ -17,6 +17,7 @@ import SourceField from "./SourceField";
 import MarkReviewedButton from "./MarkReviewedButton";
 import MedicalConditionsSection from "./MedicalConditionsSection";
 import MedicalReportLinkCard from "./MedicalReportLinkCard";
+import ClientLocationLine from "./ClientLocationLine";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
@@ -182,6 +183,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 .map((p) => ({ id: p.id, product_name: p.product_name, carrier: p.carrier, premium: p.premium }))}
             />
           </div>
+          <ClientLocationLine city={client.city} state={client.state} timezone={client.timezone} />
           {client.intake_pending_review && (
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#8B1A1A] bg-[#FBEFEF] px-3 py-2.5">
               <div className="text-xs text-[#8B1A1A]">

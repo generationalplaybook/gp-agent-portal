@@ -1,5 +1,5 @@
 import { createClientRecord } from "../actions";
-import { CLIENT_STAGES, GENDER_OPTIONS } from "@/lib/types";
+import { CLIENT_STAGES, GENDER_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
 import PhoneInput from "../PhoneInput";
 
 export default async function NewClientPage({
@@ -86,6 +86,40 @@ export default async function NewClientPage({
             </select>
           </label>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            City
+            <input
+              type="text"
+              name="city"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            State
+            <input
+              type="text"
+              name="state"
+              placeholder="e.g. TX"
+              className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+          Timezone <span className="text-xs font-normal text-[#999]">(so you can see how many hours apart you are)</span>
+          <select
+            name="timezone"
+            defaultValue=""
+            className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+          >
+            <option value="">Select…</option>
+            {US_TIMEZONE_OPTIONS.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="flex flex-wrap items-start gap-4">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             Height

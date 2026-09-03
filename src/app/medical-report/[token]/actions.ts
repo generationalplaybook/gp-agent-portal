@@ -25,7 +25,6 @@ export async function submitMedicalReport(
     condition_name: conditionName,
     onset_date: draft.onset_date || null,
     current_status: draft.current_status.trim() || null,
-    treating_physician: draft.treating_physician.trim() || null,
     latest_report_date: draft.latest_report_date || null,
     latest_report_summary: draft.latest_report_summary.trim() || null,
     hospitalizations: draft.hospitalizations.trim() || null,

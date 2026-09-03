@@ -12,7 +12,6 @@ export interface MedicalConditionDraft {
   condition_name: string;
   onset_date: string;
   current_status: string;
-  treating_physician: string;
   latest_report_date: string;
   latest_report_summary: string;
   hospitalizations: string;
@@ -25,7 +24,6 @@ export const EMPTY_MEDICAL_CONDITION_DRAFT: MedicalConditionDraft = {
   condition_name: "",
   onset_date: "",
   current_status: "",
-  treating_physician: "",
   latest_report_date: "",
   latest_report_summary: "",
   hospitalizations: "",
@@ -94,15 +92,6 @@ export default function MedicalConditionFields({
           value={draft.current_status}
           onChange={(e) => set("current_status", e.target.value)}
           placeholder="e.g. Controlled with medication, Resolved, Ongoing — moderate"
-          className={inputClass}
-        />
-      </label>
-
-      <label className={labelClass}>
-        Treating physician / facility
-        <input
-          value={draft.treating_physician}
-          onChange={(e) => set("treating_physician", e.target.value)}
           className={inputClass}
         />
       </label>

@@ -196,10 +196,8 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   a Source field, a freeform Notes field, the Reminders card, and a Linked Client card — search
   your own clients by name (reuses the same search-and-pick pattern as Family linking on the
   client page) and link/unlink, never merging the two records. "Team" added to the main nav.
-  No SQL has been run against Karina's live Supabase project yet — the new `recruits` table and
-  the `reminders` nullability/constraint change need to be applied there (same manual
-  copy-into-SQL-Editor step as every other schema change this project has used) before this
-  actually works once the code deploys.
+  SQL run against Karina's live Supabase project 9/3 (`migration_add_recruits.sql`) — live and
+  working.
 
 - **Medical Condition Report — universal health questionnaire linkable to a client's profile, for
   informal carrier underwriting calls — discussed 9/3, BUILT 9/3.** Motivating case Karina gave:
@@ -234,9 +232,39 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `MedicalConditionFields` form is also reachable directly from the client's own profile (no
   token, no public route involved) for the "agent fills it out live on the call" case — one field
   set, two doors in, exactly as discussed.
-  No SQL has been run against Karina's live Supabase project yet — `supabase/migration_add_medical_conditions.sql`
-  has the one-time copy-into-SQL-Editor step (same pattern as every other schema change this
-  project has used), needed before this actually works once the code deploys.
+  SQL run against Karina's live Supabase project 9/3 (`migration_add_medical_conditions.sql`) —
+  live and working.
+  **Update 9/3**: the "Treating physician / facility" field was removed from the form entirely —
+  Karina felt it "feel[s] invasive" on the client-facing version (asking a client to type out
+  their doctor's name into a web form). Pulled from `MedicalConditionFields.tsx`, the draft type,
+  both save paths (`clients/actions.ts` and `medical-report/[token]/actions.ts`), and the summary
+  display. The `treating_physician` column stays in the DB, just unused — no new SQL needed for
+  this change, no re-run required.
+
+- **Client City / State / Timezone — "how many hours apart are we" at a glance — discussed 9/3,
+  BUILT 9/3.** Karina's own use case: before calling, emailing, or booking something with a
+  client, she needs to know how many hours apart they are. Discussed first (state/city for
+  timezone, and whether advisor-side timezone should auto-adjust while traveling), then
+  explicitly authorized ("build the timezone thing city state we talked about").
+  New `clients.city`, `clients.state`, `clients.timezone` columns (`supabase/schema.sql` section
+  30, `migration_add_client_timezone.sql`). Timezone is a plain dropdown of 7 explicit IANA zone
+  ids (`US_TIMEZONE_OPTIONS` in `src/lib/types.ts`: Eastern/Central/Mountain/Mountain-Arizona
+  (no DST)/Pacific/Alaska/Hawaii) rather than derived from state, since several states span more
+  than one zone (Texas, Florida, Tennessee, and others) and Arizona doesn't observe daylight
+  saving.
+  No advisor-side timezone setting was needed: every date/time already on the portal
+  (`LocalDateTime.tsx`) renders in the *viewer's own device timezone* via
+  `toLocaleString(undefined, ...)`, so it already auto-adjusts when an advisor travels (as long
+  as their device's automatic timezone is on) — nothing new to build there.
+  New `src/lib/timezone.ts` computes the live hour difference between the client's saved
+  timezone and the viewer's own current browser timezone (via `Intl.DateTimeFormat` — not a
+  hardcoded offset table, so it stays correct through daylight saving changes automatically).
+  New `ClientLocationLine.tsx` shows this right under the client's name on their profile, e.g.
+  "Dallas, TX — 1 hour behind you." City/State/Timezone are editable on the existing Contact
+  Info card (`ContactInfoForm.tsx`, auto-save on blur/change, same pattern as every other field
+  there) and captured up front on the New Client form.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_client_timezone.sql`, same paste-into-SQL-Editor step as the last two.
 
 - **DollarInput — auto-formats with commas on blur, portal-wide — built 9/2.** Karina spotted
   "55000" (no commas) sitting right next to "50,000" (with commas) on the same Final Expense

@@ -10,7 +10,6 @@ function toDraft(c: MedicalCondition): MedicalConditionDraft {
     condition_name: c.condition_name,
     onset_date: c.onset_date ?? "",
     current_status: c.current_status ?? "",
-    treating_physician: c.treating_physician ?? "",
     latest_report_date: c.latest_report_date ?? "",
     latest_report_summary: c.latest_report_summary ?? "",
     hospitalizations: c.hospitalizations ?? "",
@@ -135,7 +134,6 @@ function ConditionCard({ condition, clientId }: { condition: MedicalCondition; c
 
       <div className="mt-2 flex flex-col gap-1 text-xs text-[#666]">
         {condition.onset_date && <p>Onset: {condition.onset_date}</p>}
-        {condition.treating_physician && <p>Physician/facility: {condition.treating_physician}</p>}
         {condition.events.length > 0 && (
           <p>
             Timeline: {condition.events.map((e) => [e.date, e.description].filter(Boolean).join(" — ")).join("; ")}

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo } from "../actions";
-import { GENDER_OPTIONS } from "@/lib/types";
+import { GENDER_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
 
 interface Client {
   id: string;
@@ -18,6 +18,9 @@ interface Client {
   height_ft: number | null;
   height_in: number | null;
   weight: number | null;
+  city: string | null;
+  state: string | null;
+  timezone: string | null;
 }
 
 // No "Save" button — every field saves itself as soon as you leave it (onBlur).
@@ -34,10 +37,13 @@ export default function ContactInfoForm({ client }: { client: Client }) {
   const [heightFt, setHeightFt] = useState(client.height_ft?.toString() ?? "");
   const [heightIn, setHeightIn] = useState(client.height_in?.toString() ?? "");
   const [weight, setWeight] = useState(client.weight?.toString() ?? "");
+  const [city, setCity] = useState(client.city ?? "");
+  const [state, setState] = useState(client.state ?? "");
+  const [timezone, setTimezone] = useState(client.timezone ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function save(overrides?: Partial<{ phone: string; gender: string }>) {
+  async function save(overrides?: Partial<{ phone: string; gender: string; timezone: string }>) {
     setStatus("saving");
     const formData = new FormData();
     formData.set("client_id", client.id);
@@ -51,6 +57,9 @@ export default function ContactInfoForm({ client }: { client: Client }) {
     formData.set("height_ft", heightFt);
     formData.set("height_in", heightIn);
     formData.set("weight", weight);
+    formData.set("city", city);
+    formData.set("state", state);
+    formData.set("timezone", overrides?.timezone ?? timezone);
     await updateContactInfo(formData);
     setStatus("saved");
     if (savedTimeout.current) clearTimeout(savedTimeout.current);
@@ -128,6 +137,43 @@ export default function ContactInfoForm({ client }: { client: Client }) {
           {GENDER_OPTIONS.map((g) => (
             <option key={g} value={g}>
               {g}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        City
+        <input
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          onBlur={() => save()}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        State
+        <input
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          onBlur={() => save()}
+          placeholder="e.g. TX"
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
+        Timezone <span className="font-normal text-[#999]">(so you can see how many hours apart you are)</span>
+        <select
+          value={timezone}
+          onChange={(e) => {
+            setTimezone(e.target.value);
+            save({ timezone: e.target.value });
+          }}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        >
+          <option value="">Select…</option>
+          {US_TIMEZONE_OPTIONS.map((tz) => (
+            <option key={tz.value} value={tz.value}>
+              {tz.label}
             </option>
           ))}
         </select>

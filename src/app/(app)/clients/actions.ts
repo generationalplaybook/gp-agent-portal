@@ -39,6 +39,9 @@ export async function createClientRecord(formData: FormData) {
   const height_ft = parseIntOrNull(formData.get("height_ft"));
   const height_in = parseIntOrNull(formData.get("height_in"));
   const weight = parseIntOrNull(formData.get("weight"));
+  const city = String(formData.get("city") || "").trim() || null;
+  const state = String(formData.get("state") || "").trim() || null;
+  const timezone = String(formData.get("timezone") || "").trim() || null;
 
   if (!first_name || !last_name)
     redirect("/clients/new?error=" + encodeURIComponent("First and last name are required."));
@@ -60,6 +63,9 @@ export async function createClientRecord(formData: FormData) {
       height_ft,
       height_in,
       weight,
+      city,
+      state,
+      timezone,
     })
     .select("id")
     .single();
@@ -134,6 +140,9 @@ export async function updateContactInfo(formData: FormData) {
   const height_ft = parseIntOrNull(formData.get("height_ft"));
   const height_in = parseIntOrNull(formData.get("height_in"));
   const weight = parseIntOrNull(formData.get("weight"));
+  const city = String(formData.get("city") || "").trim() || null;
+  const state = String(formData.get("state") || "").trim() || null;
+  const timezone = String(formData.get("timezone") || "").trim() || null;
 
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   // Note: `source` (lead source) is intentionally NOT handled here — it's edited separately via
@@ -141,7 +150,21 @@ export async function updateContactInfo(formData: FormData) {
   // clobber it with a stale value.
   await supabase
     .from("clients")
-    .update({ first_name, middle_name, last_name, phone, email, birth_date, gender, height_ft, height_in, weight })
+    .update({
+      first_name,
+      middle_name,
+      last_name,
+      phone,
+      email,
+      birth_date,
+      gender,
+      height_ft,
+      height_in,
+      weight,
+      city,
+      state,
+      timezone,
+    })
     .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
@@ -544,7 +567,6 @@ export interface MedicalConditionFields {
   condition_name: string;
   onset_date: string;
   current_status: string;
-  treating_physician: string;
   latest_report_date: string;
   latest_report_summary: string;
   hospitalizations: string;
@@ -558,7 +580,6 @@ function cleanMedicalConditionRow(fields: MedicalConditionFields) {
     condition_name: fields.condition_name.trim(),
     onset_date: fields.onset_date || null,
     current_status: fields.current_status.trim() || null,
-    treating_physician: fields.treating_physician.trim() || null,
     latest_report_date: fields.latest_report_date || null,
     latest_report_summary: fields.latest_report_summary.trim() || null,
     hospitalizations: fields.hospitalizations.trim() || null,
