@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import PhoneInput from "../clients/PhoneInput";
+import ChangeEmailField from "./ChangeEmailField";
 import { updateMyProfile } from "./actions";
 
 interface Profile {
@@ -70,14 +71,7 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
         Phone
         <PhoneInput defaultValue={phone} onValueChange={setPhone} className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]" />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Email
-        <input
-          disabled
-          value={profile?.email ?? ""}
-          className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#888]"
-        />
-      </label>
+      <ChangeEmailField currentEmail={profile?.email ?? null} />
       <label className="flex flex-col gap-1 text-xs text-[#666]">
         NPN
         <input

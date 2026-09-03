@@ -32,6 +32,35 @@ export async function updateMyProfile(formData: FormData) {
   revalidatePath("/profile");
 }
 
+// ─────────────────────────────────────────────────────────────
+// Self-service email change (added 9/3) — Karina: "i think they should have freedom to do it
+// themselves," after noticing Email was locked on My Profile. Calls Supabase Auth's own
+// updateUser({ email }) rather than touching the profiles row directly — Supabase sends a
+// confirmation link (per whatever "Secure email change" behavior is configured in this project's
+// Auth settings — by default that means confirming from the new address, sometimes the old one
+// too) and only actually changes auth.users.email once the agent confirms. profiles.email then
+// gets kept in sync automatically by the on_auth_user_email_changed trigger (schema.sql section
+// 34 / migration_email_change_sync.sql) — nothing here writes to profiles directly, so this
+// function succeeding only means the confirmation email was sent, not that the address changed
+// yet.
+// ─────────────────────────────────────────────────────────────
+
+export async function requestEmailChange(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { supabase } = await requireUser();
+  const newEmail = String(formData.get("email") || "").trim().toLowerCase();
+  if (!newEmail) return { ok: false, error: "Enter a new email address." };
+
+  const siteUrl = await getSiteUrl();
+  const { error } = await supabase.auth.updateUser(
+    { email: newEmail },
+    { emailRedirectTo: `${siteUrl}/profile` }
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 // addCredential / deleteCredential (My Credentials) removed 9/3 — retired once NPN got its own
 // field on Your Info and carrier/state numbers got their own homes in Carrier Logins / State
 // Licenses (see schema.sql section 31/32). The advisor_credentials table itself is left in place,

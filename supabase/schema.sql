@@ -1103,3 +1103,34 @@ end $$;
 
 alter table public.carrier_logins add column if not exists life_agent_number text;
 alter table public.carrier_logins add column if not exists annuity_agent_number text;
+
+-- ─────────────────────────────────────────────────────────────
+-- 34. Keep profiles.email synced when an agent changes their login email (added 9/3) — Karina:
+-- "i think they should have freedom to do it themselves." Self-service email change is now built
+-- on My Profile (ProfileInfoForm.tsx / profile/actions.ts requestEmailChange), which calls
+-- Supabase Auth's own updateUser({ email }) — Supabase handles the confirmation-link flow and
+-- eventually updates auth.users.email once the agent confirms.
+-- profiles.email was previously only ever set ONCE, at signup, by handle_new_user() below —
+-- nothing kept it in sync afterward. Without this trigger, an agent's login email and the
+-- "Email" shown on their profile (and used anywhere else in the portal, e.g. the invite flow)
+-- would silently drift apart the moment they changed it. This fires whenever auth.users.email
+-- actually changes (regardless of how — self-service here, or an admin editing it directly in
+-- the Supabase dashboard) and copies the new value onto the matching profiles row.
+-- ─────────────────────────────────────────────────────────────
+create or replace function public.handle_user_email_change()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.email is distinct from old.email then
+    update public.profiles set email = new.email where id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_email_changed on auth.users;
+create trigger on_auth_user_email_changed
+  after update of email on auth.users
+  for each row execute procedure public.handle_user_email_change();

@@ -278,6 +278,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   compact; the hover tooltip (full value on hover) is still there too for reading, not just
   copying.
 
+- **Self-service email change on My Profile — discussed/built 9/3.** Karina noticed the Email
+  field on Your Info is disabled and asked what an agent would do if they needed to change it —
+  turned out there was no path at all, self-service or otherwise: `profiles.email` is only ever
+  set once, at signup. Her call: "i think they should have freedom to do it themselves." Built a
+  "Change" link next to Email (`ChangeEmailField.tsx`) that reveals a new-email input + "Send
+  confirmation." `requestEmailChange` (`profile/actions.ts`) calls Supabase Auth's own
+  `updateUser({ email })` — Supabase handles sending the actual confirmation link and won't change
+  the login email until the agent clicks it (per whatever "Secure email change" is set to in this
+  project's Auth settings — Karina, worth checking Authentication → Settings in Supabase: if it's
+  on, Supabase asks for confirmation from both the old and new address, not just the new one).
+  Deliberately a separate "Send confirmation" action from the main Save button, since nothing
+  actually changes until the agent confirms — it doesn't behave like the rest of the form.
+  New trigger `on_auth_user_email_changed` (`schema.sql` section 34,
+  `migration_email_change_sync.sql`) keeps `profiles.email` in sync automatically once a change
+  actually completes — without it, an agent's real login email and the "Email" shown on their
+  profile would silently drift apart the moment they changed it (this would've been a latent bug
+  the moment self-service email change existed at all, even for a single admin-driven change).
+  SQL needs to be run against Karina's live Supabase project — see `migration_email_change_sync.sql`.
+
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an
   advisor creates illustrations they can just attach them within the portal and send it off."
