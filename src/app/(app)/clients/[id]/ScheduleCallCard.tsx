@@ -18,7 +18,7 @@ export default function ScheduleCallCard({
     return (
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
-        <p className="text-xs text-[#888]">
+        <p className="text-xs text-[#707070]">
           Add your scheduling link in{" "}
           <a href="/profile" className="text-[#1C1C1C] underline underline-offset-2">
             My Profile
@@ -75,7 +75,7 @@ export default function ScheduleCallCard({
           {showWidget ? "Hide Widget" : "Book Here"}
         </button>
       </div>
-      <p className="mt-2 text-[11px] text-[#999]">
+      <p className="mt-2 text-[11px] text-[#707070]">
         Copy the link to text or email {clientName.split(" ")[0] || "the client"} directly, or book it with them
         live. Your scheduling tool emails the video join link to both of you once it&rsquo;s booked.
       </p>

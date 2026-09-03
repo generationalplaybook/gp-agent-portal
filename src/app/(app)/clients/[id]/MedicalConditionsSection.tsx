@@ -188,7 +188,7 @@ export default function MedicalConditionsSection({ clientId, conditions }: { cli
   return (
     <div className="flex flex-col gap-3">
       {conditions.length === 0 && !adding && (
-        <p className="text-xs text-[#999]">
+        <p className="text-xs text-[#707070]">
           Nothing logged yet. Add a condition below, or copy the client&rsquo;s link (in the sidebar) for them to fill
           out themselves.
         </p>

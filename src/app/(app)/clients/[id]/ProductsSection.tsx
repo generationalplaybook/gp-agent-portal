@@ -87,7 +87,7 @@ export default function ProductsSection({
         </p>
       )}
 
-      {products.length === 0 && !showAdd && <p className="text-xs text-[#999]">No products on file yet.</p>}
+      {products.length === 0 && !showAdd && <p className="text-xs text-[#707070]">No products on file yet.</p>}
 
       {products.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -239,7 +239,7 @@ export default function ProductsSection({
                 setShowAdd(false);
                 setError("");
               }}
-              className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#707070] hover:text-[#1C1C1C]"
             >
               Cancel
             </button>

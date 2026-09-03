@@ -150,7 +150,7 @@ function CashValueMilestonesEditor({
           + Add Milestone
         </button>
       ) : (
-        <p className="text-xs text-[#999]">Maximum of {MAX_CASH_VALUE_MILESTONES} milestones.</p>
+        <p className="text-xs text-[#707070]">Maximum of {MAX_CASH_VALUE_MILESTONES} milestones.</p>
       )}
     </div>
   );
@@ -335,7 +335,7 @@ function FinalExpenseOptionsEditor({
           + Add another budget option
         </button>
       ) : (
-        <p className="text-xs text-[#999]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} budget options.</p>
+        <p className="text-xs text-[#707070]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} budget options.</p>
       )}
     </div>
   );
@@ -429,7 +429,7 @@ export default function ScenarioForm({
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Scenario Details</h2>
-        <p className="mb-4 text-xs text-[#888]">
+        <p className="mb-4 text-xs text-[#707070]">
           {scenario.product_type ?? "Product type"} — the product type was set when this scenario was created and
           can&rsquo;t be changed here (delete and start a new one if it was picked wrong).
         </p>
@@ -449,7 +449,7 @@ export default function ScenarioForm({
         {data.kind === "cash_value" && (
           <>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
-            <p className="mb-2 text-xs text-[#888]">
+            <p className="mb-2 text-xs text-[#707070]">
               What the client actually pays, and the bare minimum that keeps this policy from lapsing. The
               minimum to avoid lapse differs by election — cost of insurance isn&rsquo;t the same under Level vs.
               Increasing — so enter both from the carrier&rsquo;s illustration. All optional.
@@ -473,7 +473,7 @@ export default function ScenarioForm({
               </label>
             </div>
             {data.premiumB && data.premiumB.trim() ? (
-              <p className="mb-3 text-xs text-[#888]">
+              <p className="mb-3 text-xs text-[#707070]">
                 A third &ldquo;at $
                 {formatMoney(data.premiumB)}
                 /mo&rdquo; column opened up on Milestones below — enter what cash value and death benefit look
@@ -507,7 +507,7 @@ export default function ScenarioForm({
             </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
-            <p className="mb-2 text-xs text-[#888]">
+            <p className="mb-2 text-xs text-[#707070]">
               The policy&rsquo;s starting face amount at issue under each election — separate from the
               Level/Increasing numbers entered per milestone below, which show what it grows (or steps up) to at
               each age. Carriers can quote a different starting face amount for Level vs. Increasing even though
@@ -539,13 +539,13 @@ export default function ScenarioForm({
             </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
-            <p className="mb-1 text-xs text-[#888]">
+            <p className="mb-1 text-xs text-[#707070]">
               On a Level death benefit, if cash value is left untouched the policy is required to step the death
               benefit up at a certain age (common on some IUL designs, especially juvenile policies) — note that
               age here so it&rsquo;s called out on the summary. If the client starts taking withdrawals, the death
               benefit stays level instead — it does not step up. Leave blank if it doesn&rsquo;t apply.
             </p>
-            <p className="mb-2 text-xs text-[#888]">
+            <p className="mb-2 text-xs text-[#707070]">
               Either way, the Level/Increasing election itself can be changed at any time by calling us — we
               recommend periodic policy reviews, which we schedule as part of our service regardless.
             </p>
@@ -561,7 +561,7 @@ export default function ScenarioForm({
             </label>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               For each age that matters, enter the illustrated numbers under both death benefit options — Level
               and Increasing — pulled straight from the carrier&rsquo;s side-by-side illustration, so the client can
               see exactly how they compare.
@@ -615,7 +615,7 @@ export default function ScenarioForm({
         {data.kind === "final_expense" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
               life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here. Some clients have room to
               spend more than the minimum — add up to 2 more face-value/premium options below so they can see what
@@ -637,7 +637,7 @@ export default function ScenarioForm({
               <DollarInput value={data.initialPremium} onChange={(v) => setData({ ...data, initialPremium: v })} className={inputClass} />
             </label>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               Accumulation value, income value (if there&rsquo;s an income rider), and death benefit at whichever
               years/ages matter for this scenario.
             </p>

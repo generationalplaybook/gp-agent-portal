@@ -22,7 +22,7 @@ export default function SourceField({ clientId, source }: { clientId: string; so
   return (
     <div className="mt-4 border-t border-[#EDE8DF] pt-3">
       <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Source <span className="font-normal text-[#999]">(optional)</span>
+        Source <span className="font-normal text-[#707070]">(optional)</span>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}

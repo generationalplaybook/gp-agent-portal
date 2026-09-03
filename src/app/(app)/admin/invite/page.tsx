@@ -53,7 +53,7 @@ export default async function AdminInvitePage() {
 
       <div className="mb-6 rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Send an invite</h2>
-        <p className="mb-3 text-xs text-[#888]">
+        <p className="mb-3 text-xs text-[#707070]">
           Everyone you invite starts as an Advisor — they only ever see their own clients. Use the dropdown
           in the list below to make someone an Admin, which just adds the ability to invite and manage the
           team from this page — every advisor&rsquo;s client list, including an Admin&rsquo;s, stays private

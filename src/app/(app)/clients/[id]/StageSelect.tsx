@@ -81,7 +81,7 @@ export default function StageSelect({
               </label>
             ))}
           </div>
-          <p className="mb-2 text-[11px] text-[#999]">
+          <p className="mb-2 text-[11px] text-[#707070]">
             The {quotedProducts.length > 1 ? "other quotes" : "other quote"} will be deleted.
           </p>
           <div className="flex gap-2">

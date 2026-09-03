@@ -18,7 +18,7 @@ export default function AnalysesList({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!analyses.length) {
-    return <p className="text-xs text-[#999]">No analyses yet.</p>;
+    return <p className="text-xs text-[#707070]">No analyses yet.</p>;
   }
 
   async function handleDelete(id: string) {
@@ -37,7 +37,7 @@ export default function AnalysesList({
         <div key={a.id} className="rounded-md border border-[#D9CFBA] p-3">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#999]">{new Date(a.created_at).toLocaleString()}</span>
+              <span className="text-xs text-[#707070]">{new Date(a.created_at).toLocaleString()}</span>
               {a.from_intake && (
                 <span className="rounded-full bg-[#EEF3FA] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1B4F8A]">
                   From intake

@@ -21,13 +21,13 @@ export default function CarrierAndLicensingCard({
 
   const tabClass = (active: boolean) =>
     `-mb-px border-b-2 pb-2.5 text-sm ${
-      active ? "border-[#1C1C1C] font-bold text-[#1C1C1C]" : "border-transparent text-[#999] hover:text-[#2E2E2E]"
+      active ? "border-[#1C1C1C] font-bold text-[#1C1C1C]" : "border-transparent text-[#707070] hover:text-[#2E2E2E]"
     }`;
 
   return (
     <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Carrier &amp; Licensing</h2>
-      <p className="mb-4 text-xs text-[#888]">
+      <p className="mb-4 text-xs text-[#707070]">
         Your own broker portal logins and state licenses — visible only to you, sorted alphabetically so anything&rsquo;s
         easy to find.
       </p>

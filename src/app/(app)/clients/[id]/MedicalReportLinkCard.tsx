@@ -21,7 +21,7 @@ export default function MedicalReportLinkCard({ siteUrl, token }: { siteUrl: str
 
   return (
     <div>
-      <p className="mb-2 text-xs text-[#888]">
+      <p className="mb-2 text-xs text-[#707070]">
         Send this to the client to fill out themselves, or open it and fill it out together on a call. Submissions
         land right here on their profile.
       </p>

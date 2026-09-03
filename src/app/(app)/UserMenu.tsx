@@ -24,7 +24,7 @@ export default function UserMenu({ displayName, isAdmin = false }: { displayName
         className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-[#666] hover:bg-[#F5F0E8]"
       >
         {displayName}
-        <span className="text-[10px] text-[#999]">▾</span>
+        <span className="text-[10px] text-[#707070]">▾</span>
       </button>
       <div
         className={`absolute right-0 top-full z-10 w-44 rounded-md border border-[#D9CFBA] bg-white p-1 shadow-md ${

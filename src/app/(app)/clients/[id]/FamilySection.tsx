@@ -134,7 +134,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
 
   return (
     <div className="flex flex-col gap-3">
-      {members.length === 0 && !showAdd && <p className="text-xs text-[#999]">No family members linked yet.</p>}
+      {members.length === 0 && !showAdd && <p className="text-xs text-[#707070]">No family members linked yet.</p>}
 
       {members.length > 0 && (
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
@@ -155,7 +155,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                     type="button"
                     disabled={busy}
                     onClick={() => handleUnlink(m.id)}
-                    className="flex-shrink-0 text-[11px] text-[#999] hover:text-[#8B1A1A] disabled:opacity-50"
+                    className="flex-shrink-0 text-[11px] text-[#707070] hover:text-[#8B1A1A] disabled:opacity-50"
                   >
                     Unlink
                   </button>
@@ -172,7 +172,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                   >
                     {stageInfo?.label}
                   </span>
-                  {isMinor && (
+                  {isMinor ? (
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                         turningAdultSoon ? "bg-[#8B1A1A] text-white" : "bg-[#F0EDE8] text-[#666]"
@@ -180,10 +180,16 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                     >
                       {turningAdultSoon ? `Turns 18 in ${daysToBday}d` : `Minor · age ${age}`}
                     </span>
+                  ) : (
+                    age !== null && (
+                      <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                        Age {age}
+                      </span>
+                    )
                   )}
                 </div>
                 {m.nextReminder && (
-                  <p className="text-[11px] text-[#888]">
+                  <p className="text-[11px] text-[#707070]">
                     Next reminder:{" "}
                     {new Date(m.nextReminder.remind_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                     {m.nextReminder.message ? ` — ${m.nextReminder.message}` : ""}
@@ -239,7 +245,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                       setPicked(null);
                       setQuery("");
                     }}
-                    className="text-xs text-[#888] hover:text-[#1C1C1C]"
+                    className="text-xs text-[#707070] hover:text-[#1C1C1C]"
                   >
                     Clear
                   </button>
@@ -252,9 +258,9 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                     placeholder="Search your clients by name…"
                     className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
                   />
-                  {searching && <p className="text-xs text-[#999]">Searching…</p>}
+                  {searching && <p className="text-xs text-[#707070]">Searching…</p>}
                   {!searching && query && results.length === 0 && (
-                    <p className="text-xs text-[#999]">No matching clients.</p>
+                    <p className="text-xs text-[#707070]">No matching clients.</p>
                   )}
                   {results.length > 0 && (
                     <div className="max-h-40 overflow-y-auto rounded-md border border-[#D9CFBA] bg-white">
@@ -294,7 +300,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#707070] hover:text-[#1C1C1C]"
                 >
                   Cancel
                 </button>
@@ -380,7 +386,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#707070] hover:text-[#1C1C1C]"
                 >
                   Cancel
                 </button>

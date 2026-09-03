@@ -55,12 +55,12 @@ export default function ChangeEmailField({ currentEmail }: { currentEmail: strin
       <input
         disabled
         value={currentEmail ?? ""}
-        className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#888]"
+        className="rounded-md border border-[#D9CFBA] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#707070]"
       />
 
       {editing && (
         <div className="mt-1 flex flex-col gap-1.5 rounded-md border border-[#D9CFBA] p-2.5">
-          <span className="text-[11px] text-[#999]">
+          <span className="text-[11px] text-[#707070]">
             We&rsquo;ll send a confirmation link to the new address before it takes effect — your login
             email won&rsquo;t change until you click it.
           </span>

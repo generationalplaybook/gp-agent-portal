@@ -106,7 +106,7 @@ export default async function NewClientPage({
           </label>
         </div>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-          Timezone <span className="text-xs font-normal text-[#999]">(so you can see how many hours apart you are)</span>
+          Timezone <span className="text-xs font-normal text-[#707070]">(so you can see how many hours apart you are)</span>
           <select
             name="timezone"
             defaultValue=""
@@ -129,13 +129,13 @@ export default async function NewClientPage({
                 name="height_ft"
                 className="w-14 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
               />
-              <span className="text-xs text-[#888]">ft</span>
+              <span className="text-xs text-[#707070]">ft</span>
               <input
                 type="number"
                 name="height_in"
                 className="w-14 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
               />
-              <span className="text-xs text-[#888]">in</span>
+              <span className="text-xs text-[#707070]">in</span>
             </div>
           </label>
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
@@ -146,7 +146,7 @@ export default async function NewClientPage({
                 name="weight"
                 className="w-16 rounded-md border border-[#D9CFBA] px-2 py-2 text-center text-sm outline-none focus:border-[#1C1C1C]"
               />
-              <span className="text-xs text-[#888]">lbs</span>
+              <span className="text-xs text-[#707070]">lbs</span>
             </div>
           </label>
         </div>

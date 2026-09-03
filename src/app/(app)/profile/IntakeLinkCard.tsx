@@ -53,7 +53,7 @@ export default function IntakeLinkCard({ siteUrl, advisorId, initialSlug }: Prop
   return (
     <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Intake Link</h2>
-      <p className="mb-3 text-xs text-[#888]">
+      <p className="mb-3 text-xs text-[#707070]">
         Send this to a client before your first meeting to gather their info ahead of time — they never see any
         recommendation, just a short form. Submissions land in your Clients list flagged for review.
       </p>
@@ -75,10 +75,10 @@ export default function IntakeLinkCard({ siteUrl, advisorId, initialSlug }: Prop
 
       <div className="border-t border-[#EDE8DF] pt-3">
         <label className="flex flex-col gap-1 text-xs text-[#666]">
-          Custom link <span className="font-normal text-[#999]">(optional — e.g. &quot;karina&quot; instead of the long id above)</span>
+          Custom link <span className="font-normal text-[#707070]">(optional — e.g. &quot;karina&quot; instead of the long id above)</span>
         </label>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[#999]">{siteUrl}/intake/</span>
+          <span className="text-xs text-[#707070]">{siteUrl}/intake/</span>
           <input
             value={slugInput}
             onChange={(e) => setSlugInput(e.target.value)}
@@ -96,7 +96,7 @@ export default function IntakeLinkCard({ siteUrl, advisorId, initialSlug }: Prop
         </div>
         {error && <p className="mt-1 text-[11px] font-semibold text-[#B23B3B]">{error}</p>}
         {!error && savedSlug && (
-          <p className="mt-1 text-[11px] text-[#999]">
+          <p className="mt-1 text-[11px] text-[#707070]">
             Heads up: changing this later will break any link you&apos;ve already shared using this handle (your
             id-based link above never breaks).
           </p>

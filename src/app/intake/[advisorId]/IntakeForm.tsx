@@ -86,7 +86,7 @@ function Field({ label, optional, children }: { label: string; optional?: boolea
       <div className="mb-2 text-sm font-semibold text-[#1C1C1C]">
         {label}
         {optional && (
-          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#999]">
+          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#707070]">
             optional
           </span>
         )}
@@ -182,7 +182,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
 
   return (
     <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#888]">Your Info</div>
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#707070]">Your Info</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -217,7 +217,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           <PhoneInput defaultValue={inputs.phone} onValueChange={(v) => set("phone", v)} className={inputClass} />
         </Field>
       </div>
-      {age !== null && <div className="-mt-3 mb-4 text-xs text-[#888]">Age: {age} years old</div>}
+      {age !== null && <div className="-mt-3 mb-4 text-xs text-[#707070]">Age: {age} years old</div>}
 
       <Field label="Email">
         <input
@@ -267,10 +267,10 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       </div>
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Family (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Family (optional)</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
       <Field label="Household">
-        <div className="mb-1.5 text-xs text-[#888]">Check anything that applies — just so we know who else might be part of the conversation.</div>
+        <div className="mb-1.5 text-xs text-[#707070]">Check anything that applies — just so we know who else might be part of the conversation.</div>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -330,7 +330,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       )}
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Health (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Health (optional)</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Tobacco Use">
@@ -371,7 +371,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         />
       </Field>
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Financial (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Financial (optional)</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Existing Coverage / Products" optional>
@@ -488,11 +488,11 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       </div>
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Goals (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Goals (optional)</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Primary Goal(s)">
-        <div className="mb-1.5 text-xs text-[#888]">Select anything that applies.</div>
+        <div className="mb-1.5 text-xs text-[#707070]">Select anything that applies.</div>
         <CheckboxGroup<Goal> value={inputs.goals ?? []} onChange={(v) => set("goals", v)} options={GOAL_OPTIONS} />
       </Field>
       <Field label="Time Horizon">

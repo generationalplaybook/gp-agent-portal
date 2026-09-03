@@ -18,6 +18,16 @@ function isPast(iso: string): boolean {
   return new Date(iso).getTime() < Date.now();
 }
 
+// A synced Cal.com meeting's location is a video-call URL (see the webhook receiver) — pasted
+// manual locations can be a URL too (a Zoom/Meet link) or just a plain address. Either way, if
+// it looks like a URL, make it clickable instead of showing dead plain text (flagged 9/1,
+// built 9/3 — "if someone wants to copy and paste they cant cause its cut off right?" from a
+// different table applies here too: raw unclickable links are no more useful than truncated
+// unselectable ones).
+function isUrl(s: string): boolean {
+  return /^https?:\/\//i.test(s);
+}
+
 function downloadInvite(meeting: Meeting, clientName: string) {
   const content = buildIcsContent({
     uid: `meeting-${meeting.id}@generationalplaybook.com`,
@@ -70,7 +80,20 @@ export default function MeetingRow({
             </span>
           )}
         </div>
-        {meeting.location && <div className="mt-1 text-xs text-[#999]">{meeting.location}</div>}
+        {meeting.location && (
+          isUrl(meeting.location) ? (
+            <a
+              href={meeting.location}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block truncate text-xs text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]"
+            >
+              {meeting.location}
+            </a>
+          ) : (
+            <div className="mt-1 text-xs text-[#707070]">{meeting.location}</div>
+          )
+        )}
         {meeting.notes && <div className="mt-1 text-xs text-[#666]">{meeting.notes}</div>}
         {error && <p className="mt-1 text-xs text-[#8B1A1A]">{error}</p>}
       </div>

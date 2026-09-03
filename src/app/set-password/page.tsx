@@ -79,7 +79,7 @@ export default function SetPasswordPage() {
       setError(updateError.message);
       return;
     }
-    router.push("/clients");
+    router.push("/");
     router.refresh();
   }
 
@@ -90,7 +90,7 @@ export default function SetPasswordPage() {
         <p className="mb-6 text-sm text-[#666]">GP Advisor Portal</p>
 
         {checking ? (
-          <p className="text-sm text-[#888]">Checking your invite link...</p>
+          <p className="text-sm text-[#707070]">Checking your invite link...</p>
         ) : !hasSession ? (
           <p className="text-sm text-[#8B1A1A]">
             This link has expired or is invalid. Ask your admin to send you a new invite, or{" "}

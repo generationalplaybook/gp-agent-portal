@@ -45,7 +45,7 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-[#888]">
+        <p className="mt-5 text-center text-xs text-[#707070]">
           New advisor?{" "}
           <Link href="/signup" className="font-medium text-[#1C1C1C] underline">
             Create an account

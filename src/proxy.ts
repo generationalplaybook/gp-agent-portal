@@ -51,7 +51,7 @@ export async function proxy(request: NextRequest) {
 
   if (user && isPublic && !ALLOWED_WHILE_LOGGED_IN.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/clients";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

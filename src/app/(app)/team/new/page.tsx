@@ -43,7 +43,7 @@ export default async function NewRecruitPage({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-          State <span className="font-normal text-[#999]">(licensing/appointment state)</span>
+          State <span className="font-normal text-[#707070]">(licensing/appointment state)</span>
           <input
             type="text"
             name="state"
@@ -52,7 +52,7 @@ export default async function NewRecruitPage({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-          Target license date <span className="font-normal text-[#999]">(optional)</span>
+          Target license date <span className="font-normal text-[#707070]">(optional)</span>
           <input
             type="date"
             name="target_license_date"

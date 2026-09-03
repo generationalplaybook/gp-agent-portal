@@ -121,7 +121,7 @@ function TotalRow({ label, value }: { label: string; value: string }) {
 function Panel({ label, title, children }: { label: string; title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-[#D9CFBA] bg-white p-5">
-      <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#999]">{label}</div>
+      <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#707070]">{label}</div>
       <div className="mb-3 text-sm font-semibold text-[#1C1C1C]">{title}</div>
       {children}
     </div>
@@ -145,7 +145,7 @@ function SectionHeader({
       </div>
       {pillarScore !== undefined && (
         <div className="shrink-0 text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-[#999]">Pillar Score</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">Pillar Score</div>
           <div className="font-serif text-2xl text-[#1C1C1C]">{pillarScore}</div>
         </div>
       )}
@@ -243,7 +243,7 @@ export default function FAClient({
           </a>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-[#999]">Financial Wellness</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">Financial Wellness</div>
           <div className="h-2 w-40 overflow-hidden rounded-full bg-[#EDE8DF]">
             <div
               className="h-full bg-[#1E6B3C] transition-all"
@@ -251,7 +251,7 @@ export default function FAClient({
             />
           </div>
           <div className="mt-1 font-serif text-lg text-[#1C1C1C]">
-            {computed.overallScore} <span className="text-xs text-[#999]">/ 100</span>
+            {computed.overallScore} <span className="text-xs text-[#707070]">/ 100</span>
           </div>
         </div>
       </div>
@@ -423,12 +423,12 @@ export default function FAClient({
                 <span>Retirement accounts</span>
                 <span className="font-semibold text-[#1C1C1C]">$0</span>
               </div>
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#999]">from Retirement pillar (not yet built)</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">from Retirement pillar (not yet built)</div>
               <div className="flex items-center justify-between py-1.5 text-xs text-[#555]">
                 <span>Cash & liquid reserves</span>
                 <span className="font-semibold text-[#1C1C1C]">$0</span>
               </div>
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#999]">from Liquidity pillar (not yet built)</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">from Liquidity pillar (not yet built)</div>
               <NumberField label="Investments (non-retirement)" value={state.networth.investments} onChange={(v) => updateNetworth("investments", v)} />
               <NumberField label="Business interests" value={state.networth.business} onChange={(v) => updateNetworth("business", v)} />
               <NumberField label="Other assets" value={state.networth.other} onChange={(v) => updateNetworth("other", v)} />
@@ -436,7 +436,7 @@ export default function FAClient({
             </Panel>
             <Panel label="Owed" title="Liabilities & result">
               {computed.networth.totalLiabilities <= 0 && (
-                <p className="text-xs italic text-[#888]">No liabilities entered (Debt pillar).</p>
+                <p className="text-xs italic text-[#707070]">No liabilities entered (Debt pillar).</p>
               )}
               <TotalRow label="Total liabilities" value={fmt(computed.networth.totalLiabilities)} />
               <div className="mt-6 rounded-md bg-[#F5F0E8] p-4 text-center">
@@ -446,7 +446,7 @@ export default function FAClient({
                 >
                   {fmt(computed.networth.netWorth)}
                 </div>
-                <div className="mt-1 text-xs text-[#888]">net worth</div>
+                <div className="mt-1 text-xs text-[#707070]">net worth</div>
               </div>
             </Panel>
           </div>
@@ -508,7 +508,7 @@ export default function FAClient({
                   </span>
                 )
               )}
-              <p className="mt-4 text-[11px] text-[#999]">
+              <p className="mt-4 text-[11px] text-[#707070]">
                 Debt-to-income compares total monthly debt payments to total household income (Cash Flow pillar).
                 Under 36% is generally considered healthy.
               </p>
@@ -584,7 +584,7 @@ export default function FAClient({
                     : "Fully covered (+" + fmt(Math.abs(computed.protection.gap)) + ")"}
                 </span>
               </div>
-              <p className="mt-3 text-[11px] text-[#999]">
+              <p className="mt-3 text-[11px] text-[#707070]">
                 Income, dependents, and debt totals pull automatically from the Cash Flow and Debt pillars.
               </p>
             </Panel>
@@ -596,7 +596,7 @@ export default function FAClient({
         <div className="flex min-h-[240px] items-center justify-center rounded-lg border border-dashed border-[#D9CFBA] p-10 text-center">
           <div>
             <div className="mb-1 font-serif text-lg text-[#1C1C1C]">{activeLabel}</div>
-            <div className="text-sm text-[#888]">
+            <div className="text-sm text-[#707070]">
               {SECONDARY_TABS.find((t) => t.value === tab)?.placeholder} — coming soon.
             </div>
           </div>

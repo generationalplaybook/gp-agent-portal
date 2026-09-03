@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo } from "../actions";
 import { GENDER_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
+import { calculateAge } from "@/lib/family";
 
 interface Client {
   id: string;
@@ -114,7 +115,10 @@ export default function ContactInfoForm({ client }: { client: Client }) {
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666]">
-        Birthdate
+        <span className="flex items-center gap-1.5">
+          Birthdate
+          {birthDate && <span className="font-semibold text-[#707070]">&middot; age {calculateAge(birthDate)}</span>}
+        </span>
         <input
           type="date"
           value={birthDate}
@@ -161,7 +165,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666] sm:col-span-2">
-        Timezone <span className="font-normal text-[#999]">(so you can see how many hours apart you are)</span>
+        Timezone <span className="font-normal text-[#707070]">(so you can see how many hours apart you are)</span>
         <select
           value={timezone}
           onChange={(e) => {
@@ -189,7 +193,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
               onBlur={() => save()}
               className="w-14 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <span className="text-xs text-[#888]">ft</span>
+            <span className="text-xs text-[#707070]">ft</span>
             <input
               type="number"
               value={heightIn}
@@ -197,7 +201,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
               onBlur={() => save()}
               className="w-14 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <span className="text-xs text-[#888]">in</span>
+            <span className="text-xs text-[#707070]">in</span>
           </div>
         </label>
         <label className="flex flex-col gap-1 text-xs text-[#666]">
@@ -210,7 +214,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
               onBlur={() => save()}
               className="w-16 rounded-md border border-[#D9CFBA] px-2 py-1.5 text-center text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <span className="text-xs text-[#888]">lbs</span>
+            <span className="text-xs text-[#707070]">lbs</span>
           </div>
         </label>
       </div>

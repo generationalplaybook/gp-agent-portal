@@ -68,12 +68,12 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-[#888]">
+      <p className="text-xs text-[#707070]">
         Run numbers for an option the client hasn&rsquo;t decided on yet — nothing here shows up as a Product until
         you convert it.
       </p>
 
-      {scenarios.length === 0 && !showAdd && <p className="text-xs text-[#999]">No illustration scenarios yet.</p>}
+      {scenarios.length === 0 && !showAdd && <p className="text-xs text-[#707070]">No illustration scenarios yet.</p>}
 
       {scenarios.length > 0 && (
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
@@ -85,14 +85,14 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
             >
               <div>
                 <div className="text-sm text-[#1C1C1C]">{s.product_name}</div>
-                <div className="text-xs text-[#999]">{[s.product_type, s.carrier].filter(Boolean).join(" · ") || "—"}</div>
+                <div className="text-xs text-[#707070]">{[s.product_type, s.carrier].filter(Boolean).join(" · ") || "—"}</div>
               </div>
               {s.converted_product_id ? (
                 <span className="rounded-full bg-[#EEF6F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1E6B3C]">
                   Converted
                 </span>
               ) : (
-                <span className="text-xs text-[#888]">Edit →</span>
+                <span className="text-xs text-[#707070]">Edit →</span>
               )}
             </Link>
           ))}
@@ -157,7 +157,7 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
                 setShowAdd(false);
                 setError("");
               }}
-              className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#707070] hover:text-[#1C1C1C]"
             >
               Cancel
             </button>

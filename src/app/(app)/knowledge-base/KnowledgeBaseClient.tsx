@@ -185,7 +185,7 @@ export default function KnowledgeBaseClient() {
 
       <div className="flex flex-col gap-2.5">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-[#D9CFBA] bg-white px-4 py-10 text-center text-sm text-[#888]">
+          <div className="rounded-lg border border-[#D9CFBA] bg-white px-4 py-10 text-center text-sm text-[#707070]">
             No results found. Try different keywords.
           </div>
         ) : (

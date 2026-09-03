@@ -77,7 +77,7 @@ export default function LinkedClientCard({ recruitId, linkedClient }: { recruitI
     return (
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-xs text-[#888]">This recruit is also a client:</p>
+          <p className="text-xs text-[#707070]">This recruit is also a client:</p>
           <Link href={`/clients/${linkedClient.id}`} className="text-sm font-semibold text-[#1C1C1C] hover:underline">
             {linkedClient.full_name}
           </Link>
@@ -86,7 +86,7 @@ export default function LinkedClientCard({ recruitId, linkedClient }: { recruitI
           type="button"
           disabled={busy}
           onClick={handleUnlink}
-          className="flex-shrink-0 text-[11px] text-[#999] hover:text-[#8B1A1A] disabled:opacity-50"
+          className="flex-shrink-0 text-[11px] text-[#707070] hover:text-[#8B1A1A] disabled:opacity-50"
         >
           Unlink
         </button>
@@ -118,7 +118,7 @@ export default function LinkedClientCard({ recruitId, linkedClient }: { recruitI
               setPicked(null);
               setQuery("");
             }}
-            className="text-xs text-[#888] hover:text-[#1C1C1C]"
+            className="text-xs text-[#707070] hover:text-[#1C1C1C]"
           >
             Clear
           </button>
@@ -131,8 +131,8 @@ export default function LinkedClientCard({ recruitId, linkedClient }: { recruitI
             placeholder="Search your clients by name…"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
-          {searching && <p className="text-xs text-[#999]">Searching…</p>}
-          {!searching && query && results.length === 0 && <p className="text-xs text-[#999]">No matching clients.</p>}
+          {searching && <p className="text-xs text-[#707070]">Searching…</p>}
+          {!searching && query && results.length === 0 && <p className="text-xs text-[#707070]">No matching clients.</p>}
           {results.length > 0 && (
             <div className="max-h-40 overflow-y-auto rounded-md border border-[#D9CFBA] bg-white">
               {results.map((r) => (
@@ -164,7 +164,7 @@ export default function LinkedClientCard({ recruitId, linkedClient }: { recruitI
         <button
           type="button"
           onClick={resetForm}
-          className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#888] hover:text-[#1C1C1C]"
+          className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#707070] hover:text-[#1C1C1C]"
         >
           Cancel
         </button>

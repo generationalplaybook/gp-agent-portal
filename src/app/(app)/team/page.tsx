@@ -43,7 +43,7 @@ export default async function TeamPage({
           + New Recruit
         </Link>
       </div>
-      <p className="mb-5 text-xs text-[#888]">
+      <p className="mb-5 text-xs text-[#707070]">
         Prospective and in-progress agents — not clients. No upline/downline here, and nothing tracks commission
         (that&rsquo;s the broker&rsquo;s job); this is just for keeping track of who&rsquo;s where and doing your
         follow-ups.
@@ -75,7 +75,7 @@ export default async function TeamPage({
       {error && <p className="text-sm text-red-700">Could not load team: {error.message}</p>}
 
       {!error && (!recruits || recruits.length === 0) && (
-        <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-10 text-center text-sm text-[#888]">
+        <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-10 text-center text-sm text-[#707070]">
           No one tracked yet. Add your first recruit or lead to get started.
         </div>
       )}
@@ -111,7 +111,7 @@ export default async function TeamPage({
                 </div>
               </div>
               {nextReminder && (
-                <div className="text-right text-xs text-[#888]">
+                <div className="text-right text-xs text-[#707070]">
                   Follow up<br />
                   <LocalDateTime iso={nextReminder} options={{ dateStyle: "medium" }} />
                 </div>

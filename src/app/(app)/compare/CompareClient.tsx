@@ -57,7 +57,7 @@ function SlotPicker({
               onChange(null);
               setQuery("");
             }}
-            className="ml-2 flex-shrink-0 text-xs text-[#888] hover:text-[#1C1C1C]"
+            className="ml-2 flex-shrink-0 text-xs text-[#707070] hover:text-[#1C1C1C]"
           >
             Clear
           </button>
@@ -77,7 +77,7 @@ function SlotPicker({
       )}
       {open && !value && (
         <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-[#D9CFBA] bg-white shadow-md">
-          {filtered.length === 0 && <div className="px-3 py-2 text-xs text-[#999]">No matches</div>}
+          {filtered.length === 0 && <div className="px-3 py-2 text-xs text-[#707070]">No matches</div>}
           {filtered.map((item) => (
             <div
               key={item.name}
@@ -87,7 +87,7 @@ function SlotPicker({
               }}
               className="cursor-pointer border-b border-[#F0EDE8] px-3 py-2 text-sm hover:bg-[#F5F0E8]"
             >
-              <span className="mr-1.5 text-[10px] font-semibold text-[#888]">{item.label}</span>
+              <span className="mr-1.5 text-[10px] font-semibold text-[#707070]">{item.label}</span>
               {item.name}
             </div>
           ))}
@@ -172,13 +172,13 @@ export default function CompareClient() {
                         <ul className="flex flex-col gap-1.5">
                           {bullets.map((b, i) => (
                             <li key={i} className="relative pl-3.5 text-xs leading-relaxed text-[#444]">
-                              <span className="absolute left-0 text-[#bbb]">—</span>
+                              <span className="absolute left-0 text-[#707070]">—</span>
                               {b}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-xs text-[#999]">—</span>
+                        <span className="text-xs text-[#707070]">—</span>
                       )}
                     </td>
                   );

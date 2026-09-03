@@ -155,10 +155,10 @@ export default function ReminderRow({
           ) : (
             <div className="text-sm font-semibold text-[#1C1C1C]">{subjectName}</div>
           ))}
-        <div className={`text-sm ${completed ? "text-[#999] line-through" : "text-[#2E2E2E]"}`}>
+        <div className={`text-sm ${completed ? "text-[#707070] line-through" : "text-[#2E2E2E]"}`}>
           {reminder.message || "Follow up"}
         </div>
-        <div className={`text-xs ${completed ? "text-[#999]" : overdue ? "font-semibold text-[#8B1A1A]" : "text-[#999]"}`}>
+        <div className={`text-xs ${completed ? "text-[#707070]" : overdue ? "font-semibold text-[#8B1A1A]" : "text-[#707070]"}`}>
           {completed ? "Completed — " : overdue ? "Overdue — " : ""}
           <LocalDateTime iso={reminder.remind_at} />
         </div>

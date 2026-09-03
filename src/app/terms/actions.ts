@@ -16,5 +16,5 @@ export async function acceptTerms() {
     .update({ terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString() })
     .eq("id", user.id);
 
-  redirect("/clients");
+  redirect("/");
 }

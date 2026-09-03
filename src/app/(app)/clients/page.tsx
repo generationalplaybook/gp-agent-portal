@@ -98,7 +98,7 @@ export default async function ClientsPage({
       {error && <p className="text-sm text-red-700">Could not load clients: {error.message}</p>}
 
       {!error && (!clients || clients.length === 0) && (
-        <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-10 text-center text-sm text-[#888]">
+        <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-10 text-center text-sm text-[#707070]">
           {needsReview ? "Nothing waiting on review — you're caught up." : "No clients yet. Add your first one to get started."}
         </div>
       )}
@@ -139,7 +139,7 @@ export default async function ClientsPage({
                 </div>
               </div>
               {nextReminder && (
-                <div className="text-right text-xs text-[#888]">
+                <div className="text-right text-xs text-[#707070]">
                   Follow up<br />
                   <LocalDateTime iso={nextReminder} options={{ dateStyle: "medium" }} />
                 </div>

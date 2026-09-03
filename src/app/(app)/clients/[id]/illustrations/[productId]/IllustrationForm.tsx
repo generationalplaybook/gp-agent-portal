@@ -208,7 +208,7 @@ export default function IllustrationForm({
         {data.kind === "cash_value" && (
           <>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               Enter cash value and death benefit at whichever ages matter for this case — pull the numbers straight
               from the carrier&rsquo;s illustration.
             </p>
@@ -260,7 +260,7 @@ export default function IllustrationForm({
         {data.kind === "final_expense" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
               life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here.
             </p>
@@ -289,7 +289,7 @@ export default function IllustrationForm({
               <DollarInput value={data.initialPremium} onChange={(v) => setData({ ...data, initialPremium: v })} className={inputClass} />
             </label>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
-            <p className="mb-4 text-xs text-[#888]">
+            <p className="mb-4 text-xs text-[#707070]">
               Accumulation value, income value (if there&rsquo;s an income rider), and death benefit at whichever
               years/ages matter for this case.
             </p>

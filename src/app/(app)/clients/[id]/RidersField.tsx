@@ -53,7 +53,7 @@ export default function RidersField({ value, onChange }: { value: string[]; onCh
               <button
                 type="button"
                 onClick={() => onChange(value.filter((r) => r !== rider))}
-                className="text-[#999] hover:text-[#8B1A1A]"
+                className="text-[#707070] hover:text-[#8B1A1A]"
                 aria-label={`Remove ${rider}`}
               >
                 ×

@@ -165,7 +165,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <h1 className="font-serif text-2xl text-[#1C1C1C]">{client.full_name}</h1>
-              {clientIsMinor && (
+              {clientIsMinor ? (
                 <span
                   className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
                     clientTurning18Soon ? "bg-[#8B1A1A] text-white" : "bg-[#F0EDE8] text-[#666]"
@@ -173,6 +173,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 >
                   {clientTurning18Soon ? `Minor · turns 18 in ${clientDaysToBday}d` : `Minor · age ${clientAge}`}
                 </span>
+              ) : (
+                clientAge !== null && (
+                  <span className="rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+                    Age {clientAge}
+                  </span>
+                )
               )}
             </div>
             <StageSelect
@@ -195,7 +201,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </div>
           )}
           {!client.intake_pending_review && client.household_summary && (
-            <p className="mb-4 text-xs text-[#888]">Household: {client.household_summary}</p>
+            <p className="mb-4 text-xs text-[#707070]">Household: {client.household_summary}</p>
           )}
           {clientIsMinor && (
             <p className="mb-4 rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
@@ -265,7 +271,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </form>
           <div className="flex flex-col gap-3">
             {(!notes || notes.length === 0) && (
-              <p className="text-sm text-[#999]">No notes yet.</p>
+              <p className="text-sm text-[#707070]">No notes yet.</p>
             )}
             {notes?.map((n) => (
               <NoteRow
@@ -301,7 +307,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </button>
           </form>
           <div className="flex flex-col gap-2">
-            {(!tasks || tasks.length === 0) && <p className="text-sm text-[#999]">No tasks yet.</p>}
+            {(!tasks || tasks.length === 0) && <p className="text-sm text-[#707070]">No tasks yet.</p>}
             {tasks?.map((t) => (
               <TaskRow key={t.id} task={t} clientId={client.id} />
             ))}
@@ -365,12 +371,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 Financial Wellness Score:{" "}
                 <span className="font-semibold text-[#1C1C1C]">{computeFA(plan.data as FAState).overallScore} / 100</span>
               </div>
-              <div className="mb-3 text-xs text-[#999]">
+              <div className="mb-3 text-xs text-[#707070]">
                 Last updated <LocalDateTime iso={plan.updated_at} options={{ dateStyle: "medium" }} />
               </div>
             </>
           ) : (
-            <p className="mb-3 text-xs text-[#999]">Not started yet.</p>
+            <p className="mb-3 text-xs text-[#707070]">Not started yet.</p>
           )}
           <a
             href={`/clients/${client.id}/financial-analysis`}

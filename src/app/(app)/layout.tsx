@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import NavLinks from "./NavLinks";
 import UserMenu from "./UserMenu";
@@ -24,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col bg-white">
       <nav className="flex h-14 items-center justify-between border-b border-[#D9CFBA] bg-white px-6">
         <div className="flex items-center gap-6">
-          <span className="font-serif text-lg font-semibold text-[#1C1C1C]">GP Advisor Portal</span>
+          <Link href="/" className="font-serif text-lg font-semibold text-[#1C1C1C]">GP Advisor Portal</Link>
           <NavLinks />
         </div>
         <div className="flex items-center gap-4">

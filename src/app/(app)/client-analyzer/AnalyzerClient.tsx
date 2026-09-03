@@ -91,7 +91,7 @@ function Field({ label, optional, children }: { label: string; optional?: boolea
       <div className="mb-2 text-sm font-semibold text-[#1C1C1C]">
         {label}
         {optional && (
-          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#999]">
+          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#707070]">
             optional
           </span>
         )}
@@ -256,7 +256,7 @@ export default function AnalyzerClient({
             creates a brand-new analysis; the original one is untouched.
           </div>
         )}
-        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#888]">Client Info</div>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#707070]">Client Info</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
         <Field label="Client Name">
@@ -276,7 +276,7 @@ export default function AnalyzerClient({
             <PhoneInput defaultValue={inputs.phone} onValueChange={(v) => set("phone", v)} className={inputClass} />
           </Field>
         </div>
-        {age !== null && <div className="-mt-3 mb-4 text-xs text-[#888]">Age: {age} years old</div>}
+        {age !== null && <div className="-mt-3 mb-4 text-xs text-[#707070]">Age: {age} years old</div>}
 
         <Field label="Email" optional>
           <input
@@ -326,7 +326,7 @@ export default function AnalyzerClient({
           </Field>
         </div>
 
-        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Health (optional)</div>
+        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Health (optional)</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
         <Field label="Tobacco Use">
@@ -367,7 +367,7 @@ export default function AnalyzerClient({
           />
         </Field>
 
-        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Financial (optional)</div>
+        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Financial (optional)</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
         <Field label="Existing Coverage / Products" optional>
@@ -484,11 +484,11 @@ export default function AnalyzerClient({
           </Field>
         </div>
 
-        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#888]">Goals (optional)</div>
+        <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Goals (optional)</div>
         <div className="mb-5 h-px bg-[#D9CFBA]" />
 
         <Field label="Primary Goal(s)">
-          <div className="mb-1.5 text-xs text-[#888]">
+          <div className="mb-1.5 text-xs text-[#707070]">
             Select one or more — we&rsquo;ll build a full recommendation for each goal chosen.
           </div>
           <CheckboxGroup<Goal>
@@ -596,13 +596,13 @@ export default function AnalyzerClient({
                 <div className="mb-2 text-sm font-semibold text-[#1E6B3C]">Suggested Coverage Amounts</div>
                 <div className="mb-1.5 text-sm text-[#333]">
                   <strong>Suggested Death Benefit:</strong> ${result.suggestedDB.toLocaleString()}{" "}
-                  <span className="text-xs text-[#888]">(10x annual income + total debt)</span>
+                  <span className="text-xs text-[#707070]">(10x annual income + total debt)</span>
                 </div>
                 <div className="text-sm text-[#333]">
                   <strong>Suggested Living Benefit Reserve:</strong> $
                   {(result.suggestedReserveLow ?? 0).toLocaleString()} – $
                   {(result.suggestedReserveHigh ?? 0).toLocaleString()}{" "}
-                  <span className="text-xs text-[#888]">(6-12 months of income if too sick to work)</span>
+                  <span className="text-xs text-[#707070]">(6-12 months of income if too sick to work)</span>
                 </div>
               </div>
             )}
@@ -627,7 +627,7 @@ export default function AnalyzerClient({
             {result.recommendations.map((rec, idx) => (
               <div key={idx} className="flex flex-col gap-4">
                 {result.recommendations.length > 1 && (
-                  <div className="-mb-1 text-xs font-semibold uppercase tracking-wide text-[#888]">
+                  <div className="-mb-1 text-xs font-semibold uppercase tracking-wide text-[#707070]">
                     Goal: {rec.goalLabel}
                   </div>
                 )}
@@ -776,13 +776,13 @@ export default function AnalyzerClient({
               )}
             </div>
 
-            <div className="rounded-lg bg-[#F5F0E8] p-3 text-xs leading-relaxed text-[#777]">
+            <div className="rounded-lg bg-[#F5F0E8] p-3 text-xs leading-relaxed text-[#707070]">
               All figures and recommendations above are approximations for discussion purposes only. Final numbers
               depend on carrier underwriting, approval, and current rates.
             </div>
           </div>
         ) : (
-          <div className="flex h-full min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[#D9CFBA] p-6 text-center text-sm text-[#999]">
+          <div className="flex h-full min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[#D9CFBA] p-6 text-center text-sm text-[#707070]">
             Fill in the client&rsquo;s info and click &ldquo;Get Recommendation&rdquo; to see a suggested product,
             talking points, and what to avoid.
           </div>

@@ -100,7 +100,7 @@ export default function MedicalConditionFields({
           stroke, then two more. */}
       <div>
         <div className="mb-1.5 text-xs font-semibold text-[#666]">
-          Timeline <span className="font-normal text-[#999]">(the first event, plus any recurrences)</span>
+          Timeline <span className="font-normal text-[#707070]">(the first event, plus any recurrences)</span>
         </div>
         <div className="flex flex-col gap-2">
           {draft.events.map((ev, i) => (
@@ -120,7 +120,7 @@ export default function MedicalConditionFields({
               <button
                 type="button"
                 onClick={() => removeEvent(i)}
-                className="text-xs text-[#999] hover:text-[#8B1A1A]"
+                className="text-xs text-[#707070] hover:text-[#8B1A1A]"
               >
                 Remove
               </button>
@@ -171,7 +171,7 @@ export default function MedicalConditionFields({
               <button
                 type="button"
                 onClick={() => removeMedication(i)}
-                className="text-xs text-[#999] hover:text-[#8B1A1A]"
+                className="text-xs text-[#707070] hover:text-[#8B1A1A]"
               >
                 Remove
               </button>

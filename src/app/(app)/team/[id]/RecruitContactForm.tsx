@@ -70,7 +70,7 @@ export default function RecruitContactForm({ recruit }: { recruit: Recruit }) {
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666]">
-        State <span className="font-normal text-[#999]">(licensing/appointment)</span>
+        State <span className="font-normal text-[#707070]">(licensing/appointment)</span>
         <input
           value={state}
           onChange={(e) => setState(e.target.value)}

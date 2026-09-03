@@ -30,7 +30,7 @@ export default function ClientLocationLine({
   if (!location && !diffLabel) return null;
 
   return (
-    <p className="-mt-1 mb-4 text-xs text-[#888]">
+    <p className="-mt-1 mb-4 text-xs text-[#707070]">
       {location}
       {location && diffLabel && " — "}
       {diffLabel}

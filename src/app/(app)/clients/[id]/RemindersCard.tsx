@@ -74,7 +74,7 @@ export default function RemindersCard({ owner, reminders }: { owner: ReminderOwn
       </div>
 
       {pending.length === 0 && completed.length === 0 && (
-        <p className="text-xs text-[#999]">No reminders yet.</p>
+        <p className="text-xs text-[#707070]">No reminders yet.</p>
       )}
 
       {pending.length > 0 && (
@@ -86,7 +86,7 @@ export default function RemindersCard({ owner, reminders }: { owner: ReminderOwn
       )}
 
       {completed.length > 0 && (
-        <details className="text-xs text-[#999]">
+        <details className="text-xs text-[#707070]">
           <summary className="cursor-pointer select-none">
             {completed.length} completed reminder{completed.length > 1 ? "s" : ""}
           </summary>

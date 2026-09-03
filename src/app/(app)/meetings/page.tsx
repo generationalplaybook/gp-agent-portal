@@ -28,7 +28,7 @@ export default async function MeetingsPage() {
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Meetings</h1>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {upcoming.length === 0 && (
-          <p className="text-sm text-[#999]">No upcoming meetings. Add one from a client&rsquo;s profile.</p>
+          <p className="text-sm text-[#707070]">No upcoming meetings. Add one from a client&rsquo;s profile.</p>
         )}
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {upcoming.map((m) => {
@@ -46,7 +46,7 @@ export default async function MeetingsPage() {
       </div>
 
       {past.length > 0 && (
-        <details className="mt-4 text-xs text-[#999]">
+        <details className="mt-4 text-xs text-[#707070]">
           <summary className="cursor-pointer select-none">
             {past.length} past meeting{past.length > 1 ? "s" : ""}
           </summary>

@@ -226,7 +226,7 @@ export default function ProductRow({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[#1C1C1C]">{product.product_name}</p>
-          <p className="text-xs text-[#888]">
+          <p className="text-xs text-[#707070]">
             {[product.product_type, product.carrier].filter(Boolean).join(" · ") || "—"}
           </p>
         </div>
@@ -273,7 +273,7 @@ export default function ProductRow({
       </div>
 
       {(product.issue_date || product.expiration_date) && (
-        <p className="text-xs text-[#888]">
+        <p className="text-xs text-[#707070]">
           {product.issue_date && `Issued ${new Date(product.issue_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
           {product.issue_date && product.expiration_date && " · "}
           {product.expiration_date &&
@@ -294,7 +294,7 @@ export default function ProductRow({
       )}
 
       {(product.face_amount || product.premium) && (
-        <p className="text-xs text-[#888]">
+        <p className="text-xs text-[#707070]">
           {product.face_amount != null && `Face: $${product.face_amount.toLocaleString()}`}
           {product.face_amount != null && product.premium != null && " · "}
           {product.premium != null && `Premium: $${product.premium.toLocaleString()}`}

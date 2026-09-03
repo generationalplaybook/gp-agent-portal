@@ -34,9 +34,9 @@ export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; c
     <div className="flex items-center justify-between gap-3 py-3">
       <div>
         <div className="text-sm font-semibold text-[#1C1C1C]">
-          {agent.full_name || "Unnamed"} {isSelf && <span className="text-xs text-[#999]">(you)</span>}
+          {agent.full_name || "Unnamed"} {isSelf && <span className="text-xs text-[#707070]">(you)</span>}
         </div>
-        <div className="text-xs text-[#888]">{agent.email}</div>
+        <div className="text-xs text-[#707070]">{agent.email}</div>
         {error && <div className="mt-1 text-xs font-semibold text-[#8B1A1A]">{error}</div>}
       </div>
       <select

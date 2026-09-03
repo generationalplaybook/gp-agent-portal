@@ -59,7 +59,7 @@ function MeetingRow({ meeting, clientId, clientName }: { meeting: Meeting; clien
             </span>
           )}
         </div>
-        <div className="text-xs text-[#999]">
+        <div className="text-xs text-[#707070]">
           <LocalDateTime iso={meeting.meeting_at} />
         </div>
         {meeting.notes && <div className="mt-1 text-xs text-[#666]">{meeting.notes}</div>}
@@ -208,13 +208,13 @@ export default function MeetingsCard({
             >
               Download calendar invite
             </button>
-            <span className="text-[#999]">— add it to your calendar, or forward the file to {clientName.split(" ")[0]}.</span>
+            <span className="text-[#707070]">— add it to your calendar, or forward the file to {clientName.split(" ")[0]}.</span>
           </div>
         )}
       </div>
 
       {upcoming.length === 0 && past.length === 0 && (
-        <p className="text-xs text-[#999]">No meetings logged yet.</p>
+        <p className="text-xs text-[#707070]">No meetings logged yet.</p>
       )}
 
       {upcoming.length > 0 && (
@@ -226,7 +226,7 @@ export default function MeetingsCard({
       )}
 
       {past.length > 0 && (
-        <details className="text-xs text-[#999]">
+        <details className="text-xs text-[#707070]">
           <summary className="cursor-pointer select-none">
             {past.length} past meeting{past.length > 1 ? "s" : ""}
           </summary>

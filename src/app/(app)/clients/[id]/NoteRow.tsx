@@ -81,7 +81,7 @@ export default function NoteRow({ note, clientId }: { note: Note; clientId: stri
     <div className="border-l-2 border-[#D9CFBA] pl-3">
       <p className="text-sm text-[#2E2E2E] whitespace-pre-wrap">{note.body}</p>
       <div className="mt-1 flex items-center justify-between">
-        <p className="text-xs text-[#999]">
+        <p className="text-xs text-[#707070]">
           {note.author?.full_name ?? "Advisor"} · {new Date(note.created_at).toLocaleString()}
         </p>
         {!confirmingDelete ? (

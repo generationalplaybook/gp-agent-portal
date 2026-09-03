@@ -41,7 +41,7 @@ function CopyButton({ value }: { value: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="shrink-0 text-[#999] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/cell:opacity-100"
+      className="shrink-0 text-[#707070] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/cell:opacity-100"
       title={copied ? "Copied!" : "Copy"}
     >
       {copied ? (
@@ -231,7 +231,7 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
               <button
                 type="button"
                 onClick={() => setRevealed((v) => !v)}
-                className="shrink-0 text-[#999] hover:text-[#1C1C1C]"
+                className="shrink-0 text-[#707070] hover:text-[#1C1C1C]"
                 title={revealed ? "Hide password" : "Show password"}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -267,13 +267,13 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
       <div className={ACTIONS_SPACER_CLASS}>
         {!confirmingDelete ? (
           <>
-            <button type="button" onClick={() => setEditing(true)} className="text-[#999] hover:text-[#1C1C1C]" title="Edit">
+            <button type="button" onClick={() => setEditing(true)} className="text-[#707070] hover:text-[#1C1C1C]" title="Edit">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
               </svg>
             </button>
-            <button type="button" onClick={() => setConfirmingDelete(true)} className="text-[#999] hover:text-[#8B1A1A]" title="Delete">
+            <button type="button" onClick={() => setConfirmingDelete(true)} className="text-[#707070] hover:text-[#8B1A1A]" title="Delete">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -360,12 +360,12 @@ export default function CarrierLoginsTab({ logins }: { logins: CarrierLogin[] })
         </div>
       )}
 
-      {logins.length === 0 && !adding && <p className="text-xs text-[#999]">No carrier logins saved yet.</p>}
+      {logins.length === 0 && !adding && <p className="text-xs text-[#707070]">No carrier logins saved yet.</p>}
 
       {logins.length > 0 && (
         <div>
           <div className="hidden items-center gap-3 border-b border-[#D9CFBA] pb-1.5 sm:flex">
-            <div className={`${ROW_GRID_CLASS} text-[10px] font-semibold uppercase tracking-wide text-[#888]`}>
+            <div className={`${ROW_GRID_CLASS} text-[10px] font-semibold uppercase tracking-wide text-[#707070]`}>
               <div>Company</div>
               <div>Username</div>
               <div>Password</div>

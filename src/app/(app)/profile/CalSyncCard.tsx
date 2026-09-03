@@ -39,7 +39,7 @@ export default function CalSyncCard({ connected }: { connected: boolean }) {
   return (
     <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Cal.com Auto-Sync</h2>
-      <p className="mb-4 text-xs text-[#888]">
+      <p className="mb-4 text-xs text-[#707070]">
         Only for Cal.com — connect your account and a booking made through your scheduling link will
         automatically show up as a meeting on the right client&rsquo;s profile, no manual entry needed. Find
         your key in Cal.com under Settings → Developer → API Keys.

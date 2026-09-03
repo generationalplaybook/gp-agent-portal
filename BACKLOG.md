@@ -154,11 +154,39 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   "Add Meeting" on that client's page, same as any pre-existing meeting from before this feature
   existed.
 
-- **Clickable meeting location links (flagged 9/1, same test session).** In Meetings & Calls
-  (both the per-client card and the global Meetings tab), the Location field always renders as
-  plain text — e.g. `https://app.cal.com/video/...` shows as text, not a link. Karina wants a
-  pasted-in URL to be clickable. Small/low-risk change (`MeetingRow.tsx` in both
-  `clients/[id]/` and `meetings/`). Not built yet — Karina is still testing, hasn't said go.
+- **Clickable meeting location links (flagged 9/1, same test session) — BUILT 9/3.** In
+  Meetings & Calls, the Location field always rendered as plain text — e.g.
+  `https://app.cal.com/video/...` shown as text, not a link. Karina wants a pasted-in URL to be
+  clickable. Turned out there's only one `MeetingRow.tsx` (shared between the per-client card and
+  the global Meetings tab, not two separate files as originally logged) — added an `isUrl()`
+  check there: a URL location now renders as a real underlined link that opens in a new tab
+  (`target="_blank"`); a plain address still renders as before. Didn't touch the separate,
+  still-unconfirmed "Via Cal.com" badge question from the entry above — that one still needs
+  Karina to say what "misalignment" means before anything changes there.
+
+- **Birthday → auto-calculated/displayed age — BUILT 9/3.** Karina asked that once a client's
+  birthday is entered, their current age gets calculated and shown, rather than the advisor
+  doing that math themselves. Turned out a `calculateAge()` helper (`src/lib/family.ts`) already
+  existed and was already used for minors — the actual gap was that ADULT clients never showed
+  their age anywhere. Fixes: the client profile header now shows an "Age NN" chip next to the
+  name for every client with a birth date on file (previously only minors got a badge there);
+  the Birthdate field on the Contact Info edit form now shows "· age NN" live next to the label
+  as you pick a date; and adult family members on the Family card now get the same "Age NN" chip
+  adult clients get (previously only minors there showed an age badge too). Client Analyzer
+  already showed a live "Age: N years old" — nothing to change there. No schema change.
+
+- **Light/gray helper text is hard to read across the whole portal — BUILT 9/3.** Karina sent a
+  screenshot of My Profile (Intake Link + Carrier & Licensing cards) as one example but was clear
+  this wasn't just that page — every lighter-gray label/caption/helper text across the app needed
+  to get a bit darker (not full black, just more legible). Surveyed the actual color usage before
+  touching anything: `text-[#999]` (81 uses), `text-[#888]` (74 uses), plus one-off outliers
+  `text-[#bbb]` and `text-[#777]`, were the faint tier — things like "Send this to a client
+  before your first meeting...", "(optional — e.g. \"karina\"...)", the small COMPANY/USERNAME
+  column headers. `text-[#666]` and `text-[#555]` were already noticeably darker and left alone.
+  Ran one global find/replace across every `.tsx`/`.ts` file, collapsing all four light-gray
+  values to a single `#707070` — a portal-wide styling change, not a one-off. No schema change,
+  no logic touched, purely a color-value swap; also used `#707070` for the new gray text added by
+  the age and dashboard work above so nothing new ships in the old faint shade.
 
 - **Should a minor's Client Profile PDF also show a Parent/Guardian contact? (raised 9/1,
   discussion only, NOT built — Karina said "dnt build yet, im still testing").** Karina uploaded
@@ -277,6 +305,31 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `navigator.clipboard.writeText`, with a brief checkmark confirming it worked. Table stays
   compact; the hover tooltip (full value on hover) is still there too for reading, not just
   copying.
+
+- **New Home Page — snapshot dashboard, built 9/3.** Karina: "I want to clean up the first
+  page advisers see... it can be overwhelming" seeing the full client list the moment you log
+  in. Replaced the old behavior (landing on `/` immediately redirected straight to `/clients`)
+  with a real dashboard at `/` — Clients is now just another tab in the nav, same as Meetings or
+  Team, rather than the first thing on screen. Sketched the layout first as a design canvas
+  before writing any code, per her usual preference for anything visual — she picked 4 even
+  cards over 2 or 3, and clarified two things on the mockup before build: (1) the 4th card
+  ("Team Follow-ups") tracks reminders tied to recruits on the Team page, since there's no
+  separate advisor-to-advisor task feature yet — closest existing match to what she meant by
+  "team follow ups"; (2) Client Pipeline's per-stage rows link straight to that stage already
+  filtered on the Clients page (`/clients?stage=lead`, etc. — that filtering already existed),
+  while Meetings/Reminders/Team are each one whole clickable card through to their full page.
+  Built `src/app/(app)/page.tsx` (deleted the old `src/app/page.tsx`, which can't coexist with a
+  page at the same route inside the `(app)` group) with 4 cards: Client Pipeline (stage counts +
+  a colored bar, using the real `CLIENT_STAGES` colors), Upcoming Meetings (count + next 3),
+  Reminders Due (count + overdue count + next 3, client-owned reminders only), Team Follow-ups
+  (count + next 2, recruit-owned reminders only, so nothing double-counts between the two
+  reminder cards). Added "Home" as the first nav item (`NavLinks.tsx`) and made the "GP Advisor
+  Portal" logo in the top nav a link back to `/` (`layout.tsx`). Updated every place that used to
+  send someone straight to `/clients` after signing in — `login/actions.ts`, `terms/actions.ts`
+  (post-terms-acceptance), `set-password/page.tsx`, and the `proxy.ts` auth gate's own
+  already-logged-in redirect — to land on `/` instead, so the dashboard is genuinely the first
+  thing anyone sees, not just reachable by clicking Home afterward. No schema change, no SQL to
+  run — this is entirely new/moved page code.
 
 - **Self-service email change on My Profile — discussed/built 9/3.** Karina noticed the Email
   field on Your Info is disabled and asked what an agent would do if they needed to change it —
@@ -1255,6 +1308,35 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   number down the road, that has to be set as the face amount at issue, not left to organic
   cash value growth or the corridor to reach on their own. No schema change.
 
+- **Nationwide product lineup — 17 missing Knowledge Base entries added, built 9/3.**
+  Karina sent a screenshot of Nationwide's full 19-product list and asked why only 2 were in
+  the Knowledge Base. Confirmed the Knowledge Base is a static file (`src/lib/kb-data.ts`),
+  not a database table, so this is a pure content/code change — no SQL migration, nothing
+  for Karina to run in Supabase. Researched all 17 missing products (5 parallel research
+  passes, each told to cite sources and explicitly flag anything it couldn't verify rather
+  than invent a number) and added them in the app's existing entry format:
+  - IUL: Indexed UL Protector II 2020, Survivorship Indexed UL 2020, YourLife Indexed UL
+    Accumulator.
+  - Term: 10/15/20/30-year Term GLT (four separate entries — note the 30-year's conversion
+    privilege ends at year 20, not the full term, unlike the shorter GLTs).
+  - Whole Life: 20-Pay Whole Life, Heritage Single Premium Whole Life, Whole Life 100.
+  - LTC hybrids: CareMatters II, CareMatters Together, and CareMatters Annuity — this last
+    one is on an annuity chassis (not life insurance) unlike the other two, so underwriting
+    is generally lighter; filed under the Annuities group next to the other Nationwide
+    annuities instead of with the life products.
+  - UL/VUL: No-Lapse Guarantee UL II, Survivorship VUL II, VUL Accumulator, VUL Protector II.
+  - Also corrected the existing "Nationwide YourLife IUL Protector" entry along the way
+    (renamed to match Nationwide's actual current name, YourLife Indexed UL Protector) — it
+    had one bullet conflating two separate riders (a Long-Term Care Rider and a Premium
+    Waiver Rider) into one; split them into two accurate bullets.
+  - Worth a sanity-check on your end before this reaches agents: none of the figures above
+    are fabricated (research was explicitly told to say "could not verify" instead of
+    guessing), but products like this get repriced/updated by carriers periodically —
+    caps, minimums, elimination periods and similar numbers are worth confirming against a
+    current Nationwide illustration/spec sheet before an agent quotes off of them, same as
+    with any Knowledge Base entry.
+  No schema change, `npm run lint` / `npm run build` both clean.
+
 - **First / Last / Middle name split — built 8/29.** First Name / Last Name (required) and
   Middle Name (optional) are now separate fields everywhere someone's name gets entered or
   edited: the invite form, My Profile, the new client form, the client profile's contact info,
@@ -1296,8 +1378,9 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   this is fine to leave as-is for now — revisit only if she asks for real outbound
   notifications later.
 
-- **Better home page.** The landing page after login is minimal right now. Karina wants
-  something more useful here, but said not to worry about it yet.
+- **Better home page — BUILT 9/3.** See "New Home Page — snapshot dashboard" near the top of
+  this file for the full writeup; moved out of low-priority once Karina actually described what
+  she wanted.
 
 - **Downloads section.** Left alone for now — no changes requested yet.
 

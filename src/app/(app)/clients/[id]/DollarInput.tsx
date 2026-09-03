@@ -42,7 +42,7 @@ export default function DollarInput({
 
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-[#999]">$</span>
+      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-[#707070]">$</span>
       <input
         value={local}
         onChange={(e) => {

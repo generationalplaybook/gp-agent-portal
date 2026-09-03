@@ -33,7 +33,7 @@ export default async function RemindersPage() {
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Reminders</h1>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {pending.length === 0 && (
-          <p className="text-sm text-[#999]">No reminders set. Add one from a client&rsquo;s or recruit&rsquo;s profile.</p>
+          <p className="text-sm text-[#707070]">No reminders set. Add one from a client&rsquo;s or recruit&rsquo;s profile.</p>
         )}
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {pending.map((r) => (
@@ -43,7 +43,7 @@ export default async function RemindersPage() {
       </div>
 
       {completed.length > 0 && (
-        <details className="mt-4 text-xs text-[#999]">
+        <details className="mt-4 text-xs text-[#707070]">
           <summary className="cursor-pointer select-none">
             {completed.length} completed reminder{completed.length > 1 ? "s" : ""}
           </summary>
