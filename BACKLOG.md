@@ -211,6 +211,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   or a carrier/state number. Karina still needs to manually re-add her state numbers under the
   new State Licenses tab and remove the old My Credentials entries for NPN and each state — I
   can't move her live data myself, only ship the code/schema.
+  **Update 9/3 (later same day)**: Karina asked to just delete My Credentials outright now that
+  everything it did has a proper home. Removed the whole section from `/profile`
+  (`CredentialRow.tsx` deleted, `addCredential`/`deleteCredential` removed from
+  `profile/actions.ts`, the card/form/query pulled out of `page.tsx`). The `advisor_credentials`
+  table itself is left in place, untouched — old rows just sit there unused, same as the
+  `medical_conditions.treating_physician` column after that field was retired; no destructive SQL
+  either time. Gave Karina her exact old values inline in chat (NPN 21383480; CA 4422472; GA
+  3862688; WI 21383480; NV 4240448) so she can re-enter them into the new fields without needing
+  the old UI first.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

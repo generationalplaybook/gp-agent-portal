@@ -32,21 +32,11 @@ export async function updateMyProfile(formData: FormData) {
   revalidatePath("/profile");
 }
 
-export async function addCredential(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  const label = String(formData.get("label") || "").trim();
-  const code = String(formData.get("code") || "").trim();
-  if (!label || !code) return;
-
-  await supabase.from("advisor_credentials").insert({ agent_id: user.id, label, code });
-  revalidatePath("/profile");
-}
-
-export async function deleteCredential(credentialId: string) {
-  const { supabase } = await requireUser();
-  await supabase.from("advisor_credentials").delete().eq("id", credentialId);
-  revalidatePath("/profile");
-}
+// addCredential / deleteCredential (My Credentials) removed 9/3 — retired once NPN got its own
+// field on Your Info and carrier/state numbers got their own homes in Carrier Logins / State
+// Licenses (see schema.sql section 31/32). The advisor_credentials table itself is left in place,
+// untouched — any old rows just sit there unused, same as the medical_conditions
+// treating_physician column after that field was dropped; no destructive SQL either time.
 
 // ─────────────────────────────────────────────────────────────
 // Carrier Logins — a private, per-advisor replacement for the spreadsheet Karina was tracking
