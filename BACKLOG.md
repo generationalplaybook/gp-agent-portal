@@ -1319,6 +1319,67 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   exactly the kind of thing you're reading off a screen mid-call with a carrier.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_policy_number.sql`.
+  **Update 9/3**: while looking at this, Karina flagged that the Face Amount / Premium pair on
+  both the Add Product and Edit Product forms only ever had placeholder text ("Face amount",
+  "Premium") — placeholder text disappears the moment a value is typed, so once a product had
+  real numbers saved, editing it again showed two plain "$" boxes with no way to tell which was
+  which (unlike Minimum to Avoid Lapse, which has a real label above it). Added the same kind of
+  persistent label above each field on both forms. Also checked the comma-formatting question she
+  raised in the same message — `DollarInput` formats commas in on blur (tab/click away), by
+  design, not while actively typing (avoids cursor-jumping bugs); what she was seeing was that
+  behavior working correctly, not a bug — nothing changed there.
+
+- **Auto-reminder before a "convertible without exam" deadline — BUILT 9/3.** Looking at a
+  product's conversion deadline field, Karina asked whether the advisor could get a reminder as
+  that date approaches rather than needing to notice it themselves — floated 30 or 60 days out;
+  went with my recommendation of 60 (more real runway than 30, since a no-exam conversion can
+  involve carrier paperwork and back-and-forth). Built the same shape as the existing 18th-
+  birthday cron: new daily cron `src/app/api/cron/check-conversion-deadlines/route.ts` (added to
+  `vercel.json`, offset an hour from the birthday check to avoid both firing at once) finds every
+  product whose `conversion_deadline` falls within the next 60 days and hasn't already gotten a
+  reminder, and creates one automatically (`"[Product] ([Client]) can only convert... until
+  [date] — 60 days out."`). New `client_products.conversion_reminder_sent` boolean (same one-
+  time-only pattern as `clients.turned_18_notice_sent`) stops it from creating a fresh reminder
+  every day the deadline is still approaching.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_conversion_reminder.sql`.
+  Note for Karina: Vercel's Hobby plan has historically limited free projects to a small number
+  of cron jobs / daily-only schedules — this is now the 2nd cron job on the project (the
+  birthday check was the 1st). If the deployment errors or the new cron doesn't show up under
+  Vercel's Cron Jobs tab after this deploys, that's almost certainly a plan limit, not a bug —
+  worth a quick look there after applying this.
+  **Second pass, BUILT 9/3: final (exam-required) conversion deadline + no-exam-declined
+  tracking.** Follow-up to the "still open" note above. Karina described two more things: (1) a
+  way to track where a policy is in the conversion process ("stays organized," not just the
+  auto-reminder) — when asked simple-status-tag vs. product-to-product linking, she leaned
+  simple and wasn't sure herself ("I have never done a conversion yet... I don't know what do you
+  think"); (2) a way to record that the no-exam window was specifically missed/declined, with a
+  date, and a way to set a follow-up reminder for the later exam-required conversion window (her
+  example: "5 years no exam and convert until age 75"). Her second answer redirected this toward
+  a concrete ask: the advisor should be able to input the no-exam conversion date AND a final
+  conversion deadline directly.
+  Built the concrete, simple version her own answers pointed to — plain date fields, matching how
+  the rest of this form already works — and deliberately did NOT build the vaguer "conversion
+  pipeline / mark as converting" status tag, or product-to-product linking when a policy actually
+  converts: both were the parts she was genuinely unsure about, and her own instinct (a converted
+  policy just becomes a new Product entry, same as adding any product today) already covers what
+  she described needing in practice, without a new linking mechanism.
+  Two new fields on `client_products`: `final_conversion_deadline` (date — the absolute,
+  exam-required cutoff after the no-exam window closes) and `no_exam_declined_at` (date — records
+  that the no-exam window was specifically missed/declined, rather than just letting the date
+  quietly pass). Both editable on the Add and Edit Product forms (`ProductsSection.tsx` /
+  `ProductRow.tsx`), next to "Convertible without exam until," and shown on the product card: a
+  "No-exam window declined [date] — exam required to convert until [date]" note when
+  `no_exam_declined_at` is set, plus the status badge itself (`getProductStatus`,
+  `src/lib/products.ts`) now accounts for both fields — e.g. "Convertible — exam now required
+  (until [final date])" once the no-exam window passes but a final deadline is on file, or
+  "Conversion window closed" once that final deadline itself passes.
+  The existing conversion-deadline cron (`check-conversion-deadlines/route.ts`) was extended to
+  also watch `final_conversion_deadline`, using its own one-time flag
+  (`final_conversion_reminder_sent`) so it fires independently, same 60-day-out heads-up as the
+  no-exam reminder, worded for the final deadline instead.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_final_conversion_tracking.sql`.
 
 - **Nationwide product lineup — 17 missing Knowledge Base entries added, built 9/3.**
   Karina sent a screenshot of Nationwide's full 19-product list and asked why only 2 were in

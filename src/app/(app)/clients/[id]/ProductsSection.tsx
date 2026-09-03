@@ -24,6 +24,8 @@ const EMPTY_FIELDS: ProductFields = {
   issue_date: "",
   expiration_date: "",
   conversion_deadline: "",
+  final_conversion_deadline: "",
+  no_exam_declined_at: "",
   conversion_notes: "",
   face_amount: "",
   premium: "",
@@ -192,6 +194,26 @@ export default function ProductsSection({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Final conversion deadline (exam required, e.g. up to age 75)
+              <input
+                type="date"
+                value={fields.final_conversion_deadline}
+                onChange={(e) => set("final_conversion_deadline", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              No-exam window missed/declined on
+              <input
+                type="date"
+                value={fields.no_exam_declined_at}
+                onChange={(e) => set("no_exam_declined_at", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          </div>
           <input
             value={fields.conversion_notes}
             onChange={(e) => set("conversion_notes", e.target.value)}
@@ -199,18 +221,24 @@ export default function ProductsSection({
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
           <div className="grid grid-cols-2 gap-2">
-            <DollarInput
-              value={fields.face_amount ?? ""}
-              onChange={(v) => set("face_amount", v)}
-              placeholder="Face amount"
-              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-            <DollarInput
-              value={fields.premium ?? ""}
-              onChange={(v) => set("premium", v)}
-              placeholder="Premium"
-              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-            />
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Face amount
+              <DollarInput
+                value={fields.face_amount ?? ""}
+                onChange={(v) => set("face_amount", v)}
+                placeholder="e.g. 250,000"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Premium
+              <DollarInput
+                value={fields.premium ?? ""}
+                onChange={(v) => set("premium", v)}
+                placeholder="e.g. 89.50"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
           </div>
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Minimum to avoid lapse (monthly)

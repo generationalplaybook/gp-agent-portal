@@ -265,6 +265,21 @@ export interface ClientProduct {
   expiration_date: string | null;
   conversion_deadline: string | null;
   conversion_notes: string | null;
+  // Set true once the 60-days-out auto-reminder has been created for this product's
+  // conversion_deadline, so the daily cron doesn't create a duplicate every day it's still
+  // approaching. Not meant to be edited from the UI.
+  conversion_reminder_sent: boolean;
+  // The absolute final date this product can convert to permanent coverage AT ALL, once a
+  // medical exam is required (after conversion_deadline, the no-exam window, has passed) —
+  // e.g. "5 years no-exam, convertible with exam until age 75." Optional — not every product's
+  // final cutoff is known/entered.
+  final_conversion_deadline: string | null;
+  // Same one-time-only pattern as conversion_reminder_sent, for the 60-days-out reminder before
+  // final_conversion_deadline. Not meant to be edited from the UI.
+  final_conversion_reminder_sent: boolean;
+  // Set by the advisor when they know the no-exam conversion window was missed or the client
+  // declined to convert during it — the date that happened, not the deadline itself.
+  no_exam_declined_at: string | null;
   face_amount: number | null;
   premium: number | null;
   // The bare-minimum monthly premium that keeps the policy from lapsing — usually lower than

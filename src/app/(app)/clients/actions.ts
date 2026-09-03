@@ -482,6 +482,8 @@ export interface ProductFields {
   issue_date?: string;
   expiration_date?: string;
   conversion_deadline?: string;
+  final_conversion_deadline?: string;
+  no_exam_declined_at?: string;
   conversion_notes?: string;
   face_amount?: string;
   premium?: string;
@@ -522,6 +524,8 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     issue_date: fields.issue_date?.trim() || null,
     expiration_date: fields.expiration_date?.trim() || null,
     conversion_deadline: fields.conversion_deadline?.trim() || null,
+    final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
+    no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
     conversion_notes: fields.conversion_notes?.trim() || null,
     face_amount: parseNumberOrNull(fields.face_amount),
     premium: parseNumberOrNull(fields.premium),
@@ -551,6 +555,8 @@ export async function updateProduct(productId: string, clientId: string, fields:
       issue_date: fields.issue_date?.trim() || null,
       expiration_date: fields.expiration_date?.trim() || null,
       conversion_deadline: fields.conversion_deadline?.trim() || null,
+      final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
+      no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
       conversion_notes: fields.conversion_notes?.trim() || null,
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),

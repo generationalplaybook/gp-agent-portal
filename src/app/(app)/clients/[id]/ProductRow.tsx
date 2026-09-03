@@ -62,6 +62,8 @@ function toFieldValues(p: ClientProduct): ProductFields {
     issue_date: p.issue_date ?? "",
     expiration_date: p.expiration_date ?? "",
     conversion_deadline: p.conversion_deadline ?? "",
+    final_conversion_deadline: p.final_conversion_deadline ?? "",
+    no_exam_declined_at: p.no_exam_declined_at ?? "",
     conversion_notes: p.conversion_notes ?? "",
     face_amount: p.face_amount != null ? String(p.face_amount) : "",
     premium: p.premium != null ? String(p.premium) : "",
@@ -203,6 +205,26 @@ export default function ProductRow({
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Final conversion deadline (exam required, e.g. up to age 75)
+            <input
+              type="date"
+              value={fields.final_conversion_deadline}
+              onChange={(e) => set("final_conversion_deadline", e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            No-exam window missed/declined on
+            <input
+              type="date"
+              value={fields.no_exam_declined_at}
+              onChange={(e) => set("no_exam_declined_at", e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        </div>
         <input
           value={fields.conversion_notes}
           onChange={(e) => set("conversion_notes", e.target.value)}
@@ -210,18 +232,24 @@ export default function ProductRow({
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
         <div className="grid grid-cols-2 gap-2">
-          <DollarInput
-            value={fields.face_amount ?? ""}
-            onChange={(v) => set("face_amount", v)}
-            placeholder="Face amount"
-            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-          />
-          <DollarInput
-            value={fields.premium ?? ""}
-            onChange={(v) => set("premium", v)}
-            placeholder="Premium"
-            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-          />
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Face amount
+            <DollarInput
+              value={fields.face_amount ?? ""}
+              onChange={(v) => set("face_amount", v)}
+              placeholder="e.g. 250,000"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Premium
+            <DollarInput
+              value={fields.premium ?? ""}
+              onChange={(v) => set("premium", v)}
+              placeholder="e.g. 89.50"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
         </div>
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           Minimum to avoid lapse (monthly)
@@ -266,7 +294,12 @@ export default function ProductRow({
     );
   }
 
-  const status = getProductStatus(product.expiration_date, product.conversion_deadline);
+  const status = getProductStatus(
+    product.expiration_date,
+    product.conversion_deadline,
+    product.final_conversion_deadline,
+    product.no_exam_declined_at
+  );
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
 
   return (
@@ -333,6 +366,14 @@ export default function ProductRow({
           {product.issue_date && product.expiration_date && " · "}
           {product.expiration_date &&
             `Expires ${new Date(product.expiration_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+        </p>
+      )}
+
+      {product.no_exam_declined_at && (
+        <p className="text-xs text-[#8b6a00]">
+          No-exam window declined {new Date(product.no_exam_declined_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+          {product.final_conversion_deadline &&
+            ` — exam required to convert until ${new Date(product.final_conversion_deadline).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
         </p>
       )}
 

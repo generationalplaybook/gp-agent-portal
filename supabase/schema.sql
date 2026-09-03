@@ -1143,3 +1143,37 @@ create trigger on_auth_user_email_changed
 -- numeric), optional since a quote/application doesn't have one yet.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists policy_number text;
+
+-- ─────────────────────────────────────────────────────────────
+-- 36. Auto-reminder before a "convertible without exam" deadline (added 9/3) — Karina, looking
+-- at the conversion_deadline field: wants a heads-up before it passes rather than needing to
+-- notice it herself. Same shape as the existing 18th-birthday cron
+-- (src/app/api/cron/check-birthdays/route.ts): a new daily cron
+-- (src/app/api/cron/check-conversion-deadlines/route.ts) finds every product whose
+-- conversion_deadline falls within the next 60 days and hasn't already gotten a reminder, and
+-- creates one via the existing reminders table. conversion_reminder_sent is the one-time-only
+-- flag that stops it from creating a new reminder every day the deadline is still approaching —
+-- same pattern as clients.turned_18_notice_sent.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists conversion_reminder_sent boolean not null default false;
+
+-- ─────────────────────────────────────────────────────────────
+-- 37. Final (exam-required) conversion deadline + no-exam-declined tracking (added 9/3) —
+-- Karina described two more things after the 60-day no-exam reminder above: (1) many policies
+-- also have an absolute final deadline for converting to permanent coverage at all — after the
+-- no-exam window closes, conversion is often still possible but now requires a medical exam,
+-- up to some final cutoff (her example: "5 years no exam and convert until age 75") — and she
+-- wants to record that date and get the same kind of heads-up reminder for it; (2) a way to
+-- record that the no-exam window was specifically missed/declined, with the date that happened.
+-- Deliberately simple, matching how the rest of this form works — plain fields the advisor fills
+-- in, not a special workflow. Decided NOT to build the vaguer "conversion pipeline / mark as
+-- converting" status she also floated — she hasn't been through an actual conversion yet and
+-- wasn't sure herself what that should look like ("I don't know, what do you think"); these two
+-- concrete date fields cover what she described needing in practice. Also decided NOT to build
+-- product-to-product linking when a policy actually converts — Karina's own instinct was that
+-- the advisor would just add the new permanent policy as a separate Product at that point, same
+-- as adding any product today, so no new linking mechanism was built for that.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists final_conversion_deadline date;
+alter table public.client_products add column if not exists final_conversion_reminder_sent boolean not null default false;
+alter table public.client_products add column if not exists no_exam_declined_at date;
