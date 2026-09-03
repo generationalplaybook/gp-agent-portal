@@ -13,6 +13,44 @@ const STATUS_STYLES: Record<"good" | "warn" | "bad", string> = {
   bad: "bg-[#8B1A1A] text-white",
 };
 
+// Same hover-to-copy pattern used for carrier login numbers on My Profile (CarrierLoginsTab.tsx) —
+// a policy number is exactly the kind of thing you're reading off a screen while on the phone
+// with a carrier, so one click to copy beats retyping it.
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard API unavailable or permission denied — nothing else to fall back to.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 text-[#707070] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/policy:opacity-100"
+      title={copied ? "Copied!" : "Copy"}
+    >
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export type OwnerOption = { id: string; full_name: string };
 
 function toFieldValues(p: ClientProduct): ProductFields {
@@ -20,6 +58,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     product_name: p.product_name,
     product_type: p.product_type ?? "",
     carrier: p.carrier ?? "",
+    policy_number: p.policy_number ?? "",
     issue_date: p.issue_date ?? "",
     expiration_date: p.expiration_date ?? "",
     conversion_deadline: p.conversion_deadline ?? "",
@@ -129,6 +168,15 @@ export default function ProductRow({
             />
           </label>
         </div>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Policy number (once issued)
+          <input
+            value={fields.policy_number}
+            onChange={(e) => set("policy_number", e.target.value)}
+            placeholder="e.g. NA-9284710"
+            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+        </label>
         {ownerOptions.length > 0 && (
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
@@ -271,6 +319,13 @@ export default function ProductRow({
           </span>
         )}
       </div>
+
+      {product.policy_number && (
+        <p className="group/policy flex items-center gap-1.5 text-xs text-[#707070]">
+          Policy # {product.policy_number}
+          <CopyButton value={product.policy_number} />
+        </p>
+      )}
 
       {(product.issue_date || product.expiration_date) && (
         <p className="text-xs text-[#707070]">

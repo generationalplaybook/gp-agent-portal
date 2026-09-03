@@ -1308,6 +1308,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   number down the road, that has to be set as the face amount at issue, not left to organic
   cash value growth or the corridor to reach on their own. No schema change.
 
+- **Policy number on Products — built 9/3.** Karina, looking at a client's Products card:
+  "I think we should have a section on this product thing for a policy number." Once a product
+  is actually issued, the policy number is what you'd reference calling the carrier for service
+  or claims — there was nowhere to record it. Added `client_products.policy_number` (freeform
+  text, optional — a quote/application doesn't have one yet), a "Policy number (once issued)"
+  field on both the Add Product and Edit Product forms (`ProductsSection.tsx` / `ProductRow.tsx`),
+  and a "Policy # ..." line on the product card itself, right above the Issued/Expires line, with
+  the same hover-to-copy icon used for carrier login numbers on My Profile — a policy number is
+  exactly the kind of thing you're reading off a screen mid-call with a carrier.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_policy_number.sql`.
+
 - **Nationwide product lineup — 17 missing Knowledge Base entries added, built 9/3.**
   Karina sent a screenshot of Nationwide's full 19-product list and asked why only 2 were in
   the Knowledge Base. Confirmed the Knowledge Base is a static file (`src/lib/kb-data.ts`),

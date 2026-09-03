@@ -20,6 +20,7 @@ const EMPTY_FIELDS: ProductFields = {
   product_name: "",
   product_type: "",
   carrier: "",
+  policy_number: "",
   issue_date: "",
   expiration_date: "",
   conversion_deadline: "",
@@ -156,6 +157,15 @@ export default function ProductsSection({
               />
             </label>
           </div>
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Policy number (once issued)
+            <input
+              value={fields.policy_number}
+              onChange={(e) => set("policy_number", e.target.value)}
+              placeholder="e.g. NA-9284710"
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
           {ownerOptions.length > 0 && (
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)

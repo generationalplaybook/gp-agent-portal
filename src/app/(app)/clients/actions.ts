@@ -478,6 +478,7 @@ export interface ProductFields {
   product_name: string;
   product_type?: string;
   carrier?: string;
+  policy_number?: string;
   issue_date?: string;
   expiration_date?: string;
   conversion_deadline?: string;
@@ -517,6 +518,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     product_name,
     product_type: fields.product_type?.trim() || null,
     carrier: fields.carrier?.trim() || null,
+    policy_number: fields.policy_number?.trim() || null,
     issue_date: fields.issue_date?.trim() || null,
     expiration_date: fields.expiration_date?.trim() || null,
     conversion_deadline: fields.conversion_deadline?.trim() || null,
@@ -545,6 +547,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       product_name,
       product_type: fields.product_type?.trim() || null,
       carrier: fields.carrier?.trim() || null,
+      policy_number: fields.policy_number?.trim() || null,
       issue_date: fields.issue_date?.trim() || null,
       expiration_date: fields.expiration_date?.trim() || null,
       conversion_deadline: fields.conversion_deadline?.trim() || null,

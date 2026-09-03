@@ -258,6 +258,9 @@ export interface ClientProduct {
   product_name: string;
   product_type: string | null;
   carrier: string | null;
+  // The carrier's own policy/contract number once issued — blank on a quote/application that
+  // hasn't been issued yet.
+  policy_number: string | null;
   issue_date: string | null;
   expiration_date: string | null;
   conversion_deadline: string | null;

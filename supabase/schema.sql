@@ -1134,3 +1134,12 @@ drop trigger if exists on_auth_user_email_changed on auth.users;
 create trigger on_auth_user_email_changed
   after update of email on auth.users
   for each row execute procedure public.handle_user_email_change();
+
+-- ─────────────────────────────────────────────────────────────
+-- 35. Policy number on Products (added 9/3) — Karina, looking at a client's Products card:
+-- "I think we should have a section on this product thing for a policy number." Once a product
+-- is actually issued, the policy number is what you'd reference calling the carrier for service/
+-- claims — there was nowhere to record it. Freeform text (not every carrier's numbers are purely
+-- numeric), optional since a quote/application doesn't have one yet.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists policy_number text;
