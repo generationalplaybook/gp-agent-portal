@@ -37,7 +37,12 @@ export default async function RecruitDetailPage({ params }: { params: Promise<{ 
             <h1 className="font-serif text-2xl text-[#1C1C1C]">{recruit.full_name}</h1>
             <RecruitStageSelect recruitId={recruit.id} stage={recruit.stage} />
           </div>
-          <RecruitContactForm recruit={recruit} />
+          {/* Keyed on updated_at so this remounts (picking up fresh values) whenever the recruit
+              row changes from somewhere other than this form itself — e.g. linking a client
+              auto-fills phone/email/state below; without a fresh key this form's own local
+              state (set once at mount) would keep showing the old blank fields until a manual
+              page reload. */}
+          <RecruitContactForm key={recruit.updated_at} recruit={recruit} />
           <div className="mt-4 border-t border-[#EDE8DF] pt-4">
             <DeleteRecruitButton recruitId={recruit.id} recruitName={recruit.full_name} />
           </div>

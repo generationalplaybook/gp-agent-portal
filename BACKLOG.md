@@ -266,6 +266,23 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_client_timezone.sql`, same paste-into-SQL-Editor step as the last two.
 
+- **Team/Recruit linking auto-fills phone/email/state from the linked client — built 9/3.**
+  Karina: "when i link an existing client to a team card, can it auto fill the phone number and
+  email and any other info that is the same?" `linkClientToRecruit` (`team/actions.ts`) now
+  pulls phone/email/state from the linked client onto the recruit at link time — but only into
+  whichever of those fields are still blank on the recruit, never overwriting something already
+  typed in there. `full_name` is deliberately left untouched (already required at recruit
+  creation, and a recruit's name on file isn't wrong just because it differs slightly from the
+  client's). No new SQL — this only reads/writes existing columns.
+  Also fixed a related staleness bug found while building this: `RecruitContactForm` keeps its
+  own field state in `useState`, seeded once from its `recruit` prop at mount — so when a
+  server action updates the recruit from somewhere *other* than that form itself (linking a
+  client, in this case), the page revalidates but the form kept showing the old blank fields
+  until a manual reload. Fixed by keying `<RecruitContactForm key={recruit.updated_at} .../>` in
+  `team/[id]/page.tsx` so it remounts (and re-seeds from fresh props) whenever the recruit row
+  actually changes — the auto-filled phone/email/state now appear immediately after linking, no
+  refresh needed.
+
 - **DollarInput — auto-formats with commas on blur, portal-wide — built 9/2.** Karina spotted
   "55000" (no commas) sitting right next to "50,000" (with commas) on the same Final Expense
   budget-options card and said commas "need to autofill, that needs to happen across all areas of

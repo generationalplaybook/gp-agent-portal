@@ -111,9 +111,25 @@ export async function searchClientCandidates(query: string): Promise<{ id: strin
   return data;
 }
 
+// Linking pulls over phone/email/state from the client record, but only into whichever of those
+// fields are still blank on the recruit — never overwrites something Karina already typed in
+// here. (full_name is left alone entirely: it's required at recruit creation, so it's already
+// set, and a recruit's name on file isn't necessarily wrong just because it differs slightly
+// from the client's, e.g. a nickname.)
 export async function linkClientToRecruit(recruitId: string, clientId: string): Promise<void> {
   const { supabase } = await requireUser();
-  const { error } = await supabase.from("recruits").update({ client_id: clientId }).eq("id", recruitId);
+
+  const [{ data: recruit }, { data: client }] = await Promise.all([
+    supabase.from("recruits").select("phone, email, state").eq("id", recruitId).single(),
+    supabase.from("clients").select("phone, email, state").eq("id", clientId).single(),
+  ]);
+
+  const patch: Record<string, string> = { client_id: clientId };
+  if (!recruit?.phone && client?.phone) patch.phone = client.phone;
+  if (!recruit?.email && client?.email) patch.email = client.email;
+  if (!recruit?.state && client?.state) patch.state = client.state;
+
+  const { error } = await supabase.from("recruits").update(patch).eq("id", recruitId);
   if (error) throw new Error(error.message);
   revalidatePath(`/team/${recruitId}`);
 }
