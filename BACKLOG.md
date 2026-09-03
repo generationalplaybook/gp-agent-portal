@@ -164,6 +164,80 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Team / Recruits section — track licensed agents, agents-in-progress, and prospective agent
+  leads — discussed 9/3, BUILT 9/3.** Karina wanted to keep track of her own recruited agents for
+  follow-up purposes, explicitly with NO upline/downline hierarchy and NO commission tracking (the
+  broker already handles that), plus a way to optionally link an existing client record to a
+  recruit for the case where a client wants to become an agent. When asked to settle the two open
+  scoping questions, she confirmed the exact 3-stage pipeline in her own words — "Lead" (watching
+  the intro calls, progressing), "Studying," "Licensed" — and said "Yes nudge" for follow-up
+  reminders.
+  New `recruits` table (`supabase/schema.sql` section 28), completely independent of `clients`:
+  `full_name`, `phone`, `email`, `state` (licensing/appointment state), `stage` (lead / studying /
+  licensed), `source`, `target_license_date`, `notes_summary` (freeform "at a glance" field, same
+  pattern as `clients.notes_summary`), and an optional nullable `client_id` FK for the
+  client-becomes-candidate case — a cross-reference only, `on delete set null` so deleting either
+  record never touches the other.
+  The "nudge" reuses the EXISTING Reminders system wholesale rather than building a second
+  notification mechanism: `reminders.client_id` is now nullable, a new nullable `recruit_id`
+  column was added, and a check constraint keeps every reminder pointed at exactly one of the two.
+  No RLS change was needed — reminders were already scoped by `agent_id = auth.uid()`, not by
+  walking through the client. This meant generalizing the shared reminder plumbing everywhere it's
+  used, all done as one pass: `reminders/actions.ts`'s five functions now take a `ReminderOwner`
+  discriminated union (`{clientId}` or `{recruitId}`) instead of a bare `clientId`, `ReminderRow`
+  and `RemindersCard` take that same `owner` prop (and `ReminderRow`'s display props were renamed
+  `subjectName`/`subjectHref`, generic instead of client-specific), and `/reminders` now joins both
+  `clients` and `recruits` and routes each row to whichever one it belongs to. The existing Client
+  Reminders card and every other client call site were updated to pass `owner={{ clientId }}` —
+  behavior there is byte-for-byte unchanged, confirmed via full lint + build.
+  New `/team` section: a list page grouped/filterable by stage (mirrors `/clients`' stage-chip
+  layout exactly, including the "next reminder, overdue" badge), `/team/new`, and a `/team/[id]`
+  detail page with inline auto-save contact fields (mirrors `ContactInfoForm`), a stage selector,
+  a Source field, a freeform Notes field, the Reminders card, and a Linked Client card — search
+  your own clients by name (reuses the same search-and-pick pattern as Family linking on the
+  client page) and link/unlink, never merging the two records. "Team" added to the main nav.
+  No SQL has been run against Karina's live Supabase project yet — the new `recruits` table and
+  the `reminders` nullability/constraint change need to be applied there (same manual
+  copy-into-SQL-Editor step as every other schema change this project has used) before this
+  actually works once the code deploys.
+
+- **Medical Condition Report — universal health questionnaire linkable to a client's profile, for
+  informal carrier underwriting calls — discussed 9/3, BUILT 9/3.** Motivating case Karina gave:
+  a client in his 40s who's had 3 strokes, now medication-controlled — she's been advised to call
+  multiple carriers' underwriting departments for an informal risk assessment before a formal
+  application, and needs enough detail on hand to do that call well. When asked whether to also
+  fold in client-level health fields (tobacco, family history, etc.) alongside the condition
+  fields, Karina said "No, just condition" — so this is scoped strictly to the condition itself;
+  height/weight already live on the client record (section 22) and stay there, untouched.
+  New `medical_conditions` table (`supabase/schema.sql` section 29), one row per condition per
+  client (a client can log more than one — a cardiac history and diabetes, say), deliberately
+  condition-agnostic rather than one fixed-field form: condition name, onset/diagnosis date,
+  current status/severity, treating physician/facility, an event timeline (repeatable date +
+  description rows — Karina's own example has an initial stroke plus two recurrences, so this
+  had to be repeatable, not a single date field), medications (repeatable name/dosage/start
+  date/lifelong-yes-no rows), most recent test/report result + date, hospitalizations, and a
+  free-text catch-all. events/medications are jsonb arrays rather than child tables (same
+  reasoning as `illustration_scenarios.data`). `submitted_by_client` flags whether an entry came
+  through the public link or was typed in by the agent.
+  The full field set lives in ONE shared component, `MedicalConditionFields.tsx`
+  (`clients/[id]/`), used by both entry points so they're guaranteed to ask the same questions:
+  the agent-facing `MedicalConditionsSection.tsx` (a new "Medical Condition Report" section on
+  the client's own profile — add/edit/delete condition entries, each showing a "From client" tag
+  when it came in through the public link) and the public `MedicalReportForm.tsx`.
+  Link mechanism modeled on the existing Intake link (`/intake/[advisorId]`, `IntakeLinkCard.tsx`)
+  but per-client rather than per-advisor and with no memorable slug: a new
+  `clients.medical_report_token` (random uuid, unique, defaulted so every client already has one)
+  and a new public route `/medical-report/[token]` outside the `(app)` group, resolved with the
+  admin client exactly like Intake resolves its slug/id — deliberately a random token rather than
+  the client's own id, since health information is more sensitive than a general intake form. A
+  new `MedicalReportLinkCard.tsx` in the client sidebar shows/copies that link. The same
+  `MedicalConditionFields` form is also reachable directly from the client's own profile (no
+  token, no public route involved) for the "agent fills it out live on the call" case — one field
+  set, two doors in, exactly as discussed.
+  No SQL has been run against Karina's live Supabase project yet — `supabase/migration_add_medical_conditions.sql`
+  has the one-time copy-into-SQL-Editor step (same pattern as every other schema change this
+  project has used), needed before this actually works once the code deploys.
+
 - **DollarInput — auto-formats with commas on blur, portal-wide — built 9/2.** Karina spotted
   "55000" (no commas) sitting right next to "50,000" (with commas) on the same Final Expense
   budget-options card and said commas "need to autofill, that needs to happen across all areas of

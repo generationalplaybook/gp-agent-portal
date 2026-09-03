@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReminderRow from "../../ReminderRow";
-import { addReminder } from "../../reminders/actions";
+import { addReminder, type ReminderOwner } from "../../reminders/actions";
 
 interface Reminder {
   id: string;
@@ -11,7 +11,9 @@ interface Reminder {
   sent_at: string | null;
 }
 
-export default function RemindersCard({ clientId, reminders }: { clientId: string; reminders: Reminder[] }) {
+// Shared between a client's profile and (since Team/Recruits) a recruit's profile — `owner`
+// says which one this card is attached to; everything else is identical either way.
+export default function RemindersCard({ owner, reminders }: { owner: ReminderOwner; reminders: Reminder[] }) {
   const [remindAt, setRemindAt] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -29,7 +31,7 @@ export default function RemindersCard({ clientId, reminders }: { clientId: strin
     setError("");
     try {
       const iso = new Date(remindAt).toISOString();
-      await addReminder(clientId, iso, message);
+      await addReminder(owner, iso, message);
       setRemindAt("");
       setMessage("");
     } catch (e) {
@@ -78,7 +80,7 @@ export default function RemindersCard({ clientId, reminders }: { clientId: strin
       {pending.length > 0 && (
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {pending.map((r) => (
-            <ReminderRow key={r.id} reminder={r} clientId={clientId} />
+            <ReminderRow key={r.id} reminder={r} owner={owner} />
           ))}
         </div>
       )}
@@ -90,7 +92,7 @@ export default function RemindersCard({ clientId, reminders }: { clientId: strin
           </summary>
           <div className="mt-2 flex flex-col divide-y divide-[#EDE8DF]">
             {completed.map((r) => (
-              <ReminderRow key={r.id} reminder={r} clientId={clientId} />
+              <ReminderRow key={r.id} reminder={r} owner={owner} />
             ))}
           </div>
         </details>

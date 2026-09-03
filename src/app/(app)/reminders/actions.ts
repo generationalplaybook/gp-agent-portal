@@ -13,29 +13,45 @@ async function requireUser() {
   return { supabase, user: user! };
 }
 
-// A client can have any number of reminders — "sent_at" doubles as the
-// completed flag (null = still pending, set = completed/dismissed).
+// A client (or, since Team/Recruits, a recruit) can have any number of reminders — "sent_at"
+// doubles as the completed flag (null = still pending, set = completed/dismissed).
+//
+// Every reminder belongs to exactly one of a Client or a Recruit — never both, never neither
+// (enforced in the DB by reminders_client_or_recruit_chk, schema.sql section 28). Callers pass
+// that ownership as a small discriminated union rather than two separate optional strings, so it's
+// not possible to accidentally call these with both or neither set.
+export type ReminderOwner = { clientId: string; recruitId?: undefined } | { recruitId: string; clientId?: undefined };
 
-export async function addReminder(clientId: string, remindAtIso: string, message: string): Promise<void> {
+function revalidateForOwner(owner: ReminderOwner) {
+  if (owner.clientId) {
+    revalidatePath(`/clients/${owner.clientId}`);
+    revalidatePath("/clients");
+  } else {
+    revalidatePath(`/team/${owner.recruitId}`);
+    revalidatePath("/team");
+  }
+  revalidatePath("/reminders");
+}
+
+export async function addReminder(owner: ReminderOwner, remindAtIso: string, message: string): Promise<void> {
   const { supabase, user } = await requireUser();
   if (!remindAtIso) throw new Error("Pick a date and time.");
 
   const { error } = await supabase.from("reminders").insert({
-    client_id: clientId,
+    client_id: owner.clientId ?? null,
+    recruit_id: owner.recruitId ?? null,
     agent_id: user.id,
     remind_at: remindAtIso,
     message: message.trim() || null,
   });
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/clients");
-  revalidatePath("/reminders");
+  revalidateForOwner(owner);
 }
 
 export async function updateReminder(
   reminderId: string,
-  clientId: string,
+  owner: ReminderOwner,
   remindAtIso: string,
   message: string
 ): Promise<void> {
@@ -48,12 +64,10 @@ export async function updateReminder(
     .eq("id", reminderId);
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/clients");
-  revalidatePath("/reminders");
+  revalidateForOwner(owner);
 }
 
-export async function completeReminder(reminderId: string, clientId: string): Promise<void> {
+export async function completeReminder(reminderId: string, owner: ReminderOwner): Promise<void> {
   const { supabase } = await requireUser();
   const { error } = await supabase
     .from("reminders")
@@ -61,27 +75,21 @@ export async function completeReminder(reminderId: string, clientId: string): Pr
     .eq("id", reminderId);
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/clients");
-  revalidatePath("/reminders");
+  revalidateForOwner(owner);
 }
 
-export async function reopenReminder(reminderId: string, clientId: string): Promise<void> {
+export async function reopenReminder(reminderId: string, owner: ReminderOwner): Promise<void> {
   const { supabase } = await requireUser();
   const { error } = await supabase.from("reminders").update({ sent_at: null }).eq("id", reminderId);
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/clients");
-  revalidatePath("/reminders");
+  revalidateForOwner(owner);
 }
 
-export async function deleteReminder(reminderId: string, clientId: string): Promise<void> {
+export async function deleteReminder(reminderId: string, owner: ReminderOwner): Promise<void> {
   const { supabase } = await requireUser();
   const { error } = await supabase.from("reminders").delete().eq("id", reminderId);
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath("/clients");
-  revalidatePath("/reminders");
+  revalidateForOwner(owner);
 }

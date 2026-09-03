@@ -14,6 +14,37 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
 
 export const GENDER_OPTIONS = ["Male", "Female"];
 
+// Team / Recruits — Karina's own words for the pipeline: "Lead" (watching the intro calls,
+// progressing through the early conversation), "Studying" (actively studying for their license
+// exam), "Licensed" (active, appointed agent). Deliberately flat, just 3 stages — no
+// upline/downline, and nothing here tracks commission (the broker already handles that).
+export type RecruitStage = "lead" | "studying" | "licensed";
+
+export const RECRUIT_STAGES: { value: RecruitStage; label: string; color: string }[] = [
+  { value: "lead", label: "Lead", color: "#8b6a00" },
+  { value: "studying", label: "Studying", color: "#0057b8" },
+  { value: "licensed", label: "Licensed", color: "#00693c" },
+];
+
+export interface Recruit {
+  id: string;
+  owner_id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  // State they're licensing/appointed in — carrier appointments are state-specific.
+  state: string | null;
+  stage: RecruitStage;
+  source: string | null;
+  target_license_date: string | null;
+  notes_summary: string | null;
+  // Optional cross-reference to an existing Client who wants to become an agent. This links the
+  // two records without merging them — the client's own history stays exactly as it was.
+  client_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -64,6 +95,50 @@ export interface Client {
   height_ft: number | null;
   height_in: number | null;
   weight: number | null;
+  // Unguessable per-client token for the public Medical Condition Report link — deliberately NOT
+  // the client's own id, since health information is more sensitive than the general Intake
+  // form (which does use the advisor's own id/slug). See MedicalCondition below.
+  medical_report_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Medical Condition Report (added 9/3) — a universal, condition-agnostic questionnaire for
+// gathering enough detail to call carrier underwriting for an informal risk assessment before a
+// formal application. One row per condition per client — a client can log more than one.
+// Deliberately scoped to the condition itself, nothing client-level (tobacco, family history,
+// etc. don't live here — height/weight already live on Client above and stay there).
+export interface MedicalConditionEvent {
+  date: string;
+  description: string;
+}
+
+export interface MedicalConditionMedication {
+  name: string;
+  dosage: string;
+  start_date: string;
+  lifelong: boolean;
+}
+
+export interface MedicalCondition {
+  id: string;
+  client_id: string;
+  condition_name: string;
+  onset_date: string | null;
+  current_status: string | null;
+  treating_physician: string | null;
+  latest_report_date: string | null;
+  latest_report_summary: string | null;
+  hospitalizations: string | null;
+  additional_notes: string | null;
+  // The initial event plus any recurrences (Karina's own example: a stroke, then two more) —
+  // kept as a jsonb array rather than a child table since the shape is simple and doesn't need
+  // its own relational identity, same reasoning as IllustrationScenario.data.
+  events: MedicalConditionEvent[];
+  medications: MedicalConditionMedication[];
+  // True when submitted through the public client-facing link rather than entered by the agent
+  // live on a call.
+  submitted_by_client: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -87,7 +162,11 @@ export interface ClientTask {
 
 export interface Reminder {
   id: string;
-  client_id: string;
+  // Exactly one of client_id / recruit_id is ever set — see the check constraint added with
+  // Team/Recruits (schema.sql section 28). A reminder is either "follow up with this client" or
+  // "follow up with this recruit," never both.
+  client_id: string | null;
+  recruit_id: string | null;
   agent_id: string;
   remind_at: string;
   message: string | null;

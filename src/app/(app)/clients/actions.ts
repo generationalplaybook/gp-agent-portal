@@ -531,3 +531,75 @@ export async function deleteAnalysis(analysisId: string, clientId: string): Prom
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
 }
+
+// ─────────────────────────────────────────────────────────────
+// Medical Condition Report — agent-entered side (filled in live on a call). The public,
+// client-facing side lives at src/app/medical-report/[token]/actions.ts, unauthenticated and
+// using the admin client, since there's no session there — this file's functions are only ever
+// called from inside the logged-in portal, so they go through the normal RLS-scoped client like
+// everything else here.
+// ─────────────────────────────────────────────────────────────
+
+export interface MedicalConditionFields {
+  condition_name: string;
+  onset_date: string;
+  current_status: string;
+  treating_physician: string;
+  latest_report_date: string;
+  latest_report_summary: string;
+  hospitalizations: string;
+  additional_notes: string;
+  events: { date: string; description: string }[];
+  medications: { name: string; dosage: string; start_date: string; lifelong: boolean }[];
+}
+
+function cleanMedicalConditionRow(fields: MedicalConditionFields) {
+  return {
+    condition_name: fields.condition_name.trim(),
+    onset_date: fields.onset_date || null,
+    current_status: fields.current_status.trim() || null,
+    treating_physician: fields.treating_physician.trim() || null,
+    latest_report_date: fields.latest_report_date || null,
+    latest_report_summary: fields.latest_report_summary.trim() || null,
+    hospitalizations: fields.hospitalizations.trim() || null,
+    additional_notes: fields.additional_notes.trim() || null,
+    events: fields.events.filter((e) => e.date || e.description.trim()),
+    medications: fields.medications.filter((m) => m.name.trim()),
+  };
+}
+
+export async function addMedicalCondition(clientId: string, fields: MedicalConditionFields): Promise<void> {
+  const { supabase } = await requireUser();
+  if (!fields.condition_name.trim()) throw new Error("Condition name is required.");
+
+  const { error } = await supabase.from("medical_conditions").insert({
+    client_id: clientId,
+    ...cleanMedicalConditionRow(fields),
+    submitted_by_client: false,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function updateMedicalCondition(
+  conditionId: string,
+  clientId: string,
+  fields: MedicalConditionFields
+): Promise<void> {
+  const { supabase } = await requireUser();
+  if (!fields.condition_name.trim()) throw new Error("Condition name is required.");
+
+  const { error } = await supabase
+    .from("medical_conditions")
+    .update(cleanMedicalConditionRow(fields))
+    .eq("id", conditionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function deleteMedicalCondition(conditionId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("medical_conditions").delete().eq("id", conditionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}

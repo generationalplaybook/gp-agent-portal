@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/clients", label: "Clients" },
   { href: "/meetings", label: "Meetings" },
   { href: "/reminders", label: "Reminders" },
+  { href: "/team", label: "Team" },
   { href: "/knowledge-base", label: "Knowledge Base" },
   { href: "/client-analyzer", label: "Client Analyzer" },
   { href: "/compare", label: "Compare" },

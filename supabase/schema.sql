@@ -847,3 +847,134 @@ create policy "Illustration scenarios follow client visibility"
         and c.owner_id = auth.uid()
     )
   );
+
+-- ─────────────────────────────────────────────────────────────
+-- 28. Team / Recruits (added 9/3) — tracking prospective and in-progress agents, kept completely
+-- separate from Clients. Karina's own stages: "Lead" (watching the intro calls, progressing
+-- through the early conversation), "Studying" (actively studying for their license exam),
+-- "Licensed" (active, appointed agent). Deliberately flat — explicitly no upline/downline, and
+-- no commission tracking (the broker already handles that). client_id is an OPTIONAL
+-- cross-reference for the case where an existing client wants to become an agent — it links the
+-- two records without merging them; a recruit is never altered just because the linked client
+-- changes, and vice versa.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.recruits (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  full_name text not null,
+  phone text,
+  email text,
+  state text, -- state they're licensing/appointed in — carrier appointments are state-specific
+  stage text not null default 'lead' check (stage in ('lead','studying','licensed')),
+  source text, -- freeform: referral, former client, conference, etc.
+  target_license_date date,
+  notes_summary text, -- freeform "at a glance" field, same pattern as clients.notes_summary
+  -- Optional link to an existing client who wants to become an agent — see comment above.
+  client_id uuid references public.clients(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists recruits_owner_id_idx on public.recruits(owner_id);
+create index if not exists recruits_client_id_idx on public.recruits(client_id) where client_id is not null;
+
+alter table public.recruits enable row level security;
+
+drop policy if exists "Agents manage their own recruits" on public.recruits;
+create policy "Agents manage their own recruits"
+  on public.recruits for all
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
+
+drop trigger if exists recruits_set_updated_at on public.recruits;
+create trigger recruits_set_updated_at
+  before update on public.recruits
+  for each row execute procedure public.set_updated_at();
+
+-- Reminders can now belong to a recruit instead of a client — this is the "nudge" for follow-ups
+-- Karina asked for, wired straight into the existing Reminders table/page/UI rather than building
+-- a second notification system. client_id becomes nullable; the check constraint keeps every
+-- reminder pointed at exactly one of the two. Existing rows are unaffected (they all already have
+-- client_id set and recruit_id defaults null, which satisfies the constraint as-is). No RLS
+-- change needed here — reminders were already scoped by agent_id = auth.uid(), not by walking
+-- through the client, so a recruit's reminders are private to the owning agent automatically.
+alter table public.reminders alter column client_id drop not null;
+alter table public.reminders add column if not exists recruit_id uuid references public.recruits(id) on delete cascade;
+
+alter table public.reminders drop constraint if exists reminders_client_or_recruit_chk;
+alter table public.reminders add constraint reminders_client_or_recruit_chk check (
+  (client_id is not null and recruit_id is null) or (client_id is null and recruit_id is not null)
+);
+
+create index if not exists reminders_recruit_id_idx on public.reminders(recruit_id) where recruit_id is not null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 29. Medical Condition Report (added 9/3) — a universal, condition-agnostic questionnaire tied
+-- to a client's profile, for gathering enough detail to call carrier underwriting for an informal
+-- risk assessment before a formal application (Karina's own motivating example: a client with 3
+-- strokes, now medication-controlled). Fillable either by the agent live on a call, or by the
+-- client themselves via a unique per-client public link. Scoped strictly to the condition itself
+-- per Karina's "No, just condition" when asked whether to fold in client-level fields (tobacco,
+-- family history, etc.) — those don't belong here; height/weight already live on clients
+-- (section 22) and stay there.
+-- One row per condition per client — a client can log more than one (a cardiac history and
+-- diabetes, say). events/medications are kept as jsonb arrays (simple date+text shape, no need
+-- for their own relational identity) rather than child tables — same reasoning as
+-- illustration_scenarios.data.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.medical_conditions (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  condition_name text not null,
+  onset_date date,
+  current_status text, -- e.g. "Controlled with medication", "Resolved", "Ongoing — moderate"
+  treating_physician text,
+  latest_report_date date,
+  latest_report_summary text,
+  hospitalizations text,
+  additional_notes text,
+  events jsonb not null default '[]'::jsonb, -- [{date, description}] — initial event + recurrences
+  medications jsonb not null default '[]'::jsonb, -- [{name, dosage, start_date, lifelong}]
+  -- true when submitted through the public client-facing link rather than entered by the agent
+  submitted_by_client boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists medical_conditions_client_id_idx on public.medical_conditions(client_id);
+
+alter table public.medical_conditions enable row level security;
+
+drop policy if exists "Medical conditions follow client visibility" on public.medical_conditions;
+create policy "Medical conditions follow client visibility"
+  on public.medical_conditions for all
+  using (
+    exists (
+      select 1 from public.clients c
+      where c.id = medical_conditions.client_id
+        and c.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.clients c
+      where c.id = medical_conditions.client_id
+        and c.owner_id = auth.uid()
+    )
+  );
+
+drop trigger if exists medical_conditions_set_updated_at on public.medical_conditions;
+create trigger medical_conditions_set_updated_at
+  before update on public.medical_conditions
+  for each row execute procedure public.set_updated_at();
+
+-- Per-client unique, unguessable token for the public "fill this out" link — deliberately NOT
+-- the client's own id (unlike the advisor-level Intake link), since health information is more
+-- sensitive than a general intake form. Defaulted so every client — existing and new — always
+-- has one without a separate "generate" step.
+alter table public.clients add column if not exists medical_report_token uuid default gen_random_uuid();
+update public.clients set medical_report_token = gen_random_uuid() where medical_report_token is null;
+alter table public.clients alter column medical_report_token set default gen_random_uuid();
+alter table public.clients alter column medical_report_token set not null;
+
+create unique index if not exists clients_medical_report_token_idx on public.clients(medical_report_token);

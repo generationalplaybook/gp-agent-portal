@@ -15,10 +15,13 @@ import ScheduleCallCard from "./ScheduleCallCard";
 import MeetingsCard from "./MeetingsCard";
 import SourceField from "./SourceField";
 import MarkReviewedButton from "./MarkReviewedButton";
+import MedicalConditionsSection from "./MedicalConditionsSection";
+import MedicalReportLinkCard from "./MedicalReportLinkCard";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
 import { computeFA, type FAState } from "@/lib/fa";
 import { calculateAge, daysUntilNextBirthday } from "@/lib/family";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,6 +37,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     { data: products },
     { data: meetings },
     { data: scenarios },
+    { data: medicalConditions },
+    siteUrl,
   ] = await Promise.all([
     supabase.from("clients").select("*").eq("id", id).single(),
     supabase
@@ -68,6 +73,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .select("id, product_name, product_type, carrier, converted_product_id")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("medical_conditions")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    getSiteUrl(),
   ]);
 
   if (error || !client) notFound();
@@ -222,6 +233,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           />
         </div>
 
+        {/* Medical Condition Report — for gathering enough detail on a health condition to call
+            carrier underwriting for an informal risk assessment before a formal application. */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Medical Condition Report</h2>
+          <MedicalConditionsSection clientId={client.id} conditions={medicalConditions ?? []} />
+        </div>
+
         {/* Notes / interaction history */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">
@@ -314,6 +332,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         />
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Medical Report Link</h2>
+          <MedicalReportLinkCard siteUrl={siteUrl} token={client.medical_report_token} />
+        </div>
+
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Meetings &amp; Calls</h2>
           <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
         </div>
@@ -357,7 +380,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
-          <RemindersCard clientId={client.id} reminders={reminders ?? []} />
+          <RemindersCard owner={{ clientId: client.id }} reminders={reminders ?? []} />
         </div>
       </div>
     </div>

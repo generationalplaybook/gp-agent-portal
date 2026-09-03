@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import LocalDateTime from "./LocalDateTime";
-import { updateReminder, completeReminder, reopenReminder, deleteReminder } from "./reminders/actions";
+import { updateReminder, completeReminder, reopenReminder, deleteReminder, type ReminderOwner } from "./reminders/actions";
 
 // See FollowUpForm/RemindersCard for why this conversion has to happen in the
 // browser rather than on the server.
@@ -27,14 +27,17 @@ interface Reminder {
 
 export default function ReminderRow({
   reminder,
-  clientId,
-  clientName,
-  clientHref,
+  owner,
+  subjectName,
+  subjectHref,
 }: {
   reminder: Reminder;
-  clientId: string;
-  clientName?: string;
-  clientHref?: string;
+  owner: ReminderOwner;
+  // Who this reminder is about — a client's name/link, or (since Team/Recruits) a recruit's.
+  // Left unlabeled (no name/link) when called from inside that client's/recruit's own page,
+  // where showing their own name back to you would be redundant.
+  subjectName?: string;
+  subjectHref?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -51,7 +54,7 @@ export default function ReminderRow({
     setError("");
     try {
       const iso = new Date(remindAt).toISOString();
-      await updateReminder(reminder.id, clientId, iso, message);
+      await updateReminder(reminder.id, owner, iso, message);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save reminder.");
@@ -64,7 +67,7 @@ export default function ReminderRow({
     setBusy(true);
     setError("");
     try {
-      await completeReminder(reminder.id, clientId);
+      await completeReminder(reminder.id, owner);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update reminder.");
     } finally {
@@ -76,7 +79,7 @@ export default function ReminderRow({
     setBusy(true);
     setError("");
     try {
-      await reopenReminder(reminder.id, clientId);
+      await reopenReminder(reminder.id, owner);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update reminder.");
     } finally {
@@ -87,7 +90,7 @@ export default function ReminderRow({
   async function handleDelete() {
     setBusy(true);
     try {
-      await deleteReminder(reminder.id, clientId);
+      await deleteReminder(reminder.id, owner);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not delete reminder.");
       setBusy(false);
@@ -144,13 +147,13 @@ export default function ReminderRow({
       }`}
     >
       <div className={completed ? "opacity-60" : ""}>
-        {clientName &&
-          (clientHref ? (
-            <Link href={clientHref} className="text-sm font-semibold text-[#1C1C1C] hover:underline">
-              {clientName}
+        {subjectName &&
+          (subjectHref ? (
+            <Link href={subjectHref} className="text-sm font-semibold text-[#1C1C1C] hover:underline">
+              {subjectName}
             </Link>
           ) : (
-            <div className="text-sm font-semibold text-[#1C1C1C]">{clientName}</div>
+            <div className="text-sm font-semibold text-[#1C1C1C]">{subjectName}</div>
           ))}
         <div className={`text-sm ${completed ? "text-[#999] line-through" : "text-[#2E2E2E]"}`}>
           {reminder.message || "Follow up"}
