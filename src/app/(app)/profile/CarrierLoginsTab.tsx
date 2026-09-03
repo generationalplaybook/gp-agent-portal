@@ -22,6 +22,61 @@ function isUrl(s: string | null): s is string {
   return !!s && /^https?:\/\//i.test(s);
 }
 
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard API unavailable or permission denied — nothing else to fall back to; the icon
+      // just won't confirm. The full value is still readable via the hover tooltip either way.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 text-[#999] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/cell:opacity-100"
+      title={copied ? "Copied!" : "Copy"}
+    >
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// A truncated cell whose full value only shows on hover (as a title tooltip), paired with a
+// click-to-copy icon that fades in on hover of the same cell (`group/cell`) — added 9/3 after
+// Karina flagged that a plain ellipsis was "useless" for a table whose whole point is copying
+// logins into a carrier portal: you couldn't read the full value OR reliably grab it. Chosen over
+// wrapping the text (rows would grow tall/ragged) or moving to a card layout (more scrolling) —
+// keeps the compact table, makes copying a single click. Hover-only for now; when this portal
+// gets real mobile support, tap-and-hold is the equivalent gesture there (Karina, 9/3).
+function CopyableCell({ value }: { value: string | null }) {
+  if (!value) return <span className="text-[#C9C0AE]">—</span>;
+  return (
+    <span className="group/cell flex min-w-0 items-center gap-1">
+      <span className="min-w-0 truncate" title={value}>
+        {value}
+      </span>
+      <CopyButton value={value} />
+    </span>
+  );
+}
+
 type Draft = {
   company: string;
   username: string;
@@ -164,10 +219,10 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
         <div className="col-span-2 min-w-0 truncate font-semibold text-[#1C1C1C] sm:col-span-1" title={login.company}>
           {login.company}
         </div>
-        <div className="min-w-0 truncate text-[#666]" title={login.username ?? undefined}>
-          {login.username || <span className="text-[#C9C0AE]">—</span>}
+        <div className="min-w-0 text-[#666]">
+          <CopyableCell value={login.username} />
         </div>
-        <div className="flex min-w-0 items-center gap-1.5 text-[#666]">
+        <div className="group/cell flex min-w-0 items-center gap-1.5 text-[#666]">
           {login.password ? (
             <>
               <span className="truncate tracking-wider" title={revealed ? login.password : undefined}>
@@ -184,19 +239,20 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               </button>
+              <CopyButton value={login.password} />
             </>
           ) : (
             <span className="text-[#C9C0AE]">—</span>
           )}
         </div>
-        <div className="min-w-0 truncate text-[#666]" title={login.life_agent_number ?? undefined}>
-          {login.life_agent_number || <span className="text-[#C9C0AE]">—</span>}
+        <div className="min-w-0 text-[#666]">
+          <CopyableCell value={login.life_agent_number} />
         </div>
-        <div className="min-w-0 truncate text-[#666]" title={login.annuity_agent_number ?? undefined}>
-          {login.annuity_agent_number || <span className="text-[#C9C0AE]">—</span>}
+        <div className="min-w-0 text-[#666]">
+          <CopyableCell value={login.annuity_agent_number} />
         </div>
-        <div className="min-w-0 truncate text-[#666]" title={login.agency_number ?? undefined}>
-          {login.agency_number || <span className="text-[#C9C0AE]">—</span>}
+        <div className="min-w-0 text-[#666]">
+          <CopyableCell value={login.agency_number} />
         </div>
         <div className="min-w-0 truncate">
           {isUrl(login.link) ? (

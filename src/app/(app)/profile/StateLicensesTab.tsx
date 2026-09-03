@@ -14,6 +14,57 @@ const inputClass =
 const ROW_GRID_CLASS = "grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-4";
 const ACTIONS_SPACER_CLASS = "flex shrink-0 items-center justify-end gap-2 sm:min-w-11";
 
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard API unavailable or permission denied — nothing else to fall back to; the icon
+      // just won't confirm. The full value is still readable via the hover tooltip either way.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 text-[#999] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/cell:opacity-100"
+      title={copied ? "Copied!" : "Copy"}
+    >
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// See the matching comment in CarrierLoginsTab.tsx (added 9/3) — truncate + hover tooltip +
+// click-to-copy icon, so a long value stays both readable and reliably copyable without widening
+// the table.
+function CopyableCell({ value }: { value: string | null }) {
+  if (!value) return <span className="text-[#C9C0AE]">—</span>;
+  return (
+    <span className="group/cell flex min-w-0 items-center gap-1">
+      <span className="min-w-0 truncate" title={value}>
+        {value}
+      </span>
+      <CopyButton value={value} />
+    </span>
+  );
+}
+
 // Deliberately just State / License # / a resident flag / freeform notes — NO expiration,
 // renewal, or status fields. That's compliance data already tracked authoritatively in SureLC
 // (Karina, 9/3): duplicating it here would just be a second copy that goes stale the moment she
@@ -138,8 +189,8 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
             <span className="ml-1.5 rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-normal text-[#666]">Resident</span>
           )}
         </div>
-        <div className="min-w-0 truncate text-[#666]" title={license.license_number ?? undefined}>
-          {license.license_number || <span className="text-[#C9C0AE]">—</span>}
+        <div className="min-w-0 text-[#666]">
+          <CopyableCell value={license.license_number} />
         </div>
         <div className="col-span-2 min-w-0 truncate text-[#666]" title={license.notes ?? undefined}>
           {license.notes || <span className="text-[#C9C0AE]">—</span>}

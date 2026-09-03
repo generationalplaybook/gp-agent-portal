@@ -264,6 +264,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   and reveal icon in the next column instead of ellipsizing — added `min-w-0` + `truncate` +
   hover-title (full value) to every cell in both Carrier Logins and State Licenses so long values
   now truncate cleanly instead of colliding with their neighbor.
+  **Update 9/3 (once more)**: Karina pushed back on truncation itself — "if someone wants to copy
+  and paste they cant cause its cut off right?" A fair point for a table whose whole purpose is
+  copying credentials into carrier portals: the hover tooltip let you read the full value, but not
+  copy it without manually selecting text. Walked through options (wrap the text so rows grow
+  taller; wrap + a copy icon; a card layout instead of a table; or keep the compact table and add
+  copy icons) — she chose keeping the compact table with copy icons, hover-only for now ("hover and
+  tap and hold is fine for mobile when we get to mobile"). Added a `CopyButton`/`CopyableCell` to
+  both `CarrierLoginsTab.tsx` and `StateLicensesTab.tsx`: each truncated field (Username, Password,
+  Life Agent #, Annuity #, Agency # on Carrier Logins; License # on State Licenses) shows a small
+  copy icon on hover of that cell — one click copies the full value to the clipboard via
+  `navigator.clipboard.writeText`, with a brief checkmark confirming it worked. Table stays
+  compact; the hover tooltip (full value on hover) is still there too for reading, not just
+  copying.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an
