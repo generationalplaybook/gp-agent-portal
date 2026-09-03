@@ -166,8 +166,36 @@ export async function updateContactInfo(formData: FormData) {
       timezone,
     })
     .eq("id", clientId);
+
+  await syncContactInfoToLinkedRecruit(clientId, { phone, email, state });
+
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
+}
+
+// Keeps a linked recruit's phone/email/state matching this client's — the client is the source
+// of truth once the two are linked (Karina: "if an email is changed somewhere will it update
+// across all of that person's profiles?" — client → recruit, one-way). Only pushes fields that
+// have an actual value here; clearing a field on the client doesn't blank out the recruit's copy
+// (avoids accidentally wiping recruit-only data from a client-side edit). Most clients have no
+// linked recruit at all, so this is a no-op update touching zero rows for the common case.
+async function syncContactInfoToLinkedRecruit(
+  clientId: string,
+  info: { phone: string | null; email: string | null; state: string | null }
+) {
+  const patch: Record<string, string> = {};
+  if (info.phone) patch.phone = info.phone;
+  if (info.email) patch.email = info.email;
+  if (info.state) patch.state = info.state;
+  if (Object.keys(patch).length === 0) return;
+
+  const { supabase } = await requireUser();
+  const { data: linkedRecruits } = await supabase.from("recruits").select("id").eq("client_id", clientId);
+  if (!linkedRecruits || linkedRecruits.length === 0) return;
+
+  await supabase.from("recruits").update(patch).eq("client_id", clientId);
+  for (const r of linkedRecruits) revalidatePath(`/team/${r.id}`);
+  revalidatePath("/team");
 }
 
 // Lead source (Referral, Facebook ad, walk-in, etc.) — a lightweight, optional note on where

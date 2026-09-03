@@ -111,23 +111,24 @@ export async function searchClientCandidates(query: string): Promise<{ id: strin
   return data;
 }
 
-// Linking pulls over phone/email/state from the client record, but only into whichever of those
-// fields are still blank on the recruit — never overwrites something Karina already typed in
-// here. (full_name is left alone entirely: it's required at recruit creation, so it's already
-// set, and a recruit's name on file isn't necessarily wrong just because it differs slightly
-// from the client's, e.g. a nickname.)
+// Linking pulls phone/email/state over from the client record onto the recruit — the client is
+// the source of truth once the two are linked (Karina, 9/3), so this copies over its current
+// values outright rather than only filling blanks, matching what every later edit on the client
+// will keep doing automatically (see syncContactInfoToLinkedRecruit in clients/actions.ts, the
+// other half of this: client edits push here one-way, recruit edits never push back to the
+// client). Only pushes fields the client actually has a value for, so linking a client with no
+// email on file doesn't blank out one the recruit already had. full_name is left alone entirely:
+// it's required at recruit creation, so it's already set, and a recruit's name on file isn't
+// necessarily wrong just because it differs slightly from the client's, e.g. a nickname.
 export async function linkClientToRecruit(recruitId: string, clientId: string): Promise<void> {
   const { supabase } = await requireUser();
 
-  const [{ data: recruit }, { data: client }] = await Promise.all([
-    supabase.from("recruits").select("phone, email, state").eq("id", recruitId).single(),
-    supabase.from("clients").select("phone, email, state").eq("id", clientId).single(),
-  ]);
+  const { data: client } = await supabase.from("clients").select("phone, email, state").eq("id", clientId).single();
 
   const patch: Record<string, string> = { client_id: clientId };
-  if (!recruit?.phone && client?.phone) patch.phone = client.phone;
-  if (!recruit?.email && client?.email) patch.email = client.email;
-  if (!recruit?.state && client?.state) patch.state = client.state;
+  if (client?.phone) patch.phone = client.phone;
+  if (client?.email) patch.email = client.email;
+  if (client?.state) patch.state = client.state;
 
   const { error } = await supabase.from("recruits").update(patch).eq("id", recruitId);
   if (error) throw new Error(error.message);

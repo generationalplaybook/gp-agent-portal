@@ -164,6 +164,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## Requested, not yet built
 
+- **Email connection for Illustrations — attach and send straight from the portal — discussed
+  9/3, don't build yet.** Karina: "at some point we should allow email connection so when an
+  advisor creates illustrations they can just attach them within the portal and send it off."
+  Right now a saved Policy Illustration Summary produces a client-facing PDF (see
+  `src/lib/illustration.ts`) that the advisor has to download and then attach/send manually from
+  their own email client — this would add a "send" step right on the illustration itself.
+  Needs deciding before it's built: which email account sends it (the advisor's own inbox via
+  OAuth — Gmail/Outlook — vs. a portal-owned sender like the invite emails use), whether it's a
+  one-click "send to client's email on file" or a compose step with edit-before-send, and whether
+  the send gets logged anywhere on the client's profile (e.g. a note/timeline entry) so there's a
+  record it went out. Likely a real OAuth integration (Gmail API / Microsoft Graph) rather than a
+  simple SMTP relay, similar in scope to the Cal.com Auto-Sync connection work.
+
 - **Team / Recruits section — track licensed agents, agents-in-progress, and prospective agent
   leads — discussed 9/3, BUILT 9/3.** Karina wanted to keep track of her own recruited agents for
   follow-up purposes, explicitly with NO upline/downline hierarchy and NO commission tracking (the
@@ -266,22 +279,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_client_timezone.sql`, same paste-into-SQL-Editor step as the last two.
 
-- **Team/Recruit linking auto-fills phone/email/state from the linked client — built 9/3.**
-  Karina: "when i link an existing client to a team card, can it auto fill the phone number and
-  email and any other info that is the same?" `linkClientToRecruit` (`team/actions.ts`) now
-  pulls phone/email/state from the linked client onto the recruit at link time — but only into
-  whichever of those fields are still blank on the recruit, never overwriting something already
-  typed in there. `full_name` is deliberately left untouched (already required at recruit
-  creation, and a recruit's name on file isn't wrong just because it differs slightly from the
-  client's). No new SQL — this only reads/writes existing columns.
-  Also fixed a related staleness bug found while building this: `RecruitContactForm` keeps its
-  own field state in `useState`, seeded once from its `recruit` prop at mount — so when a
-  server action updates the recruit from somewhere *other* than that form itself (linking a
-  client, in this case), the page revalidates but the form kept showing the old blank fields
-  until a manual reload. Fixed by keying `<RecruitContactForm key={recruit.updated_at} .../>` in
-  `team/[id]/page.tsx` so it remounts (and re-seeds from fresh props) whenever the recruit row
-  actually changes — the auto-filled phone/email/state now appear immediately after linking, no
-  refresh needed.
+- **Team/Recruit linking: client is the source of truth for phone/email/state — built 9/3,
+  extended 9/3.** Karina: "when i link an existing client to a team card, can it auto fill the
+  phone number and email and any other info that is the same?" — then, once linking was live,
+  asked the natural follow-up: "if an email is changed somewhere will it update across all of
+  that person's profiles?" Together these settled the design: the client record is the source of
+  truth, one-way, for as long as the two stay linked.
+  `linkClientToRecruit` (`team/actions.ts`) copies phone/email/state from the client onto the
+  recruit at link time (only fields the client actually has a value for, so linking a client
+  with no email on file doesn't blank one the recruit already had). From then on,
+  `updateContactInfo` (`clients/actions.ts`) pushes any phone/email/state edit on the client
+  straight through to a linked recruit automatically, via a new `syncContactInfoToLinkedRecruit`
+  helper — so editing a client's email updates the linked recruit's copy too, no separate step.
+  It does NOT go the other way: editing the recruit's own phone/email/state never pushes back to
+  the client, and clearing a field on the client doesn't blank out the recruit's copy either
+  (only a real value propagates). `full_name` is deliberately left out of all of this — already
+  required at recruit creation, and a recruit's name on file isn't wrong just because it differs
+  slightly from the client's, e.g. a nickname. No new SQL — this only reads/writes existing
+  columns.
+  Also fixed a related staleness bug found while building the first half of this:
+  `RecruitContactForm` keeps its own field state in `useState`, seeded once from its `recruit`
+  prop at mount — so when a server action updates the recruit from somewhere *other* than that
+  form itself (linking a client, or now a synced client-side edit), the page revalidates but the
+  form kept showing the old fields until a manual reload. Fixed by keying
+  `<RecruitContactForm key={recruit.updated_at} .../>` in `team/[id]/page.tsx` so it remounts
+  (and re-seeds from fresh props) whenever the recruit row actually changes — synced
+  phone/email/state now appear immediately, no refresh needed.
 
 - **DollarInput — auto-formats with commas on blur, portal-wide — built 9/2.** Karina spotted
   "55000" (no commas) sitting right next to "50,000" (with commas) on the same Final Expense
