@@ -44,12 +44,20 @@ export async function updateMyProfile(formData: FormData) {
 // profile code, portal link). Nothing here is client data.
 // ─────────────────────────────────────────────────────────────
 
-export async function addCarrierLogin(formData: FormData) {
+// addCarrierLogin/updateCarrierLogin return { ok, error } instead of swallowing the result —
+// added 9/3 after Karina hit a case where Supabase rejected a save (the live table didn't have
+// the new life_agent_number/annuity_agent_number columns yet, before she'd run the migration)
+// and the form just silently discarded what she typed with no indication anything went wrong.
+// Now a real Supabase error comes back to the UI instead of vanishing.
+
+export async function addCarrierLogin(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { supabase, user } = await requireUser();
   const company = String(formData.get("company") || "").trim();
-  if (!company) return;
+  if (!company) return { ok: false, error: "Company is required." };
 
-  await supabase.from("carrier_logins").insert({
+  const { error } = await supabase.from("carrier_logins").insert({
     agent_id: user.id,
     company,
     username: String(formData.get("username") || "").trim() || null,
@@ -60,16 +68,20 @@ export async function addCarrierLogin(formData: FormData) {
     profile_code: String(formData.get("profile_code") || "").trim() || null,
     link: String(formData.get("link") || "").trim() || null,
   });
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
+  return { ok: true };
 }
 
-export async function updateCarrierLogin(formData: FormData) {
+export async function updateCarrierLogin(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { supabase } = await requireUser();
   const id = String(formData.get("id"));
   const company = String(formData.get("company") || "").trim();
-  if (!company) return;
+  if (!company) return { ok: false, error: "Company is required." };
 
-  await supabase
+  const { error } = await supabase
     .from("carrier_logins")
     .update({
       company,
@@ -82,7 +94,9 @@ export async function updateCarrierLogin(formData: FormData) {
       link: String(formData.get("link") || "").trim() || null,
     })
     .eq("id", id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
+  return { ok: true };
 }
 
 export async function deleteCarrierLogin(id: string) {
@@ -97,28 +111,34 @@ export async function deleteCarrierLogin(id: string) {
 // SureLC (Karina, 9/3) — duplicating it here would just be a second copy that goes stale.
 // ─────────────────────────────────────────────────────────────
 
-export async function addStateLicense(formData: FormData) {
+export async function addStateLicense(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { supabase, user } = await requireUser();
   const state = String(formData.get("state") || "").trim();
-  if (!state) return;
+  if (!state) return { ok: false, error: "State is required." };
 
-  await supabase.from("state_licenses").insert({
+  const { error } = await supabase.from("state_licenses").insert({
     agent_id: user.id,
     state,
     license_number: String(formData.get("license_number") || "").trim() || null,
     is_resident: formData.get("is_resident") === "on",
     notes: String(formData.get("notes") || "").trim() || null,
   });
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
+  return { ok: true };
 }
 
-export async function updateStateLicense(formData: FormData) {
+export async function updateStateLicense(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { supabase } = await requireUser();
   const id = String(formData.get("id"));
   const state = String(formData.get("state") || "").trim();
-  if (!state) return;
+  if (!state) return { ok: false, error: "State is required." };
 
-  await supabase
+  const { error } = await supabase
     .from("state_licenses")
     .update({
       state,
@@ -127,7 +147,9 @@ export async function updateStateLicense(formData: FormData) {
       notes: String(formData.get("notes") || "").trim() || null,
     })
     .eq("id", id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
+  return { ok: true };
 }
 
 export async function deleteStateLicense(id: string) {

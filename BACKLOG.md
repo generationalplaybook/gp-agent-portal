@@ -235,6 +235,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   (`mx-auto max-w-2xl` → `max-w-4xl` in `profile/page.tsx`) per "this entire profile sections
   should be stretched out wider in general" — mainly so the Carrier Logins table (now 8 columns)
   has room to breathe.
+  **Update 9/3 (bugfix)**: Karina hit "when I hit save it just deletes" trying to add a new
+  carrier after this shipped — the add/edit form would clear out with nothing saved and no error
+  shown. Root cause: `addCarrierLogin`/`updateCarrierLogin` never checked whether the Supabase
+  call actually succeeded, so when it failed (most likely because `migration_split_agent_numbers.sql`
+  hadn't been run against her live database yet, meaning the `life_agent_number`/
+  `annuity_agent_number` columns the code was writing to didn't exist there yet) the form just
+  silently discarded her input instead of showing what went wrong. Fixed the same way for both
+  Carrier Logins and State Licenses actions: `add*`/`update*` now return `{ ok, error }`, and the
+  add/edit forms in `CarrierLoginsTab.tsx`/`StateLicensesTab.tsx` show the real error message and
+  keep the form open with what was typed instead of clearing on failure. Doesn't replace running
+  the migration — just makes it obvious when something's actually wrong instead of failing quietly.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

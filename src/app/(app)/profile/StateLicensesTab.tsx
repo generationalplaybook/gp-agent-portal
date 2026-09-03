@@ -61,18 +61,24 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
   const [draft, setDraft] = useState<Draft>(() => draftFrom(license));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function save() {
     if (!draft.state.trim()) return;
     setBusy(true);
+    setError(null);
     const formData = new FormData();
     formData.set("id", license.id);
     formData.set("state", draft.state);
     formData.set("license_number", draft.license_number);
     formData.set("notes", draft.notes);
     if (draft.is_resident) formData.set("is_resident", "on");
-    await updateStateLicense(formData);
+    const result = await updateStateLicense(formData);
     setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setEditing(false);
   }
 
@@ -86,6 +92,11 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
     return (
       <div className="flex flex-col gap-2 border-b border-[#EDE8DF] py-3 last:border-0">
         <EditFields draft={draft} setDraft={setDraft} />
+        {error && (
+          <p className="text-xs font-semibold text-[#8B1A1A]">
+            Couldn&rsquo;t save: {error}
+          </p>
+        )}
         <div className="flex gap-2">
           <button
             type="button"
@@ -99,6 +110,7 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
             type="button"
             onClick={() => {
               setDraft(draftFrom(license));
+              setError(null);
               setEditing(false);
             }}
             className="rounded-md border border-[#D9CFBA] px-3 py-1 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
@@ -163,17 +175,23 @@ export default function StateLicensesTab({ licenses }: { licenses: StateLicense[
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleAdd() {
     if (!draft.state.trim()) return;
     setBusy(true);
+    setError(null);
     const formData = new FormData();
     formData.set("state", draft.state);
     formData.set("license_number", draft.license_number);
     formData.set("notes", draft.notes);
     if (draft.is_resident) formData.set("is_resident", "on");
-    await addStateLicense(formData);
+    const result = await addStateLicense(formData);
     setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setDraft(EMPTY_DRAFT);
     setAdding(false);
   }
@@ -193,6 +211,11 @@ export default function StateLicensesTab({ licenses }: { licenses: StateLicense[
       {adding && (
         <div className="mb-3 flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
           <EditFields draft={draft} setDraft={setDraft} />
+          {error && (
+            <p className="text-xs font-semibold text-[#8B1A1A]">
+              Couldn&rsquo;t save: {error}
+            </p>
+          )}
           <button
             type="button"
             disabled={busy || !draft.state.trim()}
