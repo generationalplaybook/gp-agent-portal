@@ -89,7 +89,6 @@ export interface CarrierLogin {
   life_agent_number: string | null;
   annuity_agent_number: string | null;
   agency_number: string | null;
-  profile_code: string | null;
   link: string | null;
   created_at: string;
   updated_at: string;

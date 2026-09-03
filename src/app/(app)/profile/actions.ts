@@ -40,8 +40,11 @@ export async function updateMyProfile(formData: FormData) {
 
 // ─────────────────────────────────────────────────────────────
 // Carrier Logins — a private, per-advisor replacement for the spreadsheet Karina was tracking
-// her broker/carrier portal logins in (company, username, password, agent/agency numbers,
-// profile code, portal link). Nothing here is client data.
+// her broker/carrier portal logins in (company, username, password, agent/agency numbers, portal
+// link). Nothing here is client data.
+// Profile Code removed 9/3 — Karina didn't need it ("i dont think we need it"). The
+// carrier_logins.profile_code column is left in place, untouched, unused — same non-destructive
+// pattern as advisor_credentials/medical_conditions.treating_physician.
 // ─────────────────────────────────────────────────────────────
 
 // addCarrierLogin/updateCarrierLogin return { ok, error } instead of swallowing the result —
@@ -65,7 +68,6 @@ export async function addCarrierLogin(
     life_agent_number: String(formData.get("life_agent_number") || "").trim() || null,
     annuity_agent_number: String(formData.get("annuity_agent_number") || "").trim() || null,
     agency_number: String(formData.get("agency_number") || "").trim() || null,
-    profile_code: String(formData.get("profile_code") || "").trim() || null,
     link: String(formData.get("link") || "").trim() || null,
   });
   if (error) return { ok: false, error: error.message };
@@ -90,7 +92,6 @@ export async function updateCarrierLogin(
       life_agent_number: String(formData.get("life_agent_number") || "").trim() || null,
       annuity_agent_number: String(formData.get("annuity_agent_number") || "").trim() || null,
       agency_number: String(formData.get("agency_number") || "").trim() || null,
-      profile_code: String(formData.get("profile_code") || "").trim() || null,
       link: String(formData.get("link") || "").trim() || null,
     })
     .eq("id", id);

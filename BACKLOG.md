@@ -246,6 +246,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   add/edit forms in `CarrierLoginsTab.tsx`/`StateLicensesTab.tsx` show the real error message and
   keep the form open with what was typed instead of clearing on failure. Doesn't replace running
   the migration — just makes it obvious when something's actually wrong instead of failing quietly.
+  **Update 9/3 (again)**: two more things after the migration ran and real rows started showing.
+  Karina asked what "Agency #" and "Profile" meant — Agency # is the agency/GA/IMO's own number
+  with a carrier (separate from the agent's own number), Profile was the "Profile Code" column
+  from her original spreadsheet (a carrier-specific portal code/note, or a URL). She confirmed she
+  doesn't need Profile, so it's removed from the table entirely — `CarrierLoginsTab.tsx`,
+  `profile/actions.ts`, and the `CarrierLogin` type all no longer reference it; the underlying
+  `carrier_logins.profile_code` column is left in place, untouched, same non-destructive pattern as
+  elsewhere. Also fixed two real layout bugs she caught in screenshots: (1) the header row (COMPANY
+  / USERNAME / etc.) was a plain grid spanning the full card width, while each data row's grid was
+  squeezed narrower by its own trailing edit/delete icons sitting outside the grid — so columns
+  drifted further out of alignment with the header the further right they were (worst for Link,
+  the last column). Fixed by giving the header and every row the identical
+  flex-wrapper + grid + fixed-width action-icon-spacer structure, so their columns line up exactly
+  regardless of exact icon widths. (2) grid cells had no `min-w-0`/truncate, so a long value (e.g.
+  Ethos's full email as Username) could overflow its cell and visually overlap the password dots
+  and reveal icon in the next column instead of ellipsizing — added `min-w-0` + `truncate` +
+  hover-title (full value) to every cell in both Carrier Logins and State Licenses so long values
+  now truncate cleanly instead of colliding with their neighbor.
 
 - **Email connection for Illustrations — attach and send straight from the portal — discussed
   9/3, don't build yet.** Karina: "at some point we should allow email connection so when an

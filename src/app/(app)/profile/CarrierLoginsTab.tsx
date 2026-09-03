@@ -7,6 +7,17 @@ import { addCarrierLogin, updateCarrierLogin, deleteCarrierLogin } from "./actio
 const inputClass =
   "w-full rounded-md border border-[#D9CFBA] px-2 py-1 text-xs outline-none focus:border-[#1C1C1C]";
 
+// Shared column template for the header row and every data row — both use the exact same
+// flex-wrapper + grid + fixed-width action-spacer structure so their columns line up pixel for
+// pixel. Previously the header was a plain 8-col grid spanning the full card width while each
+// data row's grid was squeezed by its own trailing edit/delete icons (a flex sibling, not part of
+// the grid), so columns drifted further out of alignment the further right they were — worst for
+// Link, the last column (added 9/3). Also: grid cells had no `min-w-0`/`truncate`, so a long value
+// (e.g. a full email as Username) could overflow its cell and visually collide with the next
+// column instead of ellipsizing (added 9/3).
+const ROW_GRID_CLASS = "grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-7";
+const ACTIONS_SPACER_CLASS = "flex shrink-0 items-center justify-end gap-2 sm:min-w-11";
+
 function isUrl(s: string | null): s is string {
   return !!s && /^https?:\/\//i.test(s);
 }
@@ -18,7 +29,6 @@ type Draft = {
   life_agent_number: string;
   annuity_agent_number: string;
   agency_number: string;
-  profile_code: string;
   link: string;
 };
 
@@ -30,7 +40,6 @@ function draftFrom(login: CarrierLogin): Draft {
     life_agent_number: login.life_agent_number ?? "",
     annuity_agent_number: login.annuity_agent_number ?? "",
     agency_number: login.agency_number ?? "",
-    profile_code: login.profile_code ?? "",
     link: login.link ?? "",
   };
 }
@@ -74,12 +83,6 @@ function EditFields({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
         onChange={(e) => setDraft({ ...draft, agency_number: e.target.value })}
         placeholder="Agency #"
         className={inputClass}
-      />
-      <input
-        value={draft.profile_code}
-        onChange={(e) => setDraft({ ...draft, profile_code: e.target.value })}
-        placeholder="Profile code / note"
-        className={`${inputClass} col-span-2`}
       />
       <input
         value={draft.link}
@@ -157,17 +160,23 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8DF] py-2.5 text-xs last:border-0">
-      <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-8">
-        <div className="col-span-2 font-semibold text-[#1C1C1C] sm:col-span-1">{login.company}</div>
-        <div className="text-[#666]">{login.username || <span className="text-[#C9C0AE]">—</span>}</div>
-        <div className="flex items-center gap-1.5 text-[#666]">
+      <div className={ROW_GRID_CLASS}>
+        <div className="col-span-2 min-w-0 truncate font-semibold text-[#1C1C1C] sm:col-span-1" title={login.company}>
+          {login.company}
+        </div>
+        <div className="min-w-0 truncate text-[#666]" title={login.username ?? undefined}>
+          {login.username || <span className="text-[#C9C0AE]">—</span>}
+        </div>
+        <div className="flex min-w-0 items-center gap-1.5 text-[#666]">
           {login.password ? (
             <>
-              <span className="tracking-wider">{revealed ? login.password : "••••••••"}</span>
+              <span className="truncate tracking-wider" title={revealed ? login.password : undefined}>
+                {revealed ? login.password : "••••••••"}
+              </span>
               <button
                 type="button"
                 onClick={() => setRevealed((v) => !v)}
-                className="text-[#999] hover:text-[#1C1C1C]"
+                className="shrink-0 text-[#999] hover:text-[#1C1C1C]"
                 title={revealed ? "Hide password" : "Show password"}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -180,19 +189,16 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
             <span className="text-[#C9C0AE]">—</span>
           )}
         </div>
-        <div className="text-[#666]">{login.life_agent_number || <span className="text-[#C9C0AE]">—</span>}</div>
-        <div className="text-[#666]">{login.annuity_agent_number || <span className="text-[#C9C0AE]">—</span>}</div>
-        <div className="text-[#666]">{login.agency_number || <span className="text-[#C9C0AE]">—</span>}</div>
-        <div className="truncate text-[#666]" title={login.profile_code ?? undefined}>
-          {isUrl(login.profile_code) ? (
-            <a href={login.profile_code} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
-              Open ↗
-            </a>
-          ) : (
-            login.profile_code || <span className="text-[#C9C0AE]">—</span>
-          )}
+        <div className="min-w-0 truncate text-[#666]" title={login.life_agent_number ?? undefined}>
+          {login.life_agent_number || <span className="text-[#C9C0AE]">—</span>}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 truncate text-[#666]" title={login.annuity_agent_number ?? undefined}>
+          {login.annuity_agent_number || <span className="text-[#C9C0AE]">—</span>}
+        </div>
+        <div className="min-w-0 truncate text-[#666]" title={login.agency_number ?? undefined}>
+          {login.agency_number || <span className="text-[#C9C0AE]">—</span>}
+        </div>
+        <div className="min-w-0 truncate">
           {isUrl(login.link) ? (
             <a href={login.link} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
               Open ↗
@@ -202,7 +208,7 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
           )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className={ACTIONS_SPACER_CLASS}>
         {!confirmingDelete ? (
           <>
             <button type="button" onClick={() => setEditing(true)} className="text-[#999] hover:text-[#1C1C1C]" title="Edit">
@@ -242,7 +248,6 @@ const EMPTY_DRAFT: Draft = {
   life_agent_number: "",
   annuity_agent_number: "",
   agency_number: "",
-  profile_code: "",
   link: "",
 };
 
@@ -303,15 +308,17 @@ export default function CarrierLoginsTab({ logins }: { logins: CarrierLogin[] })
 
       {logins.length > 0 && (
         <div>
-          <div className="hidden gap-x-3 border-b border-[#D9CFBA] pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#888] sm:grid sm:grid-cols-8">
-            <div>Company</div>
-            <div>Username</div>
-            <div>Password</div>
-            <div>Life Agent #</div>
-            <div>Annuity #</div>
-            <div>Agency #</div>
-            <div>Profile</div>
-            <div>Link</div>
+          <div className="hidden items-center gap-3 border-b border-[#D9CFBA] pb-1.5 sm:flex">
+            <div className={`${ROW_GRID_CLASS} text-[10px] font-semibold uppercase tracking-wide text-[#888]`}>
+              <div>Company</div>
+              <div>Username</div>
+              <div>Password</div>
+              <div>Life Agent #</div>
+              <div>Annuity #</div>
+              <div>Agency #</div>
+              <div>Link</div>
+            </div>
+            <div className={ACTIONS_SPACER_CLASS} aria-hidden="true" />
           </div>
           {logins.map((l) => (
             <CarrierLoginRow key={l.id} login={l} />

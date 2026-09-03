@@ -7,6 +7,13 @@ import { addStateLicense, updateStateLicense, deleteStateLicense } from "./actio
 const inputClass =
   "w-full rounded-md border border-[#D9CFBA] px-2 py-1 text-xs outline-none focus:border-[#1C1C1C]";
 
+// Shared column template for the header row and every data row — see the matching comment in
+// CarrierLoginsTab.tsx (added 9/3): keeps header columns and row columns pixel-aligned instead of
+// the header spanning the full width while each row's grid gets squeezed by its own trailing
+// edit/delete icons.
+const ROW_GRID_CLASS = "grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-4";
+const ACTIONS_SPACER_CLASS = "flex shrink-0 items-center justify-end gap-2 sm:min-w-11";
+
 // Deliberately just State / License # / a resident flag / freeform notes — NO expiration,
 // renewal, or status fields. That's compliance data already tracked authoritatively in SureLC
 // (Karina, 9/3): duplicating it here would just be a second copy that goes stale the moment she
@@ -124,19 +131,21 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8DF] py-2.5 text-xs last:border-0">
-      <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-4">
-        <div className="font-semibold text-[#1C1C1C]">
+      <div className={ROW_GRID_CLASS}>
+        <div className="min-w-0 truncate font-semibold text-[#1C1C1C]" title={license.state}>
           {license.state}
           {license.is_resident && (
             <span className="ml-1.5 rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-normal text-[#666]">Resident</span>
           )}
         </div>
-        <div className="text-[#666]">{license.license_number || <span className="text-[#C9C0AE]">—</span>}</div>
-        <div className="col-span-2 truncate text-[#666]" title={license.notes ?? undefined}>
+        <div className="min-w-0 truncate text-[#666]" title={license.license_number ?? undefined}>
+          {license.license_number || <span className="text-[#C9C0AE]">—</span>}
+        </div>
+        <div className="col-span-2 min-w-0 truncate text-[#666]" title={license.notes ?? undefined}>
           {license.notes || <span className="text-[#C9C0AE]">—</span>}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className={ACTIONS_SPACER_CLASS}>
         {!confirmingDelete ? (
           <>
             <button type="button" onClick={() => setEditing(true)} className="text-[#999] hover:text-[#1C1C1C]" title="Edit">
@@ -231,10 +240,13 @@ export default function StateLicensesTab({ licenses }: { licenses: StateLicense[
 
       {licenses.length > 0 && (
         <div>
-          <div className="hidden gap-x-3 border-b border-[#D9CFBA] pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#888] sm:grid sm:grid-cols-4">
-            <div>State</div>
-            <div>License #</div>
-            <div className="col-span-2">Notes</div>
+          <div className="hidden items-center gap-3 border-b border-[#D9CFBA] pb-1.5 sm:flex">
+            <div className={`${ROW_GRID_CLASS} text-[10px] font-semibold uppercase tracking-wide text-[#888]`}>
+              <div>State</div>
+              <div>License #</div>
+              <div className="col-span-2">Notes</div>
+            </div>
+            <div className={ACTIONS_SPACER_CLASS} aria-hidden="true" />
           </div>
           {licenses.map((l) => (
             <StateLicenseRow key={l.id} license={l} />
