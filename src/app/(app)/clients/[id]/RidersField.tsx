@@ -7,7 +7,19 @@ import { COMMON_RIDER_OPTIONS } from "@/lib/types";
 // terminal/critical/chronic illness, etc.) are one-click checkboxes; anything else (carrier
 // perks, a less common endorsement) gets typed in free-form below and shows up as a removable
 // chip, same as a checked common one.
-export default function RidersField({ value, onChange }: { value: string[]; onChange: (riders: string[]) => void }) {
+//
+// 9/4: takes an optional `commonOptions` override so an Annuity product can show the annuity-
+// specific rider list (ANNUITY_RIDER_OPTIONS) instead of the life-insurance one — riders are
+// different enough between the two that reusing the same checklist for both didn't make sense.
+export default function RidersField({
+  value,
+  onChange,
+  commonOptions = COMMON_RIDER_OPTIONS,
+}: {
+  value: string[];
+  onChange: (riders: string[]) => void;
+  commonOptions?: string[];
+}) {
   const [customInput, setCustomInput] = useState("");
 
   function toggleCommon(rider: string) {
@@ -28,13 +40,13 @@ export default function RidersField({ value, onChange }: { value: string[]; onCh
     setCustomInput("");
   }
 
-  const customRiders = value.filter((r) => !COMMON_RIDER_OPTIONS.includes(r));
+  const customRiders = value.filter((r) => !commonOptions.includes(r));
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-2.5">
       <p className="text-xs font-semibold text-[#666]">Riders</p>
       <div className="flex flex-col gap-1">
-        {COMMON_RIDER_OPTIONS.map((rider) => (
+        {commonOptions.map((rider) => (
           <label key={rider} className="flex items-center gap-2 text-xs text-[#2E2E2E]">
             <input type="checkbox" checked={value.includes(rider)} onChange={() => toggleCommon(rider)} />
             {rider}

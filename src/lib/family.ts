@@ -23,3 +23,15 @@ export function daysUntilNextBirthday(birthDateIso: string, asOf: Date = new Dat
 }
 
 export const FAMILY_RELATIONSHIP_OPTIONS = ["Spouse", "Child", "Parent", "Sibling", "Other"];
+
+// True when this person turns exactly `age` plus six months today — e.g. isHalfBirthdayToday(dob,
+// 59) is true on someone's 59 1/2 birthday. Added 9/4 for the annuity IRS early-withdrawal-
+// penalty milestone, which (unlike calculateAge/daysUntilNextBirthday above) isn't a whole-year
+// birthday.
+export function isHalfBirthdayToday(birthDateIso: string, age: number, asOf: Date = new Date()): boolean {
+  const dob = new Date(birthDateIso);
+  const target = new Date(dob.getFullYear() + age, dob.getMonth() + 6, dob.getDate());
+  target.setHours(0, 0, 0, 0);
+  const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());
+  return target.getTime() === today.getTime();
+}

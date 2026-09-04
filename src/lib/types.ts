@@ -126,6 +126,10 @@ export interface Client {
   family_id: string | null;
   family_relationship: string | null;
   turned_18_notice_sent: boolean;
+  // Same one-time-only pattern as turned_18_notice_sent, for the IRS 59 1/2 early-withdrawal-
+  // penalty milestone (added 9/4 for the annuity field set) — only meaningful for a client who
+  // holds an Annuity product. See check-birthdays cron.
+  turned_59_half_notice_sent: boolean;
   // Set true when this client was created through an advisor's public Client Intake Link —
   // the advisor hasn't reviewed/triaged it yet. household_summary is a short plain-text note
   // from the intake form's lightweight Family checkboxes (Spouse / Children + ages / Aging
@@ -252,6 +256,20 @@ export const COMMON_RIDER_OPTIONS = [
   "Protected Death Benefit Endorsement",
 ];
 
+// Annuity-specific riders (added 9/4) — a completely different common list than life insurance's
+// above, since an annuity's riders center on income/death-benefit guarantees and long-term care
+// access rather than accelerated death benefits. Researched from general industry guides, not
+// carrier-specific — anything that doesn't fit still goes in as a custom rider, same as life.
+export const ANNUITY_RIDER_OPTIONS = [
+  "Income Rider (Guaranteed Lifetime Withdrawal Benefit)",
+  "Guaranteed Minimum Income Benefit (GMIB)",
+  "Death Benefit Rider",
+  "Return of Premium (ROP) Rider",
+  "Long-Term Care / Nursing Home Rider",
+  "Terminal Illness Waiver",
+  "Cost-of-Living Adjustment (COLA) Rider",
+];
+
 export interface ClientProduct {
   id: string;
   client_id: string;
@@ -318,6 +336,19 @@ export interface ClientProduct {
   // gets flipped to false, and the rest are deleted (see resolveQuotesOnIssue in
   // src/app/(app)/clients/actions.ts).
   is_quote: boolean;
+  // Annuity-specific fields (added 9/4) — only meaningful/shown when product_type is "Annuity".
+  // face_amount/minimum_premium above don't apply to an annuity (no death-benefit face amount,
+  // no lapse-avoidance premium in the life-insurance sense); premium is reused as the initial
+  // premium/contribution instead. See ProductsSection.tsx/ProductRow.tsx for the conditional form.
+  //
+  // A flexible-premium annuity's ongoing contribution, separate from the initial premium above.
+  annuity_contribution_amount: number | null;
+  annuity_contribution_frequency: "monthly" | "quarterly" | "semi_annual" | "annual" | null;
+  // Current accumulation/contract value — a manually-updated snapshot, not derived from anything.
+  contract_value: number | null;
+  // When the surrender-charge period ends — the carrier's own early-withdrawal penalty, distinct
+  // from the IRS's 59 1/2 penalty (see clients.turned_59_half_notice_sent).
+  annuity_surrender_end_date: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -10,8 +10,17 @@ import {
   undoConverted,
   type ProductFields,
 } from "../actions";
-import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
-import { getProductStatus } from "@/lib/products";
+import { PRODUCT_TYPE_OPTIONS, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
+import { getProductStatus, getTermUrgency } from "@/lib/products";
+
+// Ongoing-contribution frequency values map to these plain-English labels wherever they're
+// displayed on an annuity's read-only card.
+const CONTRIBUTION_FREQUENCY_LABELS: Record<string, string> = {
+  monthly: "monthly",
+  quarterly: "quarterly",
+  semi_annual: "every 6 months",
+  annual: "annually",
+};
 import RidersField from "./RidersField";
 import DollarInput from "./DollarInput";
 
@@ -83,6 +92,10 @@ function toFieldValues(p: ClientProduct): ProductFields {
     owner_client_id: p.owner_client_id ?? "",
     riders: p.riders ?? [],
     minimum_premium: p.minimum_premium != null ? String(p.minimum_premium) : "",
+    annuity_contribution_amount: p.annuity_contribution_amount != null ? String(p.annuity_contribution_amount) : "",
+    annuity_contribution_frequency: p.annuity_contribution_frequency ?? "",
+    contract_value: p.contract_value != null ? String(p.contract_value) : "",
+    annuity_surrender_end_date: p.annuity_surrender_end_date ?? "",
   };
 }
 
@@ -111,6 +124,7 @@ export default function ProductRow({
 
   const isConverted = !!product.converted_at;
   const isPending = !!product.conversion_pending_at && !isConverted;
+  const isAnnuity = fields.product_type === "Annuity";
 
   async function runWorkflowAction(action: (productId: string, clientId: string) => Promise<void>) {
     setWorkflowBusy(true);
@@ -161,7 +175,12 @@ export default function ProductRow({
         <div className="grid grid-cols-2 gap-2">
           <select
             value={fields.product_type}
-            onChange={(e) => set("product_type", e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              // An annuity can't also be "this is a term policy" in this system's model — see
+              // ProductFields.is_convertible.
+              setFields((f) => ({ ...f, product_type: value, is_convertible: value === "Annuity" ? false : f.is_convertible }));
+            }}
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           >
             <option value="">Type…</option>
@@ -188,7 +207,7 @@ export default function ProductRow({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
-          {!fields.is_convertible && (
+          {!fields.is_convertible && !isAnnuity && (
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Expiration date
               <input
@@ -226,6 +245,7 @@ export default function ProductRow({
             </select>
           </label>
         )}
+        {!isAnnuity && (
         <label className="flex items-center gap-2 text-xs font-medium text-[#2E2E2E]">
           <input
             type="checkbox"
@@ -244,7 +264,8 @@ export default function ProductRow({
           />
           This is a term policy (convertible or not)
         </label>
-        {fields.is_convertible && (
+        )}
+        {fields.is_convertible && !isAnnuity && (
           <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Term expiration date
@@ -293,17 +314,19 @@ export default function ProductRow({
           </div>
         )}
         <div className="grid grid-cols-2 gap-2">
+          {!isAnnuity && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Face amount
+              <DollarInput
+                value={fields.face_amount ?? ""}
+                onChange={(v) => set("face_amount", v)}
+                placeholder="e.g. 250,000"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Face amount
-            <DollarInput
-              value={fields.face_amount ?? ""}
-              onChange={(v) => set("face_amount", v)}
-              placeholder="e.g. 250,000"
-              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Premium
+            {isAnnuity ? "Initial premium / contribution" : "Premium"}
             <DollarInput
               value={fields.premium ?? ""}
               onChange={(v) => set("premium", v)}
@@ -312,15 +335,64 @@ export default function ProductRow({
             />
           </label>
         </div>
-        <label className="flex flex-col gap-1 text-xs text-[#666]">
-          Minimum to avoid lapse (monthly)
-          <DollarInput
-            value={fields.minimum_premium ?? ""}
-            onChange={(v) => set("minimum_premium", v)}
-            placeholder="e.g. 67"
-            className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-          />
-        </label>
+        {!isAnnuity && (
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Minimum to avoid lapse (monthly)
+            <DollarInput
+              value={fields.minimum_premium ?? ""}
+              onChange={(v) => set("minimum_premium", v)}
+              placeholder="e.g. 67"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        )}
+        {isAnnuity && (
+          <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Ongoing contribution (if flexible-premium)
+                <DollarInput
+                  value={fields.annuity_contribution_amount ?? ""}
+                  onChange={(v) => set("annuity_contribution_amount", v)}
+                  placeholder="e.g. 500"
+                  className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Contribution frequency
+                <select
+                  value={fields.annuity_contribution_frequency}
+                  onChange={(e) => set("annuity_contribution_frequency", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                >
+                  <option value="">—</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
+              </label>
+            </div>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Current contract value
+              <DollarInput
+                value={fields.contract_value ?? ""}
+                onChange={(v) => set("contract_value", v)}
+                placeholder="e.g. 105,000"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Surrender period ends
+              <input
+                type="date"
+                value={fields.annuity_surrender_end_date}
+                onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          </div>
+        )}
         <textarea
           value={fields.notes}
           onChange={(e) => set("notes", e.target.value)}
@@ -328,7 +400,11 @@ export default function ProductRow({
           placeholder="Other notes"
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
-        <RidersField value={fields.riders ?? []} onChange={(riders) => setFields((f) => ({ ...f, riders }))} />
+        <RidersField
+          value={fields.riders ?? []}
+          onChange={(riders) => setFields((f) => ({ ...f, riders }))}
+          commonOptions={isAnnuity ? ANNUITY_RIDER_OPTIONS : undefined}
+        />
         {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
         <div className="flex gap-2">
           <button
@@ -368,6 +444,15 @@ export default function ProductRow({
   // For non-term products, fall back to the plain expiration_date field as before.
   const displayExpiration = effectiveTermEnd ?? product.expiration_date;
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
+  // A heads-up cue as the surrender period approaches — same 60/30-day language as the Term tab,
+  // but this isn't wired into a separate outreach queue (yet); just a bit of color on the card.
+  const surrenderUrgency = product.annuity_surrender_end_date ? getTermUrgency(product.annuity_surrender_end_date) : null;
+  const SURRENDER_TONE: Record<string, string> = {
+    overdue: "text-[#707070]",
+    critical: "text-[#8B1A1A] font-semibold",
+    soon: "text-[#8b6a00] font-semibold",
+    later: "text-[#707070]",
+  };
 
   return (
     <div
@@ -531,13 +616,32 @@ export default function ProductRow({
 
       {(product.face_amount || product.premium) && (
         <p className="text-xs text-[#707070]">
-          {product.face_amount != null && `Face: $${product.face_amount.toLocaleString()}`}
-          {product.face_amount != null && product.premium != null && " · "}
-          {product.premium != null && `Premium: $${product.premium.toLocaleString()}`}
+          {!isAnnuity && product.face_amount != null && `Face: $${product.face_amount.toLocaleString()}`}
+          {!isAnnuity && product.face_amount != null && product.premium != null && " · "}
+          {product.premium != null && `${isAnnuity ? "Initial premium" : "Premium"}: $${product.premium.toLocaleString()}`}
         </p>
       )}
 
-      {product.minimum_premium != null && (
+      {isAnnuity && (product.contract_value != null || product.annuity_contribution_amount != null || product.annuity_surrender_end_date) && (
+        <div className="flex flex-col gap-0.5 text-xs text-[#707070]">
+          {product.contract_value != null && <p>Contract value: ${product.contract_value.toLocaleString()}</p>}
+          {product.annuity_contribution_amount != null && (
+            <p>
+              Ongoing contribution: ${product.annuity_contribution_amount.toLocaleString()}
+              {product.annuity_contribution_frequency &&
+                ` (${CONTRIBUTION_FREQUENCY_LABELS[product.annuity_contribution_frequency] ?? product.annuity_contribution_frequency})`}
+            </p>
+          )}
+          {product.annuity_surrender_end_date && (
+            <p className={surrenderUrgency ? SURRENDER_TONE[surrenderUrgency] : undefined}>
+              Surrender period ends{" "}
+              {new Date(product.annuity_surrender_end_date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isAnnuity && product.minimum_premium != null && (
         <p className="text-xs font-semibold text-[#8b6a00]">
           Minimum to avoid lapse: ${product.minimum_premium.toLocaleString()}/mo
         </p>

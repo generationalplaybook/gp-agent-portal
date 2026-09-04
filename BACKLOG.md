@@ -1520,18 +1520,58 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      neutral Edit/Undo styling instead of the gold accent it had, so it no longer reads as a
      highlighted call-to-action on every convertible product regardless of timing.
 
-- **Annuity products need their own field set — flagged 9/4, NOT built.** Karina, testing with a
+- **Annuity products get their own field set — flagged 9/4, BUILT 9/4.** Karina, testing with a
   mock annuity: Issue date/Expiration date/Policy number are fine as-is, but "This is a term
   policy" obviously doesn't apply, and Face amount/Premium don't fit either — annuities can have
   periodic contributions (e.g. every quarter or six months) but otherwise work very differently
-  from a life insurance product, with their own set of nuances. Riders need to change too — the
-  current rider checklist (Accelerated Death Benefit, etc.) is life-insurance-specific; annuities
-  typically carry a different set of riders. Karina's call: get the insurance-policy side (the
-  term/conversion work above) tightened up first, then come back and design a dedicated
-  annuity field set — likely product-type-conditional fields/riders on the Add/Edit Product form,
-  the way the term block is conditional on the term checkbox now. Needs more design discussion
-  before building — what fields, what riders, whether it's its own product type branch or a set
-  of conditional sections like the term block.
+  from a life insurance product. Riders need to change too — the life-insurance checklist
+  (Accelerated Death Benefit, etc.) doesn't apply. Researched common annuity riders and the IRS's
+  age 59 1/2 early-withdrawal rule (sources below) before building, since neither was something
+  to just guess at.
+  The Add/Edit Product form now branches on Product Type = "Annuity" (it was already a dropdown
+  option, so no new checkbox needed) the same way it already branches on the term checkbox:
+  - The "This is a term policy" checkbox and its whole block disappear for an Annuity — switching
+    Product Type to Annuity also force-clears `is_convertible` if it was checked, so a product
+    can't be both.
+  - Face amount and "Minimum to avoid lapse" disappear (neither is a real annuity concept).
+    Premium is kept but relabeled "Initial premium / contribution" — an annuity's premium is
+    genuinely the same real-world concept (money paid in), so no new column needed there.
+  - A new annuity-only block appears: "Ongoing contribution" + a frequency picker
+    (monthly/quarterly/every 6 months/annually) for a flexible-premium contract, "Current
+    contract value" (a manually-updated snapshot — annuities don't carry a face amount the way
+    life insurance does), and "Surrender period ends" (the carrier's own early-withdrawal penalty
+    window — separate from the IRS's, below). The read-only card shows all three, with the
+    surrender date getting light red/amber coloring inside 30/60 days as a heads-up (same
+    language as the Term tab's urgency, but not yet wired into its own outreach queue — see "not
+    built this pass" below).
+  - Riders swap to an annuity-specific checklist: Income Rider (GLWB), Guaranteed Minimum Income
+    Benefit (GMIB), Death Benefit Rider, Return of Premium (ROP) Rider, Long-Term Care/Nursing
+    Home Rider, Terminal Illness Waiver, Cost-of-Living Adjustment (COLA) Rider — same
+    checkbox-plus-custom-input pattern as life insurance's list, just a different set
+    (`RidersField.tsx` now takes an optional `commonOptions` prop instead of hardcoding one list).
+  Also built: a new daily-cron milestone for the IRS's 59 1/2 rule Karina flagged — annuity
+  withdrawals taken before a client turns 59 1/2 carry a 10% IRS penalty on top of ordinary income
+  tax, so once a client who holds at least one Annuity product turns 59 1/2, the advisor
+  automatically gets a reminder that the penalty no longer applies. Reuses the exact same
+  daily-cron/one-time-flag shape as the existing 18th-birthday check
+  (`turned_18_notice_sent`/`turned_59_half_notice_sent`), just added into the same
+  `check-birthdays` route rather than a new cron job, plus a new `isHalfBirthdayToday` helper in
+  `lib/family.ts` since 59 1/2 isn't a whole-year birthday like the rest of that file assumes.
+  New columns: `client_products.annuity_contribution_amount`, `annuity_contribution_frequency`,
+  `contract_value`, `annuity_surrender_end_date`, and `clients.turned_59_half_notice_sent`. SQL
+  needs to be run against Karina's live Supabase project — see `migration_add_annuity_fields.sql`.
+  **Not built this pass, deliberately kept simple for a first round of testing**: the surrender
+  date is shown with urgency coloring on the card, but doesn't have its own outreach queue the
+  way Term does (no "Annuity" tab, no dashboard banner) — Karina can decide after testing whether
+  that's worth building the same way once she's seen the basic field set in use. Riders are a
+  general industry list researched for this build, not pulled from her specific carriers
+  (Athene, Nationwide, etc.) — she said she'd look into the exact ones her contracts carry and
+  we'd adjust the checklist together.
+  Sources used for the rider list and the 59 1/2 rule: [A Guide to Fixed-Indexed Annuity Riders
+  – RMD Financial Group](https://rmdfinancialgroup.net/a-guide-to-fixed-indexed-annuity-riders/),
+  [Annuity Riders: Types, Benefits & Considerations –
+  RetireGuide](https://www.retireguide.com/annuities/riders/), [What Is the 59 1/2 Rule? IRA
+  Withdrawal Penalties – myannuitystore.com](https://myannuitystore.com/retirement-planning/59-half-rule/).
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively

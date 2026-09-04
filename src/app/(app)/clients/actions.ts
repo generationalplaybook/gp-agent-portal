@@ -501,6 +501,12 @@ export interface ProductFields {
   // linked family member's client id, or left empty when the client on the product owns it.
   owner_client_id?: string;
   riders?: string[];
+  // Annuity-specific fields (added 9/4) — see ClientProduct in lib/types.ts for the full
+  // rationale. Only meaningful when product_type is "Annuity".
+  annuity_contribution_amount?: string;
+  annuity_contribution_frequency?: string;
+  contract_value?: string;
+  annuity_surrender_end_date?: string;
 }
 
 function parseNumberOrNull(v?: string): number | null {
@@ -541,6 +547,10 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     owner_client_id: fields.owner_client_id?.trim() || null,
     riders: fields.riders ?? [],
     is_quote,
+    annuity_contribution_amount: parseNumberOrNull(fields.annuity_contribution_amount),
+    annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
+    contract_value: parseNumberOrNull(fields.contract_value),
+    annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
   });
   if (error) throw new Error(error.message);
 
@@ -575,6 +585,10 @@ export async function updateProduct(productId: string, clientId: string, fields:
       notes: fields.notes?.trim() || null,
       owner_client_id: fields.owner_client_id?.trim() || null,
       riders: fields.riders ?? [],
+      annuity_contribution_amount: parseNumberOrNull(fields.annuity_contribution_amount),
+      annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
+      contract_value: parseNumberOrNull(fields.contract_value),
+      annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
     })
     .eq("id", productId);
   if (error) throw new Error(error.message);

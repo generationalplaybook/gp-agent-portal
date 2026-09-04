@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
-import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
+import { PRODUCT_TYPE_OPTIONS, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
@@ -35,6 +35,10 @@ const EMPTY_FIELDS: ProductFields = {
   owner_client_id: "",
   riders: [],
   minimum_premium: "",
+  annuity_contribution_amount: "",
+  annuity_contribution_frequency: "",
+  contract_value: "",
+  annuity_surrender_end_date: "",
 };
 
 export default function ProductsSection({
@@ -63,6 +67,8 @@ export default function ProductsSection({
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
   }
+
+  const isAnnuity = fields.product_type === "Annuity";
 
   async function handleAdd() {
     if (!fields.product_name.trim()) {
@@ -145,7 +151,12 @@ export default function ProductsSection({
           <div className="grid grid-cols-2 gap-2">
             <select
               value={fields.product_type}
-              onChange={(e) => set("product_type", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // An annuity can't also be "this is a term policy" in this system's model — see
+                // ProductFields.is_convertible.
+                setFields((f) => ({ ...f, product_type: value, is_convertible: value === "Annuity" ? false : f.is_convertible }));
+              }}
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             >
               <option value="">Type…</option>
@@ -172,7 +183,7 @@ export default function ProductsSection({
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
-            {!fields.is_convertible && (
+            {!fields.is_convertible && !isAnnuity && (
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Expiration date
                 <input
@@ -210,6 +221,7 @@ export default function ProductsSection({
               </select>
             </label>
           )}
+          {!isAnnuity && (
           <label className="flex items-center gap-2 text-xs font-medium text-[#2E2E2E]">
             <input
               type="checkbox"
@@ -228,7 +240,8 @@ export default function ProductsSection({
             />
             This is a term policy (convertible or not)
           </label>
-          {fields.is_convertible && (
+          )}
+          {fields.is_convertible && !isAnnuity && (
             <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Term expiration date
@@ -277,17 +290,19 @@ export default function ProductsSection({
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
+            {!isAnnuity && (
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Face amount
+                <DollarInput
+                  value={fields.face_amount ?? ""}
+                  onChange={(v) => set("face_amount", v)}
+                  placeholder="e.g. 250,000"
+                  className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            )}
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Face amount
-              <DollarInput
-                value={fields.face_amount ?? ""}
-                onChange={(v) => set("face_amount", v)}
-                placeholder="e.g. 250,000"
-                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Premium
+              {isAnnuity ? "Initial premium / contribution" : "Premium"}
               <DollarInput
                 value={fields.premium ?? ""}
                 onChange={(v) => set("premium", v)}
@@ -296,15 +311,64 @@ export default function ProductsSection({
               />
             </label>
           </div>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Minimum to avoid lapse (monthly)
-            <DollarInput
-              value={fields.minimum_premium ?? ""}
-              onChange={(v) => set("minimum_premium", v)}
-              placeholder="e.g. 67"
-              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
+          {!isAnnuity && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Minimum to avoid lapse (monthly)
+              <DollarInput
+                value={fields.minimum_premium ?? ""}
+                onChange={(v) => set("minimum_premium", v)}
+                placeholder="e.g. 67"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          )}
+          {isAnnuity && (
+            <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Ongoing contribution (if flexible-premium)
+                  <DollarInput
+                    value={fields.annuity_contribution_amount ?? ""}
+                    onChange={(v) => set("annuity_contribution_amount", v)}
+                    placeholder="e.g. 500"
+                    className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Contribution frequency
+                  <select
+                    value={fields.annuity_contribution_frequency}
+                    onChange={(e) => set("annuity_contribution_frequency", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  >
+                    <option value="">—</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="semi_annual">Every 6 months</option>
+                    <option value="annual">Annually</option>
+                  </select>
+                </label>
+              </div>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Current contract value
+                <DollarInput
+                  value={fields.contract_value ?? ""}
+                  onChange={(v) => set("contract_value", v)}
+                  placeholder="e.g. 105,000"
+                  className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Surrender period ends
+                <input
+                  type="date"
+                  value={fields.annuity_surrender_end_date}
+                  onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
+          )}
           <textarea
             value={fields.notes}
             onChange={(e) => set("notes", e.target.value)}
@@ -315,6 +379,7 @@ export default function ProductsSection({
           <RidersField
             value={fields.riders ?? []}
             onChange={(riders) => setFields((f) => ({ ...f, riders }))}
+            commonOptions={isAnnuity ? ANNUITY_RIDER_OPTIONS : undefined}
           />
           {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
           <div className="flex gap-2">
