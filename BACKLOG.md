@@ -1407,6 +1407,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   but stay on file.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_conversion_pending_status.sql`.
+  **Update 9/4: "is this convertible" flag, so non-convertible products stop showing conversion
+  fields/actions at all.** Karina flagged a juvenile IUL card (not a term product, no conversion
+  window at all) still showing a "Mark Conversion Pending" action and all the conversion date
+  fields on the Edit form — "since not every product is convertible... too much clutter." Added a
+  plain checkbox, "This product can convert to a permanent policy," on both the Add and Edit
+  Product forms — unchecked by default, and the four conversion-related fields (no-exam deadline,
+  final conversion deadline, no-exam-declined date, conversion notes) only appear once it's
+  checked, rather than always showing on every product. New `client_products.is_convertible`
+  boolean now also gates the "Mark Conversion Pending" action on the card — it no longer shows on
+  a product that isn't marked convertible.
+  Backfilled automatically for existing data: any product that already had conversion info on
+  file (deadline, final deadline, no-exam-declined date, or was already Pending/Converted) gets
+  the flag turned on as part of the migration, so nothing already in use silently disappears —
+  only genuinely non-convertible products (like the IUL in her screenshot) lose the clutter.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_is_convertible_flag.sql`.
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively

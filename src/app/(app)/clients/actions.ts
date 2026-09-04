@@ -481,6 +481,9 @@ export interface ProductFields {
   policy_number?: string;
   issue_date?: string;
   expiration_date?: string;
+  // Whether this product can convert to a permanent policy at all — controls whether the
+  // conversion fields below are shown/saved as meaningful, or just left blank.
+  is_convertible?: boolean;
   conversion_deadline?: string;
   final_conversion_deadline?: string;
   no_exam_declined_at?: string;
@@ -523,6 +526,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     policy_number: fields.policy_number?.trim() || null,
     issue_date: fields.issue_date?.trim() || null,
     expiration_date: fields.expiration_date?.trim() || null,
+    is_convertible: fields.is_convertible ?? false,
     conversion_deadline: fields.conversion_deadline?.trim() || null,
     final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
     no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
@@ -554,6 +558,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       policy_number: fields.policy_number?.trim() || null,
       issue_date: fields.issue_date?.trim() || null,
       expiration_date: fields.expiration_date?.trim() || null,
+      is_convertible: fields.is_convertible ?? false,
       conversion_deadline: fields.conversion_deadline?.trim() || null,
       final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
       no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,

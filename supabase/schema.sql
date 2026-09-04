@@ -1190,3 +1190,28 @@ alter table public.client_products add column if not exists no_exam_declined_at 
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists conversion_pending_at timestamptz;
 alter table public.client_products add column if not exists converted_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────
+-- 39. Explicit "is this convertible" flag (added 9/4) — Karina, looking at a juvenile IUL product
+-- card showing a "Mark Conversion Pending" action: "since not every product is convertible, maybe
+-- when adding a product an advisor can check if it is convertible then the fields popup because
+-- otherwise it's too much clutter." Before this, every product showed the full set of
+-- conversion-related fields (sections 36/37/38) regardless of product type — an IUL or annuity
+-- has no conversion window at all, so those fields and actions were just noise on most products.
+-- Now a plain checkbox on the Add/Edit form controls whether the conversion fields show at all,
+-- and the same flag gates whether "Mark Conversion Pending" appears on the card.
+-- Backfill: any existing product that already has conversion data on file gets the flag turned on
+-- automatically, so nothing that was already in use disappears from view.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists is_convertible boolean not null default false;
+
+update public.client_products
+set is_convertible = true
+where is_convertible = false
+  and (
+    conversion_deadline is not null
+    or final_conversion_deadline is not null
+    or no_exam_declined_at is not null
+    or conversion_pending_at is not null
+    or converted_at is not null
+  );

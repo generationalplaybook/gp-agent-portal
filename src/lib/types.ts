@@ -263,6 +263,11 @@ export interface ClientProduct {
   policy_number: string | null;
   issue_date: string | null;
   expiration_date: string | null;
+  // Whether this product can convert to a permanent policy at all — controls whether the
+  // conversion-related fields below show on the Add/Edit form, and whether "Mark Conversion
+  // Pending" appears on the card. Not every product type has a conversion window (e.g. an IUL or
+  // annuity never does), so this keeps those fields from cluttering products they don't apply to.
+  is_convertible: boolean;
   conversion_deadline: string | null;
   conversion_notes: string | null;
   // Set true once the 60-days-out auto-reminder has been created for this product's

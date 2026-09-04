@@ -23,6 +23,7 @@ const EMPTY_FIELDS: ProductFields = {
   policy_number: "",
   issue_date: "",
   expiration_date: "",
+  is_convertible: false,
   conversion_deadline: "",
   final_conversion_deadline: "",
   no_exam_declined_at: "",
@@ -206,41 +207,54 @@ export default function ProductsSection({
               </select>
             </label>
           )}
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Convertible without exam until
+          <label className="flex items-center gap-2 text-xs font-medium text-[#2E2E2E]">
             <input
-              type="date"
-              value={fields.conversion_deadline}
-              onChange={(e) => set("conversion_deadline", e.target.value)}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              type="checkbox"
+              checked={fields.is_convertible ?? false}
+              onChange={(e) => setFields((f) => ({ ...f, is_convertible: e.target.checked }))}
+              className="h-4 w-4 rounded border-[#D9CFBA]"
             />
+            This product can convert to a permanent policy (e.g. a term policy)
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Final conversion deadline (exam required, e.g. up to age 75)
+          {fields.is_convertible && (
+            <>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Convertible without exam until
+                <input
+                  type="date"
+                  value={fields.conversion_deadline}
+                  onChange={(e) => set("conversion_deadline", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Final conversion deadline (exam required, e.g. up to age 75)
+                  <input
+                    type="date"
+                    value={fields.final_conversion_deadline}
+                    onChange={(e) => set("final_conversion_deadline", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  No-exam window missed/declined on
+                  <input
+                    type="date"
+                    value={fields.no_exam_declined_at}
+                    onChange={(e) => set("no_exam_declined_at", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+              </div>
               <input
-                type="date"
-                value={fields.final_conversion_deadline}
-                onChange={(e) => set("final_conversion_deadline", e.target.value)}
+                value={fields.conversion_notes}
+                onChange={(e) => set("conversion_notes", e.target.value)}
+                placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              No-exam window missed/declined on
-              <input
-                type="date"
-                value={fields.no_exam_declined_at}
-                onChange={(e) => set("no_exam_declined_at", e.target.value)}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
-          </div>
-          <input
-            value={fields.conversion_notes}
-            onChange={(e) => set("conversion_notes", e.target.value)}
-            placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
-            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-          />
+            </>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Face amount
