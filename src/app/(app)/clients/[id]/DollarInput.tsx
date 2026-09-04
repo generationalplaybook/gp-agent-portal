@@ -17,6 +17,26 @@ import { formatMoney } from "@/lib/illustration";
 // illustration.ts, the same helper the PDF generator formats every dollar figure through, so what
 // an advisor sees on screen now always matches what ends up on the PDF (e.g. "91.50" stays
 // "91.50" — cents are kept only if actually entered, never forced).
+//
+// Flagged again 9/4: opening Edit on a product showed the saved face amount as "227009", no
+// commas, until you clicked into the field and blurred it — the very first render wasn't going
+// through the format-on-blur path at all, only value CHANGES after mount were. "I need commas
+// all of the time everywhere." Fixed so the value this component starts with (and any later
+// GENUINE external reset — e.g. Cancel restoring the saved value) is formatted the same way blur
+// already does. The tricky part: this component's own onChange also changes the `value` prop
+// right back (parent state round-trips it), and that round-trip must NOT get reformatted or
+// every keystroke would fight the cursor again. Fixed by having the input's own handlers mark
+// `prevValue` as already-synced the moment they emit a new value, so when that exact value comes
+// back down as a prop, the resync check below sees nothing has changed and leaves it alone —
+// only a value that arrives WITHOUT having been pre-synced this way (a true external change)
+// gets reformatted.
+function formatForDisplay(v: string): string {
+  const raw = v.trim();
+  if (!raw) return v;
+  const formatted = formatMoney(raw);
+  return formatted || v;
+}
+
 export default function DollarInput({
   value,
   onChange,
@@ -28,16 +48,15 @@ export default function DollarInput({
   placeholder?: string;
   className?: string;
 }) {
-  const [local, setLocal] = useState(value);
-  // Tracks the last `value` prop this component actually rendered with — the React-recommended
+  const [local, setLocal] = useState(() => formatForDisplay(value));
+  // Tracks the last `value` prop this component has already synced to — the React-recommended
   // way to resync local state from an external change without a setState-in-effect cascade (see
-  // "Adjusting state when a prop changes" in the React docs). Covers `value` changing from
-  // outside without going through this input's own onChange — e.g. loading a saved scenario's
-  // data after this component has already mounted.
+  // "Adjusting state when a prop changes" in the React docs). The input's own onChange/onBlur
+  // update this right alongside `local`, so their own round-tripped value never looks "external."
   const [prevValue, setPrevValue] = useState(value);
   if (value !== prevValue) {
     setPrevValue(value);
-    setLocal(value);
+    setLocal(formatForDisplay(value));
   }
 
   return (
@@ -46,8 +65,10 @@ export default function DollarInput({
       <input
         value={local}
         onChange={(e) => {
-          setLocal(e.target.value);
-          onChange(e.target.value);
+          const v = e.target.value;
+          setLocal(v);
+          setPrevValue(v);
+          onChange(v);
         }}
         onBlur={() => {
           const raw = local.trim();
@@ -55,6 +76,7 @@ export default function DollarInput({
           const formatted = formatMoney(raw);
           if (formatted && formatted !== raw) {
             setLocal(formatted);
+            setPrevValue(formatted);
             onChange(formatted);
           }
         }}

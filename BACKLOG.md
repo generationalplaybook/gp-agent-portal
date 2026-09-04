@@ -514,6 +514,28 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   correctly formatted in every case. Test scaffolding was temporary (outside the project, not
   included in any delivered zip) — the only lasting change is the four-line formatting addition
   to `DollarInput.tsx` itself.
+  **Update 9/4: commas now also show the moment a field first loads, not just after a blur.**
+  Karina caught that opening Edit on a Product showed the saved Face Amount as "227009", no
+  commas, until she clicked into the field and blurred it — because the fix above only kicked in
+  when a value CHANGED after the component was already on screen; the very first render (loading
+  a saved value straight in) never went through that path at all. "I need commas all of the time
+  everywhere." Fixed so the value a `DollarInput` starts with — and any later genuine external
+  reset, e.g. Cancel restoring the saved value — is formatted immediately, the same way blur
+  already does. The tricky part: this component's own onChange also feeds the value right back
+  down as a prop (the normal controlled-input round trip), and that echo must NOT get reformatted
+  or every keystroke would fight the cursor again, undoing the whole point of the 9/2 fix. Handled
+  by having the input's own change/blur handlers mark that round-tripped value as "already
+  synced," so only a value that arrives WITHOUT having come from this component's own typing gets
+  reformatted.
+  Re-verified with the same real-component-in-a-browser approach as 9/2 (esbuild + Playwright,
+  temporary scaffolding, not part of any delivered zip): confirmed a value loaded straight in
+  (e.g. "227009") displays formatted immediately with no interaction; confirmed typing more
+  digits at the end AND at the start of an already-formatted value doesn't reformat mid-keystroke
+  (each keystroke lands exactly where typed, no jump); confirmed blur still formats correctly and
+  the formatted value is what reaches the parent's `onChange`; and confirmed an external reset
+  (simulating Cancel) reformats immediately too. No schema change, no SQL — this is entirely
+  inside the one shared `DollarInput.tsx` component, so it reaches every dollar field in the app
+  the same way the original 9/2 fix did.
 
 - **Illustration Scenario (Final Expense) — up to 3 face-value/premium budget options on the
   same scenario — built 9/2.** Karina asked for this while reviewing a TruStage Final Expense
