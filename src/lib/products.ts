@@ -8,11 +8,18 @@
 // medical exam. And separately, an advisor can record that the no-exam window was specifically
 // missed/declined (no_exam_declined_at) rather than just letting the date quietly pass.
 //
-// 9/4: extended again for term_end_date — the plain end-of-term date for a straight,
-// non-convertible term policy (the is_convertible checkbox now covers both cases: a term policy
-// that converts, and one that doesn't). Also added getNextTermMilestone/getTermUrgency, which
-// power the new "Term" outreach view on the Clients page — a proactive "shop new coverage before
-// this ends" queue, separate from this file's reactive conversion-status badge.
+// 9/4: extended again for term_end_date — the is_convertible checkbox now covers both cases: a
+// term policy that converts, and one that doesn't, and either way it has exactly one real "term
+// expiration date." Also added getNextTermMilestone/getTermUrgency, which power the new "Term"
+// outreach view on the Clients page — a proactive "shop new coverage before this ends" queue,
+// separate from this file's reactive conversion-status badge.
+//
+// 9/4 (later same day): Karina flagged that the generic "Expiration date" field (present on
+// every product) and the term-specific "Term end date" field were asking the same question
+// twice for a term policy. Resolved by treating term_end_date as the one source of truth going
+// forward for term products, but falling back to expiration_date wherever term_end_date hasn't
+// been filled in yet — so any term policy that already had an expiration date on file before
+// this feature existed lights up immediately, with nothing to re-enter.
 
 export interface ProductStatus {
   label: string;
@@ -112,6 +119,9 @@ export interface TermMilestoneSource {
   conversion_deadline: string | null;
   final_conversion_deadline: string | null;
   term_end_date: string | null;
+  // Fallback for term_end_date — see the 9/4 note above the ProductStatus section. Only used
+  // when term_end_date itself is empty.
+  expiration_date?: string | null;
 }
 
 // Prefer the earliest of the three dates that's still upcoming (today or later). If everything
@@ -121,7 +131,8 @@ export function getNextTermMilestone(product: TermMilestoneSource): TermMileston
   const candidates: TermMilestone[] = [];
   if (product.conversion_deadline) candidates.push({ date: product.conversion_deadline, label: "No-exam conversion window" });
   if (product.final_conversion_deadline) candidates.push({ date: product.final_conversion_deadline, label: "Final conversion deadline" });
-  if (product.term_end_date) candidates.push({ date: product.term_end_date, label: "Term end date" });
+  const termExpiration = product.term_end_date ?? product.expiration_date ?? null;
+  if (termExpiration) candidates.push({ date: termExpiration, label: "Term expiration date" });
   if (candidates.length === 0) return null;
 
   const upcoming = candidates.filter((c) => daysUntil(c.date) >= 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

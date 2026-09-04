@@ -1486,6 +1486,52 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   probably add another box... so it doesn't get missed."
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_term_outreach_tracking.sql`.
+  **Open questions raised 9/4 while testing, being resolved via AskUserQuestion before next
+  build pass:**
+  1. Redundant date field. Karina noticed the product form asks for the same "when does this
+     policy end" date twice — the generic "Expiration date" up top (next to Issue date, present
+     on every product) and the new "Term end date (for a non-convertible policy)" field lower
+     down, and only the second one feeds the Term tab/dashboard. Proposed fix: once "This is a
+     term policy" is checked, hide the top "Expiration date" field and replace the "Term end
+     date (for a non-convertible policy)" field with a single "Term expiration date" field that
+     applies whether or not the policy converts (a term has one real end date regardless).
+     Non-term products keep the top "Expiration date" field unchanged.
+  2. "Mark Conversion Pending" clutter. Karina flagged that the action shows up on every
+     convertible product's card the moment it's saved, even one decades from its deadline (her
+     test product expires 2055). Options discussed: only show it once the policy is within the
+     same 60/30-day urgency window the Term tab uses (still reachable early via Edit), keep it
+     always visible but visually deprioritized, or leave as-is.
+  **Resolved and BUILT 9/4** via AskUserQuestion:
+  1. **Consolidated the date field.** The top "Expiration date" field now hides itself the
+     moment "This is a term policy" is checked, on both the Add and Edit forms. In its place,
+     the term block's first field is now "Term expiration date" (renamed from "Term end date
+     (for a non-convertible policy)"), applying whether or not the policy converts — the "Or, if
+     it doesn't convert" divider is gone, since it's no longer a non-convertible-only field.
+     Checking the box live copies whatever was already typed into Expiration date over to Term
+     expiration date automatically, so nothing typed gets lost mid-entry. For any term product
+     saved before today that only has the old Expiration date filled in (not the new field),
+     every read path — the status badge, the "Expires ..." line on the card, and the Term tab/
+     dashboard milestone calculation — falls back to that existing value automatically, so
+     nothing needs to be manually re-entered across her existing book. No schema change; both
+     `expiration_date` and `term_end_date` columns stay as they are, this is purely a UI/read
+     consolidation.
+  2. **"Mark Conversion Pending" restyled, not gated.** Karina chose to keep it always available
+     (a client can ask to convert well ahead of any deadline) but made it visually match the
+     neutral Edit/Undo styling instead of the gold accent it had, so it no longer reads as a
+     highlighted call-to-action on every convertible product regardless of timing.
+
+- **Annuity products need their own field set — flagged 9/4, NOT built.** Karina, testing with a
+  mock annuity: Issue date/Expiration date/Policy number are fine as-is, but "This is a term
+  policy" obviously doesn't apply, and Face amount/Premium don't fit either — annuities can have
+  periodic contributions (e.g. every quarter or six months) but otherwise work very differently
+  from a life insurance product, with their own set of nuances. Riders need to change too — the
+  current rider checklist (Accelerated Death Benefit, etc.) is life-insurance-specific; annuities
+  typically carry a different set of riders. Karina's call: get the insurance-policy side (the
+  term/conversion work above) tightened up first, then come back and design a dedicated
+  annuity field set — likely product-type-conditional fields/riders on the Add/Edit Product form,
+  the way the term block is conditional on the term checkbox now. Needs more design discussion
+  before building — what fields, what riders, whether it's its own product type branch or a set
+  of conditional sections like the term block.
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively

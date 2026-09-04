@@ -172,15 +172,17 @@ export default function ProductsSection({
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Expiration date
-              <input
-                type="date"
-                value={fields.expiration_date}
-                onChange={(e) => set("expiration_date", e.target.value)}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
+            {!fields.is_convertible && (
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Expiration date
+                <input
+                  type="date"
+                  value={fields.expiration_date}
+                  onChange={(e) => set("expiration_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            )}
           </div>
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Policy number (once issued)
@@ -212,13 +214,31 @@ export default function ProductsSection({
             <input
               type="checkbox"
               checked={fields.is_convertible ?? false}
-              onChange={(e) => setFields((f) => ({ ...f, is_convertible: e.target.checked }))}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setFields((f) => ({
+                  ...f,
+                  is_convertible: checked,
+                  // Carry over whatever was already typed into Expiration date, which is about
+                  // to be hidden — a term policy has one real end date, this is it either way.
+                  term_end_date: checked && !f.term_end_date ? f.expiration_date : f.term_end_date,
+                }));
+              }}
               className="h-4 w-4 rounded border-[#D9CFBA]"
             />
             This is a term policy (convertible or not)
           </label>
           {fields.is_convertible && (
             <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Term expiration date
+                <input
+                  type="date"
+                  value={fields.term_end_date}
+                  onChange={(e) => set("term_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Convertible without medical exam until
                 <input
@@ -254,20 +274,6 @@ export default function ProductsSection({
                 placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
-              <div className="mt-1 flex flex-col gap-1 border-t border-dashed border-[#D9CFBA] pt-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">
-                  Or, if it doesn&rsquo;t convert
-                </p>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Term end date (for a non-convertible policy)
-                  <input
-                    type="date"
-                    value={fields.term_end_date}
-                    onChange={(e) => set("term_end_date", e.target.value)}
-                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                  />
-                </label>
-              </div>
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">

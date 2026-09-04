@@ -37,7 +37,7 @@ export default async function ClientsPage({
   const { data: termProductsRaw } = await supabase
     .from("client_products")
     .select(
-      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, term_contacted_at, client_id, clients(id, full_name)"
+      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, term_contacted_at, client_id, clients(id, full_name)"
     )
     .eq("is_convertible", true)
     .is("converted_at", null);
@@ -48,6 +48,7 @@ export default async function ClientsPage({
       conversion_deadline: p.conversion_deadline,
       final_conversion_deadline: p.final_conversion_deadline,
       term_end_date: p.term_end_date,
+      expiration_date: p.expiration_date,
     });
     const urgency: TermUrgency | null = milestone ? getTermUrgency(milestone.date) : null;
     return {

@@ -35,7 +35,9 @@ export default async function HomePage() {
     // or overdue).
     supabase
       .from("client_products")
-      .select("id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, client_id, clients(id, full_name)")
+      .select(
+        "id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, client_id, clients(id, full_name)"
+      )
       .eq("is_convertible", true)
       .is("converted_at", null)
       .is("term_contacted_at", null),
@@ -87,6 +89,7 @@ export default async function HomePage() {
         conversion_deadline: p.conversion_deadline,
         final_conversion_deadline: p.final_conversion_deadline,
         term_end_date: p.term_end_date,
+        expiration_date: p.expiration_date,
       });
       if (!milestone) return null;
       const urgency = getTermUrgency(milestone.date);

@@ -73,7 +73,9 @@ function toFieldValues(p: ClientProduct): ProductFields {
     conversion_deadline: p.conversion_deadline ?? "",
     final_conversion_deadline: p.final_conversion_deadline ?? "",
     no_exam_declined_at: p.no_exam_declined_at ?? "",
-    term_end_date: p.term_end_date ?? "",
+    // Fall back to the (now-hidden, for term policies) expiration_date if term_end_date hasn't
+    // been filled in yet — see the 9/4 note in products.ts. Only relevant for term policies.
+    term_end_date: p.term_end_date ?? (p.is_convertible ? p.expiration_date ?? "" : ""),
     conversion_notes: p.conversion_notes ?? "",
     face_amount: p.face_amount != null ? String(p.face_amount) : "",
     premium: p.premium != null ? String(p.premium) : "",
@@ -186,15 +188,17 @@ export default function ProductRow({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Expiration date
-            <input
-              type="date"
-              value={fields.expiration_date}
-              onChange={(e) => set("expiration_date", e.target.value)}
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-          </label>
+          {!fields.is_convertible && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Expiration date
+              <input
+                type="date"
+                value={fields.expiration_date}
+                onChange={(e) => set("expiration_date", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          )}
         </div>
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           Policy number (once issued)
@@ -226,13 +230,31 @@ export default function ProductRow({
           <input
             type="checkbox"
             checked={fields.is_convertible ?? false}
-            onChange={(e) => setFields((f) => ({ ...f, is_convertible: e.target.checked }))}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setFields((f) => ({
+                ...f,
+                is_convertible: checked,
+                // Carry over whatever was already typed into Expiration date, which is about to
+                // be hidden — a term policy has one real end date, this is it either way.
+                term_end_date: checked && !f.term_end_date ? f.expiration_date : f.term_end_date,
+              }));
+            }}
             className="h-4 w-4 rounded border-[#D9CFBA]"
           />
           This is a term policy (convertible or not)
         </label>
         {fields.is_convertible && (
           <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Term expiration date
+              <input
+                type="date"
+                value={fields.term_end_date}
+                onChange={(e) => set("term_end_date", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Convertible without medical exam until
               <input
@@ -268,20 +290,6 @@ export default function ProductRow({
               placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <div className="mt-1 flex flex-col gap-1 border-t border-dashed border-[#D9CFBA] pt-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">
-                Or, if it doesn&rsquo;t convert
-              </p>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Term end date (for a non-convertible policy)
-                <input
-                  type="date"
-                  value={fields.term_end_date}
-                  onChange={(e) => set("term_end_date", e.target.value)}
-                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                />
-              </label>
-            </div>
           </div>
         )}
         <div className="grid grid-cols-2 gap-2">
@@ -347,13 +355,18 @@ export default function ProductRow({
     );
   }
 
+  // A term policy's real end date is term_end_date, falling back to the legacy expiration_date
+  // field for anything not yet re-saved through the new field — see products.ts, 9/4.
+  const effectiveTermEnd = product.is_convertible ? product.term_end_date ?? product.expiration_date : null;
   const status = getProductStatus(
     product.expiration_date,
     product.conversion_deadline,
     product.final_conversion_deadline,
     product.no_exam_declined_at,
-    product.term_end_date
+    effectiveTermEnd
   );
+  // For non-term products, fall back to the plain expiration_date field as before.
+  const displayExpiration = effectiveTermEnd ?? product.expiration_date;
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
 
   return (
@@ -384,12 +397,17 @@ export default function ProductRow({
             <button type="button" onClick={() => setEditing(true)} className="text-xs text-[#666] underline hover:text-[#1C1C1C]">
               Edit
             </button>
+            {/* Deliberately styled the same neutral gray as Edit/Undo, not the gold accent used
+                elsewhere for conversion status — Karina, 9/4: this can be clicked any time (a
+                client can ask to convert well ahead of a deadline), but it shouldn't visually
+                compete with Edit/Delete on every convertible product's card regardless of how
+                far off any deadline is. */}
             {product.is_convertible && !isPending && !isConverted && (
               <button
                 type="button"
                 disabled={workflowBusy}
                 onClick={() => runWorkflowAction(markConversionPending)}
-                className="text-xs text-[#8b6a00] underline hover:text-[#6b5400] disabled:opacity-60"
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
               >
                 Mark Conversion Pending
               </button>
@@ -473,12 +491,12 @@ export default function ProductRow({
         </p>
       )}
 
-      {(product.issue_date || product.expiration_date) && (
+      {(product.issue_date || displayExpiration) && (
         <p className="text-xs text-[#707070]">
           {product.issue_date && `Issued ${new Date(product.issue_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
-          {product.issue_date && product.expiration_date && " · "}
-          {product.expiration_date &&
-            `Expires ${new Date(product.expiration_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+          {product.issue_date && displayExpiration && " · "}
+          {displayExpiration &&
+            `Expires ${new Date(displayExpiration).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
         </p>
       )}
 
