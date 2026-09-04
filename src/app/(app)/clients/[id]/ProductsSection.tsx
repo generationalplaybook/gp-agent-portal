@@ -49,9 +49,14 @@ export default function ProductsSection({
   isMinor: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showConverted, setShowConverted] = useState(false);
   const [fields, setFields] = useState<ProductFields>(EMPTY_FIELDS);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const pendingProducts = products.filter((p) => p.conversion_pending_at && !p.converted_at);
+  const convertedProducts = products.filter((p) => p.converted_at);
+  const activeProducts = products.filter((p) => !p.conversion_pending_at && !p.converted_at);
 
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -92,9 +97,25 @@ export default function ProductsSection({
 
       {products.length === 0 && !showAdd && <p className="text-xs text-[#707070]">No products on file yet.</p>}
 
-      {products.length > 0 && (
+      {/* Conversion Pending sits in its own section at the top so it stays on the advisor's radar
+          for check-ins — see markConversionPending in actions.ts. Converted products are archived
+          into a collapsed section at the bottom instead of disappearing. */}
+      {pendingProducts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#8b6a00]">
+            Conversion Pending ({pendingProducts.length})
+          </p>
+          <div className="flex flex-col gap-3">
+            {pendingProducts.map((p) => (
+              <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeProducts.length > 0 && (
         <div className="flex flex-col gap-3">
-          {products.map((p) => (
+          {activeProducts.map((p) => (
             <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
           ))}
         </div>
@@ -282,6 +303,25 @@ export default function ProductsSection({
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {convertedProducts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShowConverted((v) => !v)}
+            className="self-start text-xs font-semibold text-[#707070] underline hover:text-[#1C1C1C]"
+          >
+            {showConverted ? "Hide" : "Show"} converted ({convertedProducts.length})
+          </button>
+          {showConverted && (
+            <div className="flex flex-col gap-3">
+              {convertedProducts.map((p) => (
+                <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

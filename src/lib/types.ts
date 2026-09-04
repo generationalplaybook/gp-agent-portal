@@ -280,6 +280,11 @@ export interface ClientProduct {
   // Set by the advisor when they know the no-exam conversion window was missed or the client
   // declined to convert during it — the date that happened, not the deadline itself.
   no_exam_declined_at: string | null;
+  // Manual workflow status (not date-derived): set when the advisor marks this product as
+  // actively being converted, and again once the new permanent policy is actually issued
+  // elsewhere as its own Product. See markConversionPending/markConverted in clients/actions.ts.
+  conversion_pending_at: string | null;
+  converted_at: string | null;
   face_amount: number | null;
   premium: number | null;
   // The bare-minimum monthly premium that keeps the policy from lapsing — usually lower than

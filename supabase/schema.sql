@@ -1177,3 +1177,16 @@ alter table public.client_products add column if not exists conversion_reminder_
 alter table public.client_products add column if not exists final_conversion_deadline date;
 alter table public.client_products add column if not exists final_conversion_reminder_sent boolean not null default false;
 alter table public.client_products add column if not exists no_exam_declined_at date;
+
+-- ─────────────────────────────────────────────────────────────
+-- 38. Conversion Pending / Converted workflow status (added 9/3) — Karina wanted a way to mark a
+-- term product as "we're actively converting this" once a client actually says yes, so it stands
+-- out in its own section on the client's Products list rather than sitting quietly alongside
+-- every other Issued policy needing no attention. Deliberately manual — only a human knows the
+-- client agreed, nothing here is derived from a date the way the fields in section 37 are. Once
+-- the new permanent policy is actually issued, the advisor adds it as a brand-new Product (no
+-- linking between the two, per her own earlier call — see section 37's comment) and marks this
+-- old term product Converted, which archives it out of the way but keeps the record on file.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists conversion_pending_at timestamptz;
+alter table public.client_products add column if not exists converted_at timestamptz;

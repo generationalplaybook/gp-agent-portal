@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { updateProduct, deleteProduct, type ProductFields } from "../actions";
+import {
+  updateProduct,
+  deleteProduct,
+  markConversionPending,
+  undoConversionPending,
+  markConverted,
+  undoConverted,
+  type ProductFields,
+} from "../actions";
 import { PRODUCT_TYPE_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus } from "@/lib/products";
 import RidersField from "./RidersField";
@@ -90,10 +98,26 @@ export default function ProductRow({
   const [fields, setFields] = useState<ProductFields>(toFieldValues(product));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [error, setError] = useState("");
 
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  const isConverted = !!product.converted_at;
+  const isPending = !!product.conversion_pending_at && !isConverted;
+
+  async function runWorkflowAction(action: (productId: string, clientId: string) => Promise<void>) {
+    setWorkflowBusy(true);
+    setError("");
+    try {
+      await action(product.id, clientId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not update conversion status.");
+    } finally {
+      setWorkflowBusy(false);
+    }
   }
 
   async function handleSave() {
@@ -303,7 +327,15 @@ export default function ProductRow({
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-md border border-[#D9CFBA] p-3">
+    <div
+      className={`flex flex-col gap-1.5 rounded-md border p-3 ${
+        isPending
+          ? "border-[#8b6a00] bg-[#FFFBF0]"
+          : isConverted
+            ? "border-[#D9CFBA] bg-[#F5F0E8] opacity-80"
+            : "border-[#D9CFBA]"
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[#1C1C1C]">{product.product_name}</p>
@@ -312,7 +344,7 @@ export default function ProductRow({
           </p>
         </div>
         {!confirmingDelete && (
-          <div className="flex flex-shrink-0 gap-3">
+          <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-3">
             <a
               href={`/clients/${clientId}/illustrations/${product.id}`}
               className="text-xs text-[#1C1C1C] underline hover:text-[#2E2E2E]"
@@ -322,6 +354,46 @@ export default function ProductRow({
             <button type="button" onClick={() => setEditing(true)} className="text-xs text-[#666] underline hover:text-[#1C1C1C]">
               Edit
             </button>
+            {!isPending && !isConverted && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(markConversionPending)}
+                className="text-xs text-[#8b6a00] underline hover:text-[#6b5400] disabled:opacity-60"
+              >
+                Mark Conversion Pending
+              </button>
+            )}
+            {isPending && (
+              <>
+                <button
+                  type="button"
+                  disabled={workflowBusy}
+                  onClick={() => runWorkflowAction(markConverted)}
+                  className="text-xs text-[#00693C] underline hover:text-[#004d2b] disabled:opacity-60"
+                >
+                  Mark Converted
+                </button>
+                <button
+                  type="button"
+                  disabled={workflowBusy}
+                  onClick={() => runWorkflowAction(undoConversionPending)}
+                  className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+                >
+                  Undo
+                </button>
+              </>
+            )}
+            {isConverted && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(undoConverted)}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Undo
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
@@ -339,7 +411,18 @@ export default function ProductRow({
             Quote — not yet issued
           </span>
         )}
-        {status && (
+        {isPending && (
+          <span className="self-start rounded-full bg-[#8b6a00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Conversion Pending
+          </span>
+        )}
+        {isConverted && (
+          <span className="self-start rounded-full bg-[#707070] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Converted{" "}
+            {new Date(product.converted_at!).toLocaleDateString(undefined, { dateStyle: "medium" })}
+          </span>
+        )}
+        {!isPending && !isConverted && status && (
           <span
             className={`self-start rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}
           >
@@ -366,6 +449,14 @@ export default function ProductRow({
           {product.issue_date && product.expiration_date && " · "}
           {product.expiration_date &&
             `Expires ${new Date(product.expiration_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+        </p>
+      )}
+
+      {isPending && product.conversion_pending_at && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Conversion pending since{" "}
+          {new Date(product.conversion_pending_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — check in
+          with the client until the new policy is issued.
         </p>
       )}
 

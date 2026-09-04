@@ -578,6 +578,49 @@ export async function deleteProduct(productId: string, clientId: string): Promis
   revalidatePath(`/clients/${clientId}`);
 }
 
+// Conversion Pending / Converted — a manual workflow status separate from the date-based
+// no-exam/final conversion fields above. Karina, 9/3: once a client actually says yes to
+// converting, she wants that product to visibly move into its own section so it stays on her
+// radar for check-ins, rather than sitting quietly alongside every other Issued policy. Nothing
+// here is date-derived — only the advisor knows the client actually agreed — so these are plain
+// manual toggles, not cron-driven like conversion_reminder_sent above. When the new permanent
+// policy is actually issued, the advisor adds it as its own Product (no linking, per her earlier
+// call) and marks this old term product Converted, which archives it out of the way but keeps
+// the record on file rather than deleting it.
+export async function markConversionPending(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("client_products")
+    .update({ conversion_pending_at: new Date().toISOString(), converted_at: null })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function undoConversionPending(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_products").update({ conversion_pending_at: null }).eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function markConverted(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("client_products")
+    .update({ converted_at: new Date().toISOString() })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function undoConverted(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_products").update({ converted_at: null }).eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+}
+
 // ─────────────────────────────────────────────────────────────
 // Client Analyses — each saved analysis is a point-in-time snapshot (inputs + result), so we
 // don't offer in-place editing (that would silently rewrite history). Delete removes a snapshot

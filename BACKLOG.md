@@ -1381,6 +1381,47 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_final_conversion_tracking.sql`.
 
+- **Conversion Pending / Converted — workflow status on Products, BUILT 9/3.** Karina asked what
+  happens once a conversion date is coming up and the client actually says yes: is there
+  something to click so it moves to its own section on the client's product list, distinct from
+  a normal Issued policy the advisor doesn't need to check in on often? Confirmed the design with
+  her via two quick questions before building: a manual "Mark as Conversion Pending" button
+  (nothing automatic — only a human knows the client agreed), and once the new permanent policy
+  is actually issued as its own separate Product (per the earlier no-linking decision), the
+  advisor clicks "Mark Converted" to archive the old term product out of the way rather than
+  deleting it.
+  Two new timestamp fields on `client_products`: `conversion_pending_at` and `converted_at`, both
+  manual (not cron-derived, unlike every other date field on Products). New actions in
+  `clients/actions.ts`: `markConversionPending`, `undoConversionPending`, `markConverted`,
+  `undoConverted` — each a plain one-field update plus `revalidatePath`, undo included both places
+  in case of a misclick.
+  On `ProductRow.tsx`: while pending, the card gets a gold border/background, a "Conversion
+  Pending" badge (replacing the normal date-based status badge, which is less relevant once
+  you're actively mid-conversion), a "Conversion pending since [date] — check in with the client"
+  line, and "Mark Converted" / "Undo" actions next to Edit/Delete. Once converted, the card is
+  dimmed with a muted "Converted [date]" badge and just an "Undo" action.
+  On `ProductsSection.tsx`: the product list is now grouped into three sections — Conversion
+  Pending at the top (its own labeled group, so it's the first thing the advisor sees), the
+  normal active list in the middle (unchanged from before), and Converted collapsed behind a
+  "Show converted (N)" toggle at the bottom so old, resolved conversions don't clutter the list
+  but stay on file.
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_conversion_pending_status.sql`.
+
+- **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
+  idea Karina raised in the same message: once a policy is issued, should the system proactively
+  remind the advisor to check in around each policy anniversary (she floated ~1 year), rather
+  than relying on the advisor to set their own manual reminder? She talked herself partway out of
+  it in the same message ("I don't know how we should put that feature in... we need to think on
+  that one more") — explicitly logged for later review, not a build order. Open questions for
+  when this comes back up: is the anchor date `issue_date` (already on every product) or
+  something else; does every product get this automatically or is it opt-in per policy; does it
+  repeat every year indefinitely or just once; and how it should read on the reminder itself (a
+  generic "annual check-in" vs. something that references the specific policy). Likely the same
+  cron + flag shape as the other two date-based reminders on Products, but "fires every year, not
+  just once" is new and needs its own design (the existing `*_reminder_sent` boolean pattern only
+  fires once ever).
+
 - **Nationwide product lineup — 17 missing Knowledge Base entries added, built 9/3.**
   Karina sent a screenshot of Nationwide's full 19-product list and asked why only 2 were in
   the Knowledge Base. Confirmed the Knowledge Base is a static file (`src/lib/kb-data.ts`),
