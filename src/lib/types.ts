@@ -244,6 +244,14 @@ export interface ClientMeeting {
 
 export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Final Expense", "Annuity", "Other"];
 
+// Permanent/lifetime coverage — no meaningful "expiration date" the way term life does (Karina,
+// 9/4: a final expense whole life, whole life, or IUL policy doesn't expire). Used to hide the
+// generic Expiration date field on the Add/Edit Product form for these types, the same way it's
+// already hidden for a term policy (replaced by Term expiration date) and an annuity (replaced
+// by Surrender period ends). Left showing for "Other" and a blank/unselected type since it's
+// unknown what those actually are.
+export const PERMANENT_PRODUCT_TYPES = ["Whole Life", "IUL", "Final Expense"];
+
 // The riders that show up often enough to offer as one-click checkboxes when logging a product.
 // Anything else (Ethos Perks, a carrier-specific endorsement, etc.) gets typed in as a custom
 // rider instead — riders vary a lot by carrier, so this list is deliberately just the common

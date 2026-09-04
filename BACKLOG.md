@@ -1572,6 +1572,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   [Annuity Riders: Types, Benefits & Considerations –
   RetireGuide](https://www.retireguide.com/annuities/riders/), [What Is the 59 1/2 Rule? IRA
   Withdrawal Penalties – myannuitystore.com](https://myannuitystore.com/retirement-planning/59-half-rule/).
+  **Update 9/4: Expiration date hidden for permanent product types too, BUILT 9/4.** Karina,
+  looking at a Final Expense (whole life) product: that field doesn't apply there either, or on
+  Whole Life or IUL — none of those expire the way term life does. Hidden the same way it's
+  already hidden for a term policy and an annuity, for product_type in {Whole Life, IUL, Final
+  Expense} — on both the Add and Edit forms, and on the read-only card (so a legacy record that
+  happened to have an old expiration_date on file from before this feature won't show a
+  now-meaningless "Expires ..." line either). Left showing for "Other" and a blank/unselected
+  type, since it's unknown what those actually are. New `PERMANENT_PRODUCT_TYPES` constant in
+  `lib/types.ts` — no schema change.
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively

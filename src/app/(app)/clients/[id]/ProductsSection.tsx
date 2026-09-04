@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
-import { PRODUCT_TYPE_OPTIONS, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
+import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
@@ -69,6 +69,7 @@ export default function ProductsSection({
   }
 
   const isAnnuity = fields.product_type === "Annuity";
+  const isPermanent = PERMANENT_PRODUCT_TYPES.includes(fields.product_type ?? "");
 
   async function handleAdd() {
     if (!fields.product_name.trim()) {
@@ -183,7 +184,7 @@ export default function ProductsSection({
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
-            {!fields.is_convertible && !isAnnuity && (
+            {!fields.is_convertible && !isAnnuity && !isPermanent && (
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Expiration date
                 <input

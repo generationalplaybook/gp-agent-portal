@@ -10,7 +10,7 @@ import {
   undoConverted,
   type ProductFields,
 } from "../actions";
-import { PRODUCT_TYPE_OPTIONS, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
+import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus, getTermUrgency } from "@/lib/products";
 
 // Ongoing-contribution frequency values map to these plain-English labels wherever they're
@@ -125,6 +125,7 @@ export default function ProductRow({
   const isConverted = !!product.converted_at;
   const isPending = !!product.conversion_pending_at && !isConverted;
   const isAnnuity = fields.product_type === "Annuity";
+  const isPermanent = PERMANENT_PRODUCT_TYPES.includes(fields.product_type ?? "");
 
   async function runWorkflowAction(action: (productId: string, clientId: string) => Promise<void>) {
     setWorkflowBusy(true);
@@ -207,7 +208,7 @@ export default function ProductRow({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
-          {!fields.is_convertible && !isAnnuity && (
+          {!fields.is_convertible && !isAnnuity && !isPermanent && (
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Expiration date
               <input
@@ -441,8 +442,9 @@ export default function ProductRow({
     product.no_exam_declined_at,
     effectiveTermEnd
   );
-  // For non-term products, fall back to the plain expiration_date field as before.
-  const displayExpiration = effectiveTermEnd ?? product.expiration_date;
+  // For non-term products, fall back to the plain expiration_date field as before — except a
+  // permanent product type, which never shows an expiration at all (Karina, 9/4).
+  const displayExpiration = isPermanent ? null : effectiveTermEnd ?? product.expiration_date;
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
   // A heads-up cue as the surrender period approaches — same 60/30-day language as the Term tab,
   // but this isn't wired into a separate outreach queue (yet); just a bit of color on the card.
