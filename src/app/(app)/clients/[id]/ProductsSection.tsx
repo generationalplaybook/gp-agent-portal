@@ -214,7 +214,7 @@ export default function ProductsSection({
               onChange={(e) => setFields((f) => ({ ...f, is_convertible: e.target.checked }))}
               className="h-4 w-4 rounded border-[#D9CFBA]"
             />
-            This product can convert to a permanent policy (e.g. a term policy)
+            This is a term (or otherwise convertible) policy that can convert to permanent coverage
           </label>
           {fields.is_convertible && (
             <>

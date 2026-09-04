@@ -1423,6 +1423,11 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   only genuinely non-convertible products (like the IUL in her screenshot) lose the clutter.
   SQL needs to be run against Karina's live Supabase project — see
   `migration_add_is_convertible_flag.sql`.
+  **Update 9/4: checkbox wording fixed.** Karina caught that "This product can convert to a
+  permanent policy (e.g. a term policy)" read backwards — the "e.g." landed on the destination
+  (permanent) side of the sentence when the example (term) belongs on the source side. Reworded
+  to "This is a term (or otherwise convertible) policy that can convert to permanent coverage" on
+  both the Add and Edit forms. Copy-only change, no schema/logic touched.
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively
