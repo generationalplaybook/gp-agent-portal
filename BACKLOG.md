@@ -1450,6 +1450,42 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   (permanent) side of the sentence when the example (term) belongs on the source side. Reworded
   to "This is a term (or otherwise convertible) policy that can convert to permanent coverage" on
   both the Add and Edit forms. Copy-only change, no schema/logic touched.
+  **Update 9/4: Term end date + a dedicated "Term" tab, so every term policy — convertible or
+  not — gets tracked and worked in one place, soonest-expiring first, BUILT 9/4.** Karina, looking
+  at the convertible section: a 30-year term needs its own end-of-term date tracked too (not just
+  the conversion-window dates), and term policies in general should be tagged and filterable on
+  Clients so an advisor can pull up every client with a term policy, ordered by what's expiring
+  first, to shop new coverage or just touch base — with a way to mark "already reached out" so a
+  contacted policy moves out of the queue without disappearing. Worked through the design with her
+  (a false start — an alternate "tag by Product Type" approach turned out to contradict what she
+  actually wanted — she then sent a full, concrete spec in one message, which this follows exactly):
+  the `is_convertible` checkbox now broadly means "this is a term policy" (convertible into
+  something else, or not) rather than narrowly "this converts" — relabeled "This is a term policy
+  (convertible or not)." Two of the three existing date fields inside that checkbox's block were
+  renamed for clarity: "Convertible without exam until" → "Convertible without medical exam
+  until," and "No-exam window missed/declined on" → "No-exam window declined by client." A new
+  4th field, "Term end date (for a non-convertible policy)," was added inside the same block but
+  visually separated below a divider under an "Or, if it doesn't convert" label, since it's a
+  different kind of policy than the other three fields describe. New `client_products.term_end_date`
+  column (plain nullable date, same pattern as the other date fields).
+  All term policies — with or without a medical-exam conversion window, or plain non-convertible
+  term — now show up together on a new "Term" filter chip on the Clients page (only appears when
+  at least one exists), which switches the page into two lists: "Needs Outreach" and "Already
+  Touched Base," both sorted by whichever of the three possible dates (no-exam deadline, final
+  conversion deadline, term end date) is soonest and still upcoming. Each row has a "Mark Touched
+  Base" button (new `term_contacted_at` timestamp, per-policy, with an "Undo") that moves it into
+  the Touched Base group without deleting or losing track of it — matching the same "clicked by a
+  human, not automatic" pattern as Conversion Pending. Rows within 30 days show a red "critical"
+  badge, within 60 days an amber "soon" badge, per Karina's "red tab or something... this is high
+  level, check this."
+  Also added a new "Time-Sensitive Term" card on the home dashboard — a full-width banner above the
+  existing 4-card grid, since this needs to be seen immediately rather than buried as a 5th tile.
+  It turns red/alert styled once there's at least one term policy within 60 days that hasn't been
+  touched base on yet, shows the count and up to 3 preview rows (client, product, and the date
+  that's driving the urgency), and links straight into the new Term tab — per Karina's "we should
+  probably add another box... so it doesn't get missed."
+  SQL needs to be run against Karina's live Supabase project — see
+  `migration_add_term_outreach_tracking.sql`.
 
 - **Policy anniversary check-in reminder — flagged 9/3, needs more thought, NOT built.** Separate
   idea Karina raised in the same message: once a policy is issued, should the system proactively

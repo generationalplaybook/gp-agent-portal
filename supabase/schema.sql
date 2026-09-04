@@ -1215,3 +1215,23 @@ where is_convertible = false
     or conversion_pending_at is not null
     or converted_at is not null
   );
+
+-- ─────────────────────────────────────────────────────────────
+-- 40. Term end date + term outreach tracking (added 9/4) — Karina wants a proactive "shop new
+-- coverage / touch base before this term ends" workflow, not just the reactive conversion
+-- tracking above. Two things:
+-- (1) `term_end_date` — a plain end-of-term date for a policy that does NOT have a conversion
+-- option at all (a straight non-convertible term). The is_convertible checkbox is being broadened
+-- in spirit to mean "this is a term policy" in general (convertible or not), not just "this can
+-- convert" — a term policy with no conversion window still needs to be tracked so the advisor can
+-- reach out before it ends. `conversion_deadline` / `final_conversion_deadline` remain the
+-- relevant dates for the ones that DO convert; term_end_date is the alternate path for the ones
+-- that don't.
+-- (2) `term_contacted_at` — a manual, per-product "I've reached out to this client about their
+-- upcoming term" flag, same shape as conversion_pending_at/converted_at (a plain timestamp, not
+-- cron-managed). Powers a new "Term" view on the Clients page: every is_convertible product,
+-- sorted by whichever of its three dates is soonest, split into "Needs Outreach" (not yet
+-- contacted) and "Contacted" so nothing gets missed and nothing gets worked twice.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists term_end_date date;
+alter table public.client_products add column if not exists term_contacted_at timestamptz;

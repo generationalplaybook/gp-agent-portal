@@ -263,12 +263,22 @@ export interface ClientProduct {
   policy_number: string | null;
   issue_date: string | null;
   expiration_date: string | null;
-  // Whether this product can convert to a permanent policy at all — controls whether the
-  // conversion-related fields below show on the Add/Edit form, and whether "Mark Conversion
-  // Pending" appears on the card. Not every product type has a conversion window (e.g. an IUL or
-  // annuity never does), so this keeps those fields from cluttering products they don't apply to.
+  // Broadened 9/4: originally just "can this convert to a permanent policy," now means "this is
+  // a term policy" in general (convertible or not) — controls whether the term/conversion block
+  // shows on the Add/Edit form, whether "Mark Conversion Pending" appears on the card, and
+  // whether this product is tagged for the Term outreach view on the Clients page. Not every
+  // product type is a term policy at all (an IUL or annuity never is), so this keeps that whole
+  // block from cluttering products it doesn't apply to.
   is_convertible: boolean;
   conversion_deadline: string | null;
+  // The plain end-of-term date for a policy that does NOT have a conversion option — the
+  // alternate path to conversion_deadline/final_conversion_deadline below, for a straight
+  // non-convertible term. See getNextTermMilestone in lib/products.ts.
+  term_end_date: string | null;
+  // Manual, per-product "I've reached out to this client about their upcoming term" flag for the
+  // Term outreach view — a plain timestamp, not cron-managed. See markTermContacted in
+  // clients/actions.ts.
+  term_contacted_at: string | null;
   conversion_notes: string | null;
   // Set true once the 60-days-out auto-reminder has been created for this product's
   // conversion_deadline, so the daily cron doesn't create a duplicate every day it's still

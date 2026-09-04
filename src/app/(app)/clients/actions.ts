@@ -481,12 +481,14 @@ export interface ProductFields {
   policy_number?: string;
   issue_date?: string;
   expiration_date?: string;
-  // Whether this product can convert to a permanent policy at all — controls whether the
-  // conversion fields below are shown/saved as meaningful, or just left blank.
+  // Broadened 9/4: "this is a term policy" in general (convertible or not) — controls whether
+  // the term/conversion fields below are shown/saved as meaningful, or just left blank.
   is_convertible?: boolean;
   conversion_deadline?: string;
   final_conversion_deadline?: string;
   no_exam_declined_at?: string;
+  // Plain end-of-term date, for a term policy that does NOT have a conversion option.
+  term_end_date?: string;
   conversion_notes?: string;
   face_amount?: string;
   premium?: string;
@@ -530,6 +532,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     conversion_deadline: fields.conversion_deadline?.trim() || null,
     final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
     no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
+    term_end_date: fields.term_end_date?.trim() || null,
     conversion_notes: fields.conversion_notes?.trim() || null,
     face_amount: parseNumberOrNull(fields.face_amount),
     premium: parseNumberOrNull(fields.premium),
@@ -542,6 +545,8 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
   if (error) throw new Error(error.message);
 
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 export async function updateProduct(productId: string, clientId: string, fields: ProductFields): Promise<void> {
@@ -562,6 +567,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       conversion_deadline: fields.conversion_deadline?.trim() || null,
       final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
       no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
+      term_end_date: fields.term_end_date?.trim() || null,
       conversion_notes: fields.conversion_notes?.trim() || null,
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),
@@ -574,6 +580,8 @@ export async function updateProduct(productId: string, clientId: string, fields:
   if (error) throw new Error(error.message);
 
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 export async function deleteProduct(productId: string, clientId: string): Promise<void> {
@@ -581,6 +589,8 @@ export async function deleteProduct(productId: string, clientId: string): Promis
   const { error } = await supabase.from("client_products").delete().eq("id", productId);
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 // Conversion Pending / Converted — a manual workflow status separate from the date-based
@@ -616,7 +626,11 @@ export async function markConverted(productId: string, clientId: string): Promis
     .update({ converted_at: new Date().toISOString() })
     .eq("id", productId);
   if (error) throw new Error(error.message);
+  // Converted products drop out of the Term outreach view (see markTermContacted below), so
+  // that list needs to refresh too, not just this client's own page.
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 export async function undoConverted(productId: string, clientId: string): Promise<void> {
@@ -624,6 +638,34 @@ export async function undoConverted(productId: string, clientId: string): Promis
   const { error } = await supabase.from("client_products").update({ converted_at: null }).eq("id", productId);
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
+}
+
+// Term outreach — a separate manual workflow from Conversion Pending/Converted above. Karina,
+// 9/4: wants a proactive queue of every term policy (convertible or not), soonest-expiring first,
+// so she can shop new coverage or just touch base before it ends — and a way to mark one as
+// "already reached out to" so it moves out of the active queue without deleting it or losing
+// track of who's been contacted. Lives on the new "Term" view on the Clients page.
+export async function markTermContacted(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("client_products")
+    .update({ term_contacted_at: new Date().toISOString() })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
+}
+
+export async function undoTermContacted(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("client_products").update({ term_contacted_at: null }).eq("id", productId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
 
 // ─────────────────────────────────────────────────────────────

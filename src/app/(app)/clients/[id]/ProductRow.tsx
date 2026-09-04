@@ -73,6 +73,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     conversion_deadline: p.conversion_deadline ?? "",
     final_conversion_deadline: p.final_conversion_deadline ?? "",
     no_exam_declined_at: p.no_exam_declined_at ?? "",
+    term_end_date: p.term_end_date ?? "",
     conversion_notes: p.conversion_notes ?? "",
     face_amount: p.face_amount != null ? String(p.face_amount) : "",
     premium: p.premium != null ? String(p.premium) : "",
@@ -228,12 +229,12 @@ export default function ProductRow({
             onChange={(e) => setFields((f) => ({ ...f, is_convertible: e.target.checked }))}
             className="h-4 w-4 rounded border-[#D9CFBA]"
           />
-          This is a term (or otherwise convertible) policy that can convert to permanent coverage
+          This is a term policy (convertible or not)
         </label>
         {fields.is_convertible && (
-          <>
+          <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Convertible without exam until
+              Convertible without medical exam until
               <input
                 type="date"
                 value={fields.conversion_deadline}
@@ -252,7 +253,7 @@ export default function ProductRow({
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs text-[#666]">
-                No-exam window missed/declined on
+                No-exam window declined by client
                 <input
                   type="date"
                   value={fields.no_exam_declined_at}
@@ -267,7 +268,21 @@ export default function ProductRow({
               placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
-          </>
+            <div className="mt-1 flex flex-col gap-1 border-t border-dashed border-[#D9CFBA] pt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">
+                Or, if it doesn&rsquo;t convert
+              </p>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Term end date (for a non-convertible policy)
+                <input
+                  type="date"
+                  value={fields.term_end_date}
+                  onChange={(e) => set("term_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
+          </div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-xs text-[#666]">
@@ -336,7 +351,8 @@ export default function ProductRow({
     product.expiration_date,
     product.conversion_deadline,
     product.final_conversion_deadline,
-    product.no_exam_declined_at
+    product.no_exam_declined_at,
+    product.term_end_date
   );
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
 
@@ -476,7 +492,8 @@ export default function ProductRow({
 
       {product.no_exam_declined_at && (
         <p className="text-xs text-[#8b6a00]">
-          No-exam window declined {new Date(product.no_exam_declined_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+          No-exam window declined by client on{" "}
+          {new Date(product.no_exam_declined_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
           {product.final_conversion_deadline &&
             ` — exam required to convert until ${new Date(product.final_conversion_deadline).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
         </p>

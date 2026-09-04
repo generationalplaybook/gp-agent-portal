@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
+import { getNextTermMilestone, getTermUrgency } from "@/lib/products";
 import LocalDateTime from "./LocalDateTime";
 
 // The landing page after login (built 9/3, replacing the old straight-to-/clients redirect —
@@ -17,7 +18,7 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: clients }, { data: meetings }, { data: reminders }] = await Promise.all([
+  const [{ data: profile }, { data: clients }, { data: meetings }, { data: reminders }, { data: termProductsRaw }] = await Promise.all([
     supabase.from("profiles").select("first_name").eq("id", user.id).single(),
     supabase.from("clients").select("id, stage"),
     supabase
@@ -28,6 +29,16 @@ export default async function HomePage() {
       .from("reminders")
       .select("id, remind_at, message, sent_at, client_id, recruit_id, clients(id, full_name), recruits(id, full_name)")
       .order("remind_at", { ascending: true }),
+    // Time-sensitive term policies (Karina, 9/4): "it should also show up on the dashboard...
+    // so it doesn't get missed." Same is_convertible + not-yet-converted + not-yet-contacted
+    // universe as the Term view on /clients, narrowed here to just the urgent ones (60 days out
+    // or overdue).
+    supabase
+      .from("client_products")
+      .select("id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, client_id, clients(id, full_name)")
+      .eq("is_convertible", true)
+      .is("converted_at", null)
+      .is("term_contacted_at", null),
   ]);
 
   const now = new Date();
@@ -67,6 +78,32 @@ export default async function HomePage() {
     });
   const previewRecruitReminders = recruitReminders.slice(0, 3);
 
+  // Time-Sensitive Term — every not-yet-contacted term policy within 60 days of its next
+  // deadline (or already past it), soonest/most-overdue first, so nothing gets missed.
+  const urgentTermProducts = (termProductsRaw ?? [])
+    .map((p) => {
+      const client = p.clients as unknown as { id: string; full_name: string } | null;
+      const milestone = getNextTermMilestone({
+        conversion_deadline: p.conversion_deadline,
+        final_conversion_deadline: p.final_conversion_deadline,
+        term_end_date: p.term_end_date,
+      });
+      if (!milestone) return null;
+      const urgency = getTermUrgency(milestone.date);
+      if (urgency === "later") return null;
+      return {
+        id: p.id,
+        productName: p.product_name,
+        clientId: client?.id ?? p.client_id,
+        clientName: client?.full_name ?? "Unknown client",
+        milestone,
+        urgency,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null)
+    .sort((a, b) => new Date(a.milestone.date).getTime() - new Date(b.milestone.date).getTime());
+  const previewUrgentTerm = urgentTermProducts.slice(0, 3);
+
   const greetingName = profile?.first_name || "there";
 
   return (
@@ -75,6 +112,54 @@ export default async function HomePage() {
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Welcome back, {greetingName}</h1>
         <p className="mt-1 text-sm text-[#555]">Here&rsquo;s where things stand today.</p>
       </div>
+
+      {/* Time-Sensitive Term — Karina, 9/4: "it should also show up on the dashboard as things
+          the adviser needs to immediately get to... so it doesn't get missed." A banner rather
+          than one of the even grid cards below, since the whole point is that it stands out. */}
+      <Link
+        href="/clients?view=term"
+        className={`mb-6 flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
+          urgentTermProducts.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <span
+            className={`text-xs font-semibold uppercase tracking-wide ${
+              urgentTermProducts.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
+            }`}
+          >
+            Time-Sensitive Term
+          </span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={urgentTermProducts.length > 0 ? "#8B1A1A" : "#555555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+        </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{urgentTermProducts.length}</span>
+          <span className="text-sm text-[#555]">within 60 days, not yet touched base</span>
+        </div>
+        {previewUrgentTerm.length > 0 && (
+          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">
+            {previewUrgentTerm.map((p) => (
+              <div key={p.id} className="py-1.5 text-xs sm:py-0">
+                <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
+                <br />
+                <span className="text-[#666]">
+                  {p.productName} — {p.milestone.label}{" "}
+                  {new Date(p.milestone.date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {urgentTermProducts.length === 0 && (
+          <p className="mt-4 text-xs text-[#555]">Nothing urgent right now.</p>
+        )}
+        <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+          View term policies &rarr;
+        </span>
+      </Link>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Client Pipeline */}
