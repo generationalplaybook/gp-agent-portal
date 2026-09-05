@@ -22,13 +22,6 @@ export interface CashValueMilestone {
   // (Guaranteed/Non-Guaranteed) never sets or reads these.
   cvIncreasing?: string;
   dbIncreasing?: string;
-  // Second-premium comparison — added 9/2. Karina wanted to show a client "what does this look
-  // like at $100/mo vs $200/mo" on the same illustration. Deliberately NOT crossed with
-  // Level/Increasing above (that would mean 4 tracks per milestone, entered per age — too much
-  // to type and too wide a table) — these are a single, third track, paired with
-  // CashValueIllustration.premiumB below. Only shown/used at all when premiumB is filled in.
-  cvPremiumB?: string;
-  dbPremiumB?: string;
 }
 
 export interface AnnuityMilestone {
@@ -75,12 +68,6 @@ export interface CashValueIllustration {
   monthlyPremium?: string;
   minimumPremium?: string;
   minimumPremiumIncreasing?: string;
-  // Second premium to compare against monthlyPremium — added 9/2. Filling this in is the on/off
-  // switch for the whole premium-comparison feature: when blank, the Milestones editor and PDF
-  // look exactly like they did before this field existed (2-track Level/Increasing only); when
-  // filled in, a third "at $[premiumB]/mo" track opens up per milestone (cvPremiumB/dbPremiumB
-  // on CashValueMilestone) so a client can see the same policy design at two different budgets.
-  premiumB?: string;
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,
@@ -148,8 +135,6 @@ export function emptyCashValueMilestone(): CashValueMilestone {
     dbNonGuaranteed: "",
     cvIncreasing: "",
     dbIncreasing: "",
-    cvPremiumB: "",
-    dbPremiumB: "",
   };
 }
 

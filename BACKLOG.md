@@ -1790,6 +1790,30 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     `doc.save()`.
   - No schema change, no SQL to run.
 
+- **Illustration Scenario cleanup — BUILT 9/5.** More feedback from Karina while testing:
+  - **"Compare to a second premium" removed entirely.** This was the 9/2 feature that opened up a
+    third "at $X/mo" column across the Policy Premium section, the Milestones table, and both
+    charts. Karina's call: the comparison she actually wants is Level vs. Increasing, not a
+    second premium — so the whole premiumB/cvPremiumB/dbPremiumB feature (and its columns/legend
+    entries) is gone from `ScenarioForm.tsx`, `illustration-pdf.ts`, and the
+    `IllustrationData`/`CashValueMilestone` types in `illustration.ts`. Monthly Premium is back to
+    a single field. Any already-saved scenario that has old premiumB data sitting in its JSON
+    `data` column just has it silently ignored now — nothing to migrate, no SQL to run.
+  - **Researched: does "Minimum to Avoid Lapse (Increasing)" actually rise every year?** Karina
+    wasn't sure. Short answer: yes, generally, and more so than under Level. An Increasing death
+    benefit keeps the policy's net amount at risk at the full face amount for the life of the
+    policy (Level's net amount at risk shrinks as cash value builds up), and cost-of-insurance
+    rates also climb with attained age regardless of election — the two compound under Increasing,
+    so the minimum premium needed to avoid lapse typically keeps climbing rather than leveling
+    off, unlike Level where growing cash value can eventually offset the rising age-based rate.
+    Added a short note under the field in the editor and a matching one on the generated PDF next
+    to "Minimum to Avoid Lapse (Increasing)," flagging that this isn't a fixed number and to
+    confirm the actual year-by-year schedule against the carrier's own illustration.
+    Sources: [Universal Life Insurance Death Benefit Options A vs B Compared](https://theinsuranceproblog.com/universal-life-insurance-death-benefit-options/),
+    [Universal Life Insurance: Flexible Premiums, Option A vs B](https://legalclarity.org/universal-life-insurance-flexible-premiums-option-a-vs-b/),
+    [Universal Life Insurance Expenses: The Complete Breakdown](https://theinsuranceproblog.com/universal-life-insurance-expense-breakdown/).
+  - No schema change, no SQL to run for either item.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does

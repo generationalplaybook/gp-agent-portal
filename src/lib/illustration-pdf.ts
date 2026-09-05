@@ -535,10 +535,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
 
   if (data.kind === "cash_value") {
     const hasMonthlyPremium = !!(data.monthlyPremium && data.monthlyPremium.trim());
-    const hasPremiumB = !!(data.premiumB && data.premiumB.trim());
     const hasMinimumPremiumLevel = !!(data.minimumPremium && data.minimumPremium.trim());
     const hasMinimumPremiumIncreasing = !!(data.minimumPremiumIncreasing && data.minimumPremiumIncreasing.trim());
-    if (hasMonthlyPremium || hasPremiumB || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
+    if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(GRAY);
@@ -549,12 +548,6 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       setText(OBSIDIAN);
       if (hasMonthlyPremium) {
         doc.text("Monthly Premium: $" + formatMoney(data.monthlyPremium) + "/mo", M, y);
-        y += 14;
-      }
-      // Second premium to compare against — added 9/2, gates the Milestones table/charts' third
-      // "at $[premiumB]/mo" track (see CashValueMilestone.cvPremiumB's comment in illustration.ts).
-      if (hasPremiumB) {
-        doc.text("Compare to: $" + formatMoney(data.premiumB) + "/mo", M, y);
         y += 14;
       }
       // Minimum to avoid lapse varies by election (cost of insurance differs between Level and
@@ -572,6 +565,24 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
           y
         );
         y += 14;
+        // Karina, 9/5: asked whether this minimum actually climbs over time under Increasing —
+        // researched (Option A/Level's net amount at risk shrinks as cash value grows, so its
+        // cost of insurance can flatten; Option B/Increasing's net amount at risk stays at the
+        // full face amount for life, and COI rates also rise with attained age regardless of
+        // election, so the two compound and this minimum typically keeps climbing rather than
+        // leveling off). Flagged on the PDF so a client doesn't read this single number as fixed.
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(7.5);
+        setText(GOLD);
+        const nl = doc.splitTextToSize(
+          "Increasing keeps the full face amount at risk for life, so this minimum typically rises every year rather than leveling off — confirm the year-by-year schedule on the carrier's illustration.",
+          W - 2 * M
+        );
+        doc.text(nl, M, y);
+        y += nl.length * 10;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        setText(OBSIDIAN);
       }
       y += 10;
     }
@@ -644,43 +655,26 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.text("No milestones entered yet.", M, y);
       y += 20;
     } else {
-      // A track (Level / Increasing / the optional Premium B) only gets a line on the chart (and
-      // a legend entry) if at least one milestone actually has a number for it — added 9/2. Bug
-      // found while testing: an entirely-blank track used to still draw as a flat line sitting at
-      // $0 with its label in the legend, which reads to a client as "Level pays $0" rather than
-      // "we didn't enter this side." Doesn't affect the table — a blank cell there already showed
-      // a plain "—", which was always clear.
+      // A track (Level / Increasing) only gets a line on the chart (and a legend entry) if at
+      // least one milestone actually has a number for it — added 9/2. Bug found while testing: an
+      // entirely-blank track used to still draw as a flat line sitting at $0 with its label in the
+      // legend, which reads to a client as "Level pays $0" rather than "we didn't enter this
+      // side." Doesn't affect the table — a blank cell there already showed a plain "—", which was
+      // always clear.
       const hasAnyValue = (values: (string | undefined)[]) => values.some((v) => !!(v && String(v).trim()));
       const cvLevelHas = hasAnyValue(milestones.map((m) => m.cvNonGuaranteed));
       const cvIncHas = hasAnyValue(milestones.map((m) => m.cvIncreasing));
-      const cvPremBHas = hasPremiumB && hasAnyValue(milestones.map((m) => m.cvPremiumB));
       const dbLevelHas = hasAnyValue(milestones.map((m) => m.dbGuaranteed));
       const dbIncHas = hasAnyValue(milestones.map((m) => m.dbIncreasing));
-      const dbPremBHas = hasPremiumB && hasAnyValue(milestones.map((m) => m.dbPremiumB));
 
       // Table — two-part Level vs. Increasing, same column layout as the original per-product
-      // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width). When a
-      // second premium is being compared (added 9/2), two more columns open up and everything
-      // shrinks a size to keep 7 columns fitting the same page width.
+      // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width).
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(hasPremiumB ? 7 : 8);
+      doc.setFontSize(8);
       setText(OBSIDIAN);
-      const colX = hasPremiumB
-        ? [M, M + 62, M + 137, M + 212, M + 287, M + 362, M + 437]
-        : [M, M + 105, M + 220, M + 335, M + 450];
-      const colMaxW = hasPremiumB ? 72 : 110;
-      const premiumBTag = "\n($" + formatMoney(data.premiumB) + "/mo)";
-      const headers = hasPremiumB
-        ? [
-            "",
-            "Cash Value\n(Level)",
-            "Cash Value\n(Increasing)",
-            "Cash Value" + premiumBTag,
-            "Death Benefit\n(Level)",
-            "Death Benefit\n(Increasing)",
-            "Death Benefit" + premiumBTag,
-          ]
-        : ["", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
+      const colX = [M, M + 105, M + 220, M + 335, M + 450];
+      const colMaxW = 110;
+      const headers = ["", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: colMaxW }));
       y += 20;
       doc.setDrawColor(217, 207, 186);
@@ -689,7 +683,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += 14;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(hasPremiumB ? 8 : 9);
+      doc.setFontSize(9);
       milestones.forEach((m) => {
         setText(OBSIDIAN);
         doc.setFont("helvetica", "bold");
@@ -698,25 +692,17 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         setText(CHARCOAL);
         doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
         doc.text(m.cvIncreasing ? "$" + formatMoney(m.cvIncreasing) : "—", colX[2], y);
-        if (hasPremiumB) {
-          doc.text(m.cvPremiumB ? "$" + formatMoney(m.cvPremiumB) : "—", colX[3], y);
-          doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[4], y);
-          doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[5], y);
-          doc.text(m.dbPremiumB ? "$" + formatMoney(m.dbPremiumB) : "—", colX[6], y);
-        } else {
-          doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
-          doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
-        }
+        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
+        doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
         y += 16;
       });
       y += 14;
 
       const xLabels = milestones.map((m) => "Age " + m.label);
-      const premiumBLegendLabel = "$" + formatMoney(data.premiumB) + "/mo";
 
-      // Cash value chart — Level solid, Increasing dashed, Premium B (when present) solid gold —
-      // same legend pattern as the original per-product Illustration's Guaranteed/Non-Guaranteed
-      // charts, plus each track above only appears here if it actually has data (see hasAnyValue).
+      // Cash value chart — Level solid, Increasing dashed — same legend pattern as the original
+      // per-product Illustration's Guaranteed/Non-Guaranteed charts, plus each track above only
+      // appears here if it actually has data (see hasAnyValue).
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(GREEN);
@@ -732,16 +718,12 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         cvLegend.push({ label: "Increasing", color: LIGHT_GREEN, dashed: true });
         cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: LIGHT_GREEN, dashed: true });
       }
-      if (cvPremBHas) {
-        cvLegend.push({ label: premiumBLegendLabel, color: GOLD });
-        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvPremiumB)), color: GOLD });
-      }
       drawLegend(doc, M + 150, y - 2.5, cvLegend);
       y += 12;
       drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: cvSeries });
       y += 130;
 
-      // Death benefit chart — same Level/Increasing/Premium B split.
+      // Death benefit chart — same Level/Increasing split.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(BLUE);
@@ -756,10 +738,6 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       if (dbIncHas) {
         dbLegend.push({ label: "Increasing", color: LIGHT_BLUE, dashed: true });
         dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: LIGHT_BLUE, dashed: true });
-      }
-      if (dbPremBHas) {
-        dbLegend.push({ label: premiumBLegendLabel, color: GOLD });
-        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbPremiumB)), color: GOLD });
       }
       drawLegend(doc, M + 150, y - 2.5, dbLegend);
       y += 12;
