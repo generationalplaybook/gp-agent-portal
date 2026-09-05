@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CLIENT_STAGES, GENDER_OPTIONS, type ClientStage } from "@/lib/types";
-import { calculateAge, daysUntilNextBirthday, FAMILY_RELATIONSHIP_OPTIONS } from "@/lib/family";
+import { calculateAge, daysUntilNextBirthday, inverseRelationship, FAMILY_RELATIONSHIP_OPTIONS } from "@/lib/family";
 import {
   searchFamilyCandidates,
   linkExistingFamilyMember,
@@ -20,7 +20,15 @@ interface FamilyMember {
   nextReminder: { remind_at: string; message: string | null } | null;
 }
 
-export default function FamilySection({ clientId, members }: { clientId: string; members: FamilyMember[] }) {
+export default function FamilySection({
+  clientId,
+  clientName,
+  members,
+}: {
+  clientId: string;
+  clientName: string;
+  members: FamilyMember[];
+}) {
   const [showAdd, setShowAdd] = useState(false);
   const [mode, setMode] = useState<"search" | "new">("search");
   const [busy, setBusy] = useState(false);
@@ -32,12 +40,18 @@ export default function FamilySection({ clientId, members }: { clientId: string;
   const [searching, setSearching] = useState(false);
   const [picked, setPicked] = useState<{ id: string; full_name: string } | null>(null);
   const [relationship, setRelationship] = useState("");
+  // Only asked when `relationship` isn't one of the four standard invertible types (see
+  // inverseRelationship in lib/family.ts) — e.g. "Other" or a free-text value like "Stepchild".
+  // Optional; left blank means the profile you're on keeps whatever relationship it already has
+  // (or none), per Karina 9/5 ("or just leave it").
+  const [reverseRelationship, setReverseRelationship] = useState("");
 
   // "Add new person" mode
   const [newFirstName, setNewFirstName] = useState("");
   const [newMiddleName, setNewMiddleName] = useState("");
   const [newLastName, setNewLastName] = useState("");
   const [newRelationship, setNewRelationship] = useState("");
+  const [newReverseRelationship, setNewReverseRelationship] = useState("");
   const [newBirthDate, setNewBirthDate] = useState("");
   const [newGender, setNewGender] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -66,10 +80,12 @@ export default function FamilySection({ clientId, members }: { clientId: string;
     setResults([]);
     setPicked(null);
     setRelationship("");
+    setReverseRelationship("");
     setNewFirstName("");
     setNewMiddleName("");
     setNewLastName("");
     setNewRelationship("");
+    setNewReverseRelationship("");
     setNewBirthDate("");
     setNewGender("");
     setNewPhone("");
@@ -85,7 +101,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
     setBusy(true);
     setError("");
     try {
-      await linkExistingFamilyMember(clientId, picked.id, relationship);
+      await linkExistingFamilyMember(clientId, picked.id, relationship, reverseRelationship);
       resetForm();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not link that family member.");
@@ -107,6 +123,7 @@ export default function FamilySection({ clientId, members }: { clientId: string;
         middle_name: newMiddleName,
         last_name: newLastName,
         relationship: newRelationship,
+        reverseRelationship: newReverseRelationship,
         birth_date: newBirthDate,
         gender: newGender,
         phone: newPhone,
@@ -284,9 +301,17 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                 value={relationship}
                 onChange={(e) => setRelationship(e.target.value)}
                 list="family-relationship-options"
-                placeholder="Relationship (e.g. Spouse, Child)"
+                placeholder={`${picked?.full_name ?? "This person"} is ${clientName}'s… (e.g. Spouse, Child)`}
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
+              {relationship.trim() !== "" && !inverseRelationship(relationship) && (
+                <input
+                  value={reverseRelationship}
+                  onChange={(e) => setReverseRelationship(e.target.value)}
+                  placeholder={`And ${clientName} is ${picked?.full_name ?? "their"}… (optional)`}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              )}
               {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
               <div className="flex gap-2">
                 <button
@@ -332,9 +357,17 @@ export default function FamilySection({ clientId, members }: { clientId: string;
                 value={newRelationship}
                 onChange={(e) => setNewRelationship(e.target.value)}
                 list="family-relationship-options"
-                placeholder="Relationship (e.g. Spouse, Child)"
+                placeholder={`This person is ${clientName}'s… (e.g. Spouse, Child)`}
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
+              {newRelationship.trim() !== "" && !inverseRelationship(newRelationship) && (
+                <input
+                  value={newReverseRelationship}
+                  onChange={(e) => setNewReverseRelationship(e.target.value)}
+                  placeholder={`And ${clientName} is their… (optional)`}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Birthdate

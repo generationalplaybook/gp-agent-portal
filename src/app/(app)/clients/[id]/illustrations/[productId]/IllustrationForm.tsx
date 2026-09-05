@@ -192,14 +192,33 @@ export default function IllustrationForm({
   }
 
   function handleDownload() {
-    generateIllustrationPDF({
-      clientName,
-      productName: product.product_name,
-      carrier: product.carrier,
-      productType: product.product_type,
-      data,
-      advisor,
-    });
+    generateIllustrationPDF(
+      {
+        clientName,
+        productName: product.product_name,
+        carrier: product.carrier,
+        productType: product.product_type,
+        data,
+        advisor,
+      },
+      "download"
+    );
+  }
+
+  // Karina, 9/5: downloading every time is overkill for just glancing at the summary — this opens
+  // the same PDF in a new tab (the browser's built-in viewer) instead of saving it to disk.
+  function handleView() {
+    generateIllustrationPDF(
+      {
+        clientName,
+        productName: product.product_name,
+        carrier: product.carrier,
+        productType: product.product_type,
+        data,
+        advisor,
+      },
+      "view"
+    );
   }
 
   return (
@@ -321,6 +340,13 @@ export default function IllustrationForm({
             className="rounded-md bg-[#1C1C1C] px-4 py-2 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
           >
             {status === "saving" ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={handleView}
+            className="rounded-md border border-[#D9CFBA] px-4 py-2 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            View Summary
           </button>
           <button
             type="button"

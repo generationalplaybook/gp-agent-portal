@@ -379,14 +379,33 @@ export default function ScenarioForm({
   }
 
   function handleDownload() {
-    generateScenarioIllustrationPDF({
-      clientName,
-      productName,
-      carrier: carrier.trim() || null,
-      productType: scenario.product_type,
-      data,
-      advisor,
-    });
+    generateScenarioIllustrationPDF(
+      {
+        clientName,
+        productName,
+        carrier: carrier.trim() || null,
+        productType: scenario.product_type,
+        data,
+        advisor,
+      },
+      "download"
+    );
+  }
+
+  // Karina, 9/5: downloading every time is overkill for just glancing at the summary — this opens
+  // the same PDF in a new tab (the browser's built-in viewer) instead of saving it to disk.
+  function handleView() {
+    generateScenarioIllustrationPDF(
+      {
+        clientName,
+        productName,
+        carrier: carrier.trim() || null,
+        productType: scenario.product_type,
+        data,
+        advisor,
+      },
+      "view"
+    );
   }
 
   async function handleConvert() {
@@ -482,28 +501,32 @@ export default function ScenarioForm({
               </p>
             ) : null}
             <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
-              <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Level</div>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Minimum to Avoid Lapse
-                  <DollarInput
-                    value={data.minimumPremium ?? ""}
-                    onChange={(v) => setData({ ...data, minimumPremium: v })}
-                    className={inputClass + " w-full"}
-                  />
-                </label>
-              </div>
-              <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Increasing</div>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Minimum to Avoid Lapse
-                  <DollarInput
-                    value={data.minimumPremiumIncreasing ?? ""}
-                    onChange={(v) => setData({ ...data, minimumPremiumIncreasing: v })}
-                    className={inputClass + " w-full"}
-                  />
-                </label>
-              </div>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
+                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                    Level
+                  </span>
+                </span>
+                <DollarInput
+                  value={data.minimumPremium ?? ""}
+                  onChange={(v) => setData({ ...data, minimumPremium: v })}
+                  className={inputClass + " w-full"}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
+                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                    Increasing
+                  </span>
+                </span>
+                <DollarInput
+                  value={data.minimumPremiumIncreasing ?? ""}
+                  onChange={(v) => setData({ ...data, minimumPremiumIncreasing: v })}
+                  className={inputClass + " w-full"}
+                />
+              </label>
             </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
@@ -514,28 +537,32 @@ export default function ScenarioForm({
               both work toward the same eventual target.
             </p>
             <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
-              <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Level</div>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Face Value
-                  <DollarInput
-                    value={data.initialDeathBenefit ?? ""}
-                    onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
-                    className={inputClass + " w-full"}
-                  />
-                </label>
-              </div>
-              <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">Increasing</div>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Face Value
-                  <DollarInput
-                    value={data.initialDeathBenefitIncreasing ?? ""}
-                    onChange={(v) => setData({ ...data, initialDeathBenefitIncreasing: v })}
-                    className={inputClass + " w-full"}
-                  />
-                </label>
-              </div>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
+                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                    Level
+                  </span>
+                </span>
+                <DollarInput
+                  value={data.initialDeathBenefit ?? ""}
+                  onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
+                  className={inputClass + " w-full"}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
+                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                    Increasing
+                  </span>
+                </span>
+                <DollarInput
+                  value={data.initialDeathBenefitIncreasing ?? ""}
+                  onChange={(v) => setData({ ...data, initialDeathBenefitIncreasing: v })}
+                  className={inputClass + " w-full"}
+                />
+              </label>
             </div>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
@@ -546,8 +573,8 @@ export default function ScenarioForm({
               benefit stays level instead — it does not step up. Leave blank if it doesn&rsquo;t apply.
             </p>
             <p className="mb-2 text-xs text-[#707070]">
-              Either way, the Level/Increasing election itself can be changed at any time by calling us — we
-              recommend periodic policy reviews, which we schedule as part of our service regardless.
+              Either way, the Level/Increasing election itself can be changed at any time by calling the
+              carrier — we recommend periodic policy reviews, which we schedule as part of our service regardless.
             </p>
             <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
               Age it increases (optional)
@@ -669,6 +696,13 @@ export default function ScenarioForm({
             className="rounded-md bg-[#1C1C1C] px-4 py-2 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
           >
             {status === "saving" ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={handleView}
+            className="rounded-md border border-[#D9CFBA] px-4 py-2 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            View Summary
           </button>
           <button
             type="button"

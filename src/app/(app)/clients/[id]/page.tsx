@@ -219,7 +219,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {/* Family — linked household members, at a glance */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
-          <FamilySection clientId={client.id} members={familyMembers} />
+          <FamilySection clientId={client.id} clientName={client.full_name} members={familyMembers} />
         </div>
 
         {/* Illustrations — exploratory scenarios, not yet real coverage. Comes before Products

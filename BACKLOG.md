@@ -1746,6 +1746,50 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   page has its own different (grouped, not flat) layout, so it wasn't touched. No schema change,
   no SQL to run.
 
+- **Family relationship — one-directional fix — BUILT 9/5.** Karina's question: when adding a
+  family member from someone's profile, which end of the relationship do you type in, and does
+  the system show the relationship from both sides (mom's page shows "Child", child's own page
+  shows "Parent")? Confirmed it did NOT — `clients.family_relationship` is a single flat field
+  per client row, and both "Link Existing Client" and "Add New Person" only ever wrote it onto
+  the OTHER person's row (the one being linked/added in), never back onto the profile you were
+  on. So a child's own page never showed their mom as "Parent" unless someone happened to also
+  edit the child's row directly.
+  - **Fix:** both flows now also write the relationship back onto the profile you're linking
+    from — but only when that profile's own `family_relationship` field is still blank, so it
+    never overwrites an existing role (needed for a family group of 3+ with mixed relationship
+    types, e.g. someone who's already "Parent" to one child shouldn't get clobbered when a second
+    child is added). New `inverseRelationship()` helper (`src/lib/family.ts`) auto-fills the
+    other side for the four standard types: Spouse↔Spouse, Child↔Parent, Parent↔Child,
+    Sibling↔Sibling.
+  - **The "Other" question** ("when other selected should we type in the relationship or just
+    leave it?"): "Other" and any other free-text relationship (e.g. "Stepchild") has no single
+    reliable auto-inverse, so a second, optional field now appears — only when the typed
+    relationship isn't one of the four standard types — asking how the profile you're on relates
+    back to the person being added (e.g. "And Karina's Client is their…"). Leaving it blank is a
+    valid choice: the profile you're on just keeps no relationship recorded for that link, same
+    as today.
+  - Also clarified the existing relationship field's placeholder text on both forms to spell out
+    the direction ("This person is [Client]'s… e.g. Spouse, Child") — directly answering the
+    "which end of the relationship is it" confusion, independent of the write-back fix.
+  - `FamilySection.tsx` now takes a `clientName` prop (the profile you're on) to build these
+    labels. No schema change, no SQL to run — `family_relationship` already exists on `clients`.
+
+- **Illustration Summary polish — BUILT 9/5.** Two small fixes while Karina was testing the
+  Illustration Scenario builder:
+  - The Death Benefit Increase callout (and its matching line on the generated PDF) said the
+    Level/Increasing election "can be changed at any time by calling us" — should say the carrier,
+    since it's the insurance company the policy is placed with that the client would actually
+    call, not the advisor's own office. Reworded to "by calling the carrier" in both the on-screen
+    text (`ScenarioForm.tsx`) and the PDF (`illustration-pdf.ts`).
+  - New **View Summary** button next to Download PDF Summary, on both the Scenario builder and
+    the per-product Illustration form — opens the same PDF in a new browser tab (the browser's
+    built-in PDF viewer) instead of saving a file to disk, for a quick glance without a download
+    every time. `generateIllustrationPDF`/`generateScenarioIllustrationPDF` (`illustration-pdf.ts`)
+    both take a new optional `"download" | "view"` argument (defaults to `"download"`, so nothing
+    else changes) — `"view"` opens `doc.output("bloburl")` in a new tab instead of calling
+    `doc.save()`.
+  - No schema change, no SQL to run.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does

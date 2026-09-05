@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import type { ClientStage } from "@/lib/types";
+import { inverseRelationship } from "@/lib/family";
 
 async function requireUser() {
   const supabase = await createSupabaseClient();
@@ -321,6 +322,31 @@ async function ensureFamilyId(
   return newFamilyId;
 }
 
+// Writes the OTHER side of the relationship back onto the profile you linked/added from —
+// e.g. adding someone as "Child" from the parent's page should also record "Parent" on the
+// parent's own row, which the schema (one flat family_relationship field per client) never did
+// automatically before. Only fills it in when that field is still blank, so it never clobbers an
+// existing role for someone who already belongs to a family group with more than two people (a
+// parent who's "Parent" to one child shouldn't get overwritten when a second child is added).
+// `reverseRelationship` is the advisor's own explicit answer for non-standard relationships (see
+// FAMILY_RELATIONSHIP_OPTIONS / inverseRelationship in lib/family.ts) — used when given, otherwise
+// falls back to the automatic inverse, otherwise leaves the field untouched.
+async function maybeSetReverseRelationship(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  clientId: string,
+  currentRelationship: string | null,
+  forwardRelationship: string,
+  reverseRelationship?: string
+): Promise<void> {
+  if (currentRelationship && currentRelationship.trim()) return;
+
+  const value = reverseRelationship?.trim() || inverseRelationship(forwardRelationship) || "";
+  if (!value) return;
+
+  const { error } = await supabase.from("clients").update({ family_relationship: value }).eq("id", clientId);
+  if (error) throw new Error(error.message);
+}
+
 export async function searchFamilyCandidates(
   query: string,
   excludeIds: string[]
@@ -343,14 +369,15 @@ export async function searchFamilyCandidates(
 export async function linkExistingFamilyMember(
   clientId: string,
   relatedClientId: string,
-  relationship: string
+  relationship: string,
+  reverseRelationship?: string
 ): Promise<void> {
   const { supabase } = await requireUser();
   if (clientId === relatedClientId) throw new Error("Can't link a client to themselves.");
 
   const { data: current, error: currentErr } = await supabase
     .from("clients")
-    .select("family_id")
+    .select("family_id, family_relationship")
     .eq("id", clientId)
     .single();
   if (currentErr || !current) throw new Error(currentErr?.message || "Client not found.");
@@ -381,6 +408,8 @@ export async function linkExistingFamilyMember(
     .eq("id", relatedClientId);
   if (linkErr) throw new Error(linkErr.message);
 
+  await maybeSetReverseRelationship(supabase, clientId, current.family_relationship, relationship, reverseRelationship);
+
   revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${relatedClientId}`);
   revalidatePath("/clients");
@@ -393,6 +422,7 @@ export async function addNewFamilyMember(
     middle_name?: string;
     last_name: string;
     relationship: string;
+    reverseRelationship?: string;
     birth_date?: string;
     gender?: string;
     phone?: string;
@@ -406,7 +436,7 @@ export async function addNewFamilyMember(
 
   const { data: current, error: currentErr } = await supabase
     .from("clients")
-    .select("family_id")
+    .select("family_id, family_relationship")
     .eq("id", clientId)
     .single();
   if (currentErr || !current) throw new Error(currentErr?.message || "Client not found.");
@@ -428,6 +458,14 @@ export async function addNewFamilyMember(
     family_relationship: fields.relationship.trim() || null,
   });
   if (error) throw new Error(error.message);
+
+  await maybeSetReverseRelationship(
+    supabase,
+    clientId,
+    current.family_relationship,
+    fields.relationship,
+    fields.reverseRelationship
+  );
 
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");

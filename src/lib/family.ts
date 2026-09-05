@@ -24,6 +24,23 @@ export function daysUntilNextBirthday(birthDateIso: string, asOf: Date = new Dat
 
 export const FAMILY_RELATIONSHIP_OPTIONS = ["Spouse", "Child", "Parent", "Sibling", "Other"];
 
+// Family linking (Karina, 9/5): family_relationship is a single flat field per client row, so
+// linking B to A only ever recorded "B is A's ___" — A's own page never got a relationship back.
+// For the four standard, reliably-invertible types, this fills in what A is to B automatically
+// (Spouse<->Spouse, Child<->Parent, Parent<->Child, Sibling<->Sibling). Returns null for anything
+// else — "Other" and free-text values have no single reliable inverse (e.g. "Stepchild" doesn't
+// obviously invert), so callers should offer an explicit reverse-relationship field instead and
+// leave it blank if not provided, rather than guessing.
+export function inverseRelationship(relationship: string): string | null {
+  const inverses: Record<string, string> = {
+    spouse: "Spouse",
+    child: "Parent",
+    parent: "Child",
+    sibling: "Sibling",
+  };
+  return inverses[relationship.trim().toLowerCase()] ?? null;
+}
+
 // True when this person turns exactly `age` plus six months today — e.g. isHalfBirthdayToday(dob,
 // 59) is true on someone's 59 1/2 birthday. Added 9/4 for the annuity IRS early-withdrawal-
 // penalty milestone, which (unlike calculateAge/daysUntilNextBirthday above) isn't a whole-year

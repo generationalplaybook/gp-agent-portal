@@ -131,7 +131,11 @@ function drawLineChart(
   doc.line(plotX, plotY + plotH, plotX + plotW, plotY + plotH);
 }
 
-export function generateIllustrationPDF(input: IllustrationPdfInput) {
+// `action` (Karina, 9/5): "download" saves the PDF to disk as before; "view" opens the same PDF
+// in a new browser tab (the browser's built-in PDF viewer) instead — for a quick glance without
+// forcing a file onto disk every time. Defaults to "download" so every existing caller is
+// unaffected unless it opts in.
+export function generateIllustrationPDF(input: IllustrationPdfInput, action: "download" | "view" = "download") {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = 612;
   const M = 50;
@@ -470,6 +474,10 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
     { maxWidth: 612 - 2 * M }
   );
 
+  if (action === "view") {
+    window.open(doc.output("bloburl"), "_blank");
+    return;
+  }
   const filename = "Illustration_" + input.clientName.replace(/\s+/g, "_") + "_" + input.productName.replace(/\s+/g, "_") + ".pdf";
   doc.save(filename);
 }
@@ -480,7 +488,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput) {
 // changes. Only the cash_value layout actually differs (Age/Cash Value/Death Benefit, one number
 // each, plus an optional "death benefit increases at age X" callout) — term/final_expense/annuity
 // are identical to the original. Used only by the Illustration Scenarios editor.
-export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
+export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, action: "download" | "view" = "download") {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = 612;
   const M = 50;
@@ -621,7 +629,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.text(
-        "This can be changed at any time by calling us — we recommend periodic policy reviews, which we schedule as part of our service.",
+        "This can be changed at any time by calling the carrier — we recommend periodic policy reviews, which we schedule as part of our service.",
         M + 12,
         y + 29
       );
@@ -1025,6 +1033,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput) {
     { maxWidth: 612 - 2 * M }
   );
 
+  if (action === "view") {
+    window.open(doc.output("bloburl"), "_blank");
+    return;
+  }
   const filename = "Illustration_" + input.clientName.replace(/\s+/g, "_") + "_" + input.productName.replace(/\s+/g, "_") + ".pdf";
   doc.save(filename);
 }
