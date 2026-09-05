@@ -379,8 +379,10 @@ export interface ProductIllustration {
 // A lightweight, exploratory "let's see the numbers" record — deliberately NOT tied to a
 // ClientProduct. Lets an advisor run/compare numbers for options a client hasn't committed to
 // yet without it showing up as real coverage in Products. See the schema comment (section 25)
-// and src/app/(app)/clients/[id]/scenarios/actions.ts for the full "promote to a real Product"
-// flow via converted_product_id.
+// and src/app/(app)/clients/[id]/scenarios/actions.ts. converted_product_id is a read-only
+// historical field (an old scenario auto-promoted to a Product before 9/5 — see schema section
+// 42); chosen_at is the current flow — a plain timestamp marking which scenario the client went
+// with, set by markScenarioChosen. The advisor still adds the real Product by hand afterward.
 export interface IllustrationScenario {
   id: string;
   client_id: string;
@@ -390,6 +392,7 @@ export interface IllustrationScenario {
   data: unknown;
   notes: string | null;
   converted_product_id: string | null;
+  chosen_at: string | null;
   created_at: string;
   updated_at: string;
 }

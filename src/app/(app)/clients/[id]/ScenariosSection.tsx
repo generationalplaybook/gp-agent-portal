@@ -13,6 +13,7 @@ interface Scenario {
   product_type: string | null;
   carrier: string | null;
   converted_product_id: string | null;
+  chosen_at: string | null;
 }
 
 // Illustrations — exploratory "let's see the numbers" scenarios, deliberately separate from
@@ -90,6 +91,10 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
               {s.converted_product_id ? (
                 <span className="rounded-full bg-[#EEF6F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1E6B3C]">
                   Converted
+                </span>
+              ) : s.chosen_at ? (
+                <span className="rounded-full bg-[#EEF6F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1E6B3C]">
+                  Chosen {new Date(s.chosen_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </span>
               ) : (
                 <span className="text-xs text-[#707070]">Edit →</span>

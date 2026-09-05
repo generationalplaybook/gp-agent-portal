@@ -1814,6 +1814,37 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     [Universal Life Insurance Expenses: The Complete Breakdown](https://theinsuranceproblog.com/universal-life-insurance-expense-breakdown/).
   - No schema change, no SQL to run for either item.
 
+- **Retired auto-convert-to-Product on Illustration Scenarios — BUILT 9/5, SQL REQUIRED.** Karina,
+  testing: "convert" was pulling illustration numbers (Level/Increasing tracks, milestones) into
+  the new Product's own Illustration Summary, and it didn't read like a real in-force policy
+  record — too much mismatch between "numbers we were illustrating to compare options" and "what
+  the client actually has now" (issue date, policy number, the real premium). Her call: stop
+  converting anything automatically.
+  - **What changed:** the "This Is What They're Going With →" button on a scenario no longer
+    creates a Product or copies any numbers anywhere. It now just marks the scenario with a plain
+    timestamp (`chosen_at`) recording "the client chose this one, on this date" — for the record,
+    in case a client later disputes what they agreed to. An "Undo" link clears it if marked by
+    mistake. The scenario list (on the client's profile) shows a "Chosen [date]" badge for these,
+    same green styling as before.
+  - **The advisor now adds the real Product by hand**, the normal way, in Products below — see the
+    next item for the autofill fix that makes that faster.
+  - **Already-converted scenarios are untouched.** Any scenario converted under the old flow
+    keeps its "Converted" badge and its link to the Product it created — that history isn't going
+    anywhere, and `converted_product_id` isn't being repurposed or cleared. Nothing new will ever
+    set it again; the underlying `convertScenarioToProduct` function has been removed.
+  - **SQL to run before applying this build:** `supabase/migration_scenario_chosen_at.sql` (also
+    folded into `schema.sql` as section 42) — adds the new `chosen_at` column. One line, purely
+    additive, nothing to backfill.
+  - **Product name autofill on Add Product — BUILT 9/5.** Karina noticed picking a known product
+    from the datalist (e.g. "Accumulation IUL (via Ethos)") didn't fill in Carrier/Type the way
+    the Illustration Scenario picker already does. Same fix: `ProductsSection.tsx`'s product-name
+    field now uses the same `KB_PRODUCTS` lookup as `ScenariosSection.tsx`'s "+ Add Illustration"
+    field — picking (or typing an exact match of) a known product now autofills Carrier and Type
+    (e.g. "Accumulation IUL (via Ethos)" correctly fills Carrier: North American, Type: IUL, not
+    "Ethos" — see the `inferCarrier`/`ETHOS_UNDERWRITER_BY_NAME` comment in `kb-data.ts`). Date and
+    policy number are still always typed in by hand — those are specific to the actual issued
+    policy, nothing to autofill there. No SQL for this part.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does

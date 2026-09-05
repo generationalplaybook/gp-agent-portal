@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
-import { KB } from "@/lib/kb-data";
+import { KB_PRODUCTS } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
 import DollarInput from "./DollarInput";
@@ -11,10 +11,11 @@ import DollarInput from "./DollarInput";
 // Suggestions for the product-name field: your own carrier products (life/annuity — not the
 // Knowledge Base's concept/tax entries), deduplicated. Rendered as a native <datalist> so a
 // client can either pick one of your products or just type anything (e.g. a policy from a
-// carrier you don't sell, or something a client already had before you met them).
-const PRODUCT_NAME_SUGGESTIONS = Array.from(
-  new Set(KB.filter((i) => i.group === "life" || i.group === "annuity").map((i) => i.name))
-);
+// carrier you don't sell, or something a client already had before you met them). Karina, 9/5:
+// picking a known product should autofill Carrier and Type too, same convenience the "+ Add
+// Illustration" picker on ScenariosSection.tsx already has (KB_PRODUCTS already resolves the
+// real underwriting carrier — e.g. "Accumulation IUL (via Ethos)" -> North American, not Ethos).
+const PRODUCT_NAME_SUGGESTIONS = KB_PRODUCTS.map((p) => p.name);
 
 const EMPTY_FIELDS: ProductFields = {
   product_name: "",
@@ -66,6 +67,29 @@ export default function ProductsSection({
 
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  const productLookup = useMemo(() => {
+    const byName = new Map<string, (typeof KB_PRODUCTS)[number]>();
+    KB_PRODUCTS.forEach((p) => byName.set(p.name, p));
+    return byName;
+  }, []);
+
+  function handleProductNameChange(value: string) {
+    const match = productLookup.get(value);
+    setFields((f) => ({
+      ...f,
+      product_name: value,
+      ...(match
+        ? {
+            product_type: match.productType,
+            carrier: match.carrier,
+            // An annuity can't also be "this is a term policy" — same rule as the Type select's
+            // own onChange below.
+            is_convertible: match.productType === "Annuity" ? false : f.is_convertible,
+          }
+        : {}),
+    }));
   }
 
   const isAnnuity = fields.product_type === "Annuity";
@@ -144,7 +168,7 @@ export default function ProductsSection({
         <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
           <input
             value={fields.product_name}
-            onChange={(e) => set("product_name", e.target.value)}
+            onChange={(e) => handleProductNameChange(e.target.value)}
             list="product-name-suggestions"
             placeholder="Product name * (e.g. Ameritas 30-Year Term with Living Benefits)"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"

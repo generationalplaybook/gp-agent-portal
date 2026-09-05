@@ -21,7 +21,7 @@ export default async function ScenarioPage({
     supabase.from("clients").select("id, full_name").eq("id", id).single(),
     supabase
       .from("illustration_scenarios")
-      .select("id, product_name, product_type, carrier, data, notes, converted_product_id")
+      .select("id, product_name, product_type, carrier, data, notes, converted_product_id, chosen_at")
       .eq("id", scenarioId)
       .single(),
     supabase.auth.getUser(),
@@ -48,8 +48,8 @@ export default async function ScenarioPage({
       <p className="mb-5 text-sm text-[#666]">
         {scenario.product_name}
         {scenario.carrier ? ` · ${scenario.carrier}` : ""}
-        {scenario.product_type ? ` · ${scenario.product_type}` : ""} — exploratory only, not shown as a Product
-        until you convert it.
+        {scenario.product_type ? ` · ${scenario.product_type}` : ""} — exploratory only; add it as a real Product on
+        {client.full_name}&rsquo;s profile yourself once they decide.
       </p>
       <ScenarioForm
         clientId={client.id}

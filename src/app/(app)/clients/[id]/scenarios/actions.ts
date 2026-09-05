@@ -84,73 +84,28 @@ export async function deleteScenario(scenarioId: string, clientId: string): Prom
   revalidatePath(`/clients/${clientId}`);
 }
 
-// "This is what they're going with" — promotes a scenario to a real Product. Creates the
-// client_products row (same is_quote-while-Quoted-stage logic as the normal Add Product flow),
-// copies this scenario's numbers into that product's own product_illustrations row (so the
-// existing per-product Illustration Summary page/PDF work immediately, no extra step), and
-// links the two via converted_product_id so the scenario shows as resolved rather than being
-// deleted — the "how we got here" history stays intact. Term/Final Expense riders carry over
-// automatically since they already live inside the illustration data; every other Product field
-// (issue date, face amount, actual premium, owner, etc.) is left for the advisor to fill in
-// afterward on the new Product row itself, same as any product added normally.
-export async function convertScenarioToProduct(scenarioId: string, clientId: string): Promise<string> {
-  const { supabase, user } = await requireUser();
-
-  const { data: scenario, error: scenarioError } = await supabase
+// "This is what they're going with" — Karina, 9/5: retired the old auto-convert-to-Product flow
+// (used to create the client_products row and copy this scenario's numbers over automatically).
+// Too much mismatch between illustration numbers and what a real in-force policy record needs —
+// so this no longer creates anything. It's just a dated record, for when a client later disputes
+// what they agreed to: markScenarioChosen sets chosen_at, undoScenarioChosen clears it if marked
+// by mistake. The advisor adds the real Product by hand afterward, same as any product added
+// normally (see ProductsSection.tsx's Add Product form).
+export async function markScenarioChosen(scenarioId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
     .from("illustration_scenarios")
-    .select("id, product_name, product_type, carrier, data, converted_product_id")
-    .eq("id", scenarioId)
-    .single();
-
-  if (scenarioError || !scenario) throw new Error(scenarioError?.message || "Scenario not found.");
-  if (scenario.converted_product_id) throw new Error("This scenario has already been converted to a product.");
-
-  const { data: clientRow } = await supabase.from("clients").select("stage").eq("id", clientId).single();
-  const is_quote = clientRow?.stage === "quoted";
-
-  const illustrationData = scenario.data as IllustrationData;
-  const riders =
-    illustrationData && "riders" in illustrationData && Array.isArray(illustrationData.riders)
-      ? illustrationData.riders
-      : [];
-
-  const { data: product, error: productError } = await supabase
-    .from("client_products")
-    .insert({
-      client_id: clientId,
-      product_name: scenario.product_name,
-      product_type: scenario.product_type,
-      carrier: scenario.carrier,
-      riders,
-      is_quote,
-    })
-    .select("id")
-    .single();
-
-  if (productError || !product) throw new Error(productError?.message || "Could not create product.");
-
-  const { error: illustrationError } = await supabase.from("product_illustrations").upsert(
-    {
-      product_id: product.id,
-      client_id: clientId,
-      product_type: scenario.product_type,
-      data: scenario.data,
-      created_by: user.id,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "product_id" }
-  );
-  if (illustrationError) throw new Error(illustrationError.message);
-
-  const { error: linkError } = await supabase
-    .from("illustration_scenarios")
-    .update({ converted_product_id: product.id })
+    .update({ chosen_at: new Date().toISOString() })
     .eq("id", scenarioId);
-  if (linkError) throw new Error(linkError.message);
-
+  if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/scenarios/${scenarioId}`);
-  revalidatePath(`/clients/${clientId}/illustrations/${product.id}`);
+}
 
-  return product.id as string;
+export async function undoScenarioChosen(scenarioId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("illustration_scenarios").update({ chosen_at: null }).eq("id", scenarioId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath(`/clients/${clientId}/scenarios/${scenarioId}`);
 }

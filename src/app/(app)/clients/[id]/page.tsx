@@ -71,7 +71,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .order("meeting_at", { ascending: true }),
     supabase
       .from("illustration_scenarios")
-      .select("id, product_name, product_type, carrier, converted_product_id")
+      .select("id, product_name, product_type, carrier, converted_product_id, chosen_at")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     supabase

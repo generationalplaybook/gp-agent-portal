@@ -625,11 +625,10 @@ create unique index if not exists profiles_intake_slug_idx
 -- committed to — but Products is meant to mean "coverage this client already owns" (see its own
 -- section comment above), so that forced "just exploring" numbers to look like real coverage.
 -- This table exists so an advisor can run/compare as many hypothetical scenarios as they want
--- for a client with zero effect on their Products list, then promote exactly one to a real
--- Product once the client actually decides (see convertScenarioToProduct in
--- src/app/(app)/clients/[id]/scenarios/actions.ts, which creates the client_products row AND
--- copies this scenario's numbers into that product's own product_illustrations row — the
--- existing per-product Illustration Summary page and PDF are completely unchanged by this).
+-- for a client with zero effect on their Products list. Originally (9/1) one scenario could be
+-- auto-"promoted" to a real Product; retired 9/5 per Karina — too much mismatch between
+-- illustration numbers and what a real in-force policy record needs. See section 42 below for
+-- the current flow (mark which one the client chose, add the real Product by hand).
 -- ─────────────────────────────────────────────────────────────
 create table if not exists public.illustration_scenarios (
   id uuid primary key default gen_random_uuid(),
@@ -1261,3 +1260,22 @@ alter table public.client_products add column if not exists annuity_contribution
 alter table public.client_products add column if not exists contract_value numeric;
 alter table public.client_products add column if not exists annuity_surrender_end_date date;
 alter table public.clients add column if not exists turned_59_half_notice_sent boolean not null default false;
+
+-- ─────────────────────────────────────────────────────────────
+-- 42. Retire auto-convert-to-Product on Illustration Scenarios (added 9/5) — Karina found too
+-- much mismatch between what a scenario captures (illustration numbers for comparing options —
+-- Level/Increasing tracks, milestones, projected values) and what a real in-force Product record
+-- needs (issue date, policy number, the actual numbers the client is now paying) to trust an
+-- automatic copy between the two. `convertScenarioToProduct` (the function that did this copy)
+-- is removed; `illustration_scenarios.converted_product_id` is LEFT IN PLACE, untouched, purely
+-- to keep already-converted scenarios' historical link/badge working (see ScenarioForm.tsx's
+-- "Converted to a Product" banner and ScenariosSection.tsx's "Converted" badge) — nothing new
+-- ever sets it again.
+-- Going forward: `chosen_at` records when an advisor marks a scenario as "this is what the
+-- client went with" (see markScenarioChosen/undoScenarioChosen in scenarios/actions.ts) — a
+-- plain manual timestamp, same shape as conversion_pending_at/converted_at on client_products.
+-- This is deliberately NOT a conversion — it's just a dated record of "we presented this, they
+-- chose it" for when a client later disputes what they agreed to. The advisor still adds the
+-- real Product by hand afterward, the same way as any other product.
+-- ─────────────────────────────────────────────────────────────
+alter table public.illustration_scenarios add column if not exists chosen_at timestamptz;
