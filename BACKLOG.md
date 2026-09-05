@@ -1596,6 +1596,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   just once" is new and needs its own design (the existing `*_reminder_sent` boolean pattern only
   fires once ever).
 
+- **Reminder delivery preference (email / text / both) — flagged 9/5, just an idea, NOT built.**
+  Karina wants an option, at some later date, for an advisor to choose how they want to be
+  notified of a reminder — email, text, or both — rather than one fixed way. Worth noting for
+  whenever this comes back up: `reminders.channel` already exists in the schema as a single
+  `"email" | "sms"` value, but nothing in the app actually sends an email or text today —
+  reminders are purely an in-app list (the Reminders page and the dashboard's Reminders Due
+  card). So this isn't just a preference toggle; it would mean building actual outbound
+  email/SMS delivery first (a provider to send through, likely a cron job checking `remind_at`),
+  then layering the advisor's channel choice on top — probably widening `channel` to allow
+  "both," per-advisor or per-reminder. No design work done yet, just capturing the idea.
+
 - **Nationwide product lineup — 17 missing Knowledge Base entries added, built 9/3.**
   Karina sent a screenshot of Nationwide's full 19-product list and asked why only 2 were in
   the Knowledge Base. Confirmed the Knowledge Base is a static file (`src/lib/kb-data.ts`),
@@ -1724,7 +1735,16 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     another linked client record, not a distinct role), and routing a minor's day-to-day
     reminders to the guardian specifically rather than just showing the guardian nearby.
 
-## Technical follow-up
+- **Search on the Clients list — BUILT 9/5.** Karina: the list isn't in alphabetical order, and
+  even if it were, it'll only get harder to scan as her book grows — she wanted to start typing a
+  client's name and have the list narrow down live as she types. New `ClientSearchList.tsx`
+  (client component) wraps the "All clients"/stage/Needs Review list — a search box above it
+  filters by `full_name` on every keystroke, entirely client-side (no page reload per keystroke,
+  since the list is already loaded and she doesn't have that many clients yet for it to matter
+  performance-wise). Distinguishes "no clients yet" from "no clients match your search" so the
+  right empty-state message shows. Scoped to the main list only — the Term view on this same
+  page has its own different (grouped, not flat) layout, so it wasn't touched. No schema change,
+  no SQL to run.
 
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
