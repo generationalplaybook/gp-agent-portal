@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import InviteForm from "./InviteForm";
 import AgentRoleRow from "./AgentRoleRow";
+import UnassignedClientsSection from "./UnassignedClientsSection";
 
 export default async function AdminInvitePage() {
   const supabase = await createClient();
@@ -35,7 +37,7 @@ export default async function AdminInvitePage() {
 
   const { data: agents, error: agentsError } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, created_at")
+    .select("id, full_name, email, role, created_at, disabled_at")
     .order("created_at", { ascending: true });
 
   if (agentsError) {
@@ -46,6 +48,19 @@ export default async function AdminInvitePage() {
       </div>
     );
   }
+
+  // Unassigned clients (owner_id is null — left behind when an advisor's access was removed) are
+  // invisible to every advisor's own RLS-scoped queries by design, so this has to go through the
+  // service-role client rather than the session client above, same as every other admin-only
+  // cross-advisor read/write on this page.
+  const admin = createAdminClient();
+  const { data: unassignedClients } = await admin
+    .from("clients")
+    .select("id, full_name, stage, created_at")
+    .is("owner_id", null)
+    .order("created_at", { ascending: true });
+
+  const activeAgents = (agents ?? []).filter((a) => !a.disabled_at);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -70,6 +85,8 @@ export default async function AdminInvitePage() {
           ))}
         </div>
       </div>
+
+      <UnassignedClientsSection clients={unassignedClients ?? []} agents={activeAgents} />
     </div>
   );
 }

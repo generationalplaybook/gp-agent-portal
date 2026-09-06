@@ -66,8 +66,13 @@ export async function GET(request: NextRequest) {
   const results: { product_id: string; product_name: string; client_name: string; kind: "no_exam" | "final" }[] = [];
 
   for (const product of candidates ?? []) {
-    const client = product.clients as unknown as { id: string; full_name: string; owner_id: string } | null;
+    const client = product.clients as unknown as { id: string; full_name: string; owner_id: string | null } | null;
     if (!client) continue;
+    // Unassigned (owner_id null, left over from an advisor's access being removed — see
+    // admin/invite/actions.ts) has nobody to send this to yet. Skip without marking it sent, so
+    // once an admin reassigns the client, the next run picks this back up for the new advisor
+    // instead of it having silently been marked done while no one owned it.
+    if (!client.owner_id) continue;
 
     const deadlineLabel = new Date(product.conversion_deadline!).toLocaleDateString(undefined, {
       dateStyle: "medium",
@@ -86,8 +91,9 @@ export async function GET(request: NextRequest) {
   }
 
   for (const product of finalCandidates ?? []) {
-    const client = product.clients as unknown as { id: string; full_name: string; owner_id: string } | null;
+    const client = product.clients as unknown as { id: string; full_name: string; owner_id: string | null } | null;
     if (!client) continue;
+    if (!client.owner_id) continue;
 
     const deadlineLabel = new Date(product.final_conversion_deadline!).toLocaleDateString(undefined, {
       dateStyle: "medium",

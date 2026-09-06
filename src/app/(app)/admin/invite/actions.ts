@@ -76,3 +76,96 @@ export async function updateAgentRole(agentId: string, role: "agent" | "admin"):
     return { ok: false, error: e instanceof Error ? e.message : "Could not update role." };
   }
 }
+
+// "Remove access" — added 9/6, see schema.sql section 43 / migration_add_advisor_removal.sql.
+// Deliberately NOT a real delete: clients.owner_id cascades on profile delete, which would wipe
+// this advisor's entire book of business. Instead this bans their auth login, marks
+// profiles.disabled_at for the UI, and un-assigns (owner_id = null) every client they owned so
+// an admin can reassign the book below rather than it sitting under a login nobody can use.
+export async function removeAgentAccess(agentId: string): Promise<ActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    if (agentId === user.id) return { ok: false, error: "You can't remove your own access." };
+
+    const admin = createAdminClient();
+
+    const { error: unassignError } = await admin.from("clients").update({ owner_id: null }).eq("owner_id", agentId);
+    if (unassignError) return { ok: false, error: unassignError.message };
+
+    // A very long ban rather than deleting the auth user — deleting it would cascade-delete the
+    // profile row (see the FK above), and per Supabase's admin API a ban_duration this long is
+    // effectively permanent while still being reversible (see restoreAgentAccess below).
+    const { error: banError } = await admin.auth.admin.updateUserById(agentId, { ban_duration: "876000h" });
+    if (banError) return { ok: false, error: banError.message };
+
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ disabled_at: new Date().toISOString() })
+      .eq("id", agentId);
+    if (profileError) return { ok: false, error: profileError.message };
+
+    revalidatePath("/admin/invite");
+    revalidatePath("/clients");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not remove this advisor's access." };
+  }
+}
+
+// Undo for removeAgentAccess — doesn't touch clients (whatever was reassigned or left Unassigned
+// stays exactly where an admin put it; this only restores the ability to log in).
+export async function restoreAgentAccess(agentId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const admin = createAdminClient();
+
+    // "none" is Supabase's documented value for clearing an existing ban via this same API —
+    // please double check this actually un-blocks sign-in the first time you test it, since this
+    // couldn't be verified against a live project from here.
+    const { error: banError } = await admin.auth.admin.updateUserById(agentId, { ban_duration: "none" });
+    if (banError) return { ok: false, error: banError.message };
+
+    const { error: profileError } = await admin.from("profiles").update({ disabled_at: null }).eq("id", agentId);
+    if (profileError) return { ok: false, error: profileError.message };
+
+    revalidatePath("/admin/invite");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not restore this advisor's access." };
+  }
+}
+
+// Reassign one or several Unassigned clients (owner_id = null, from removeAgentAccess above) to
+// an advisor. Also moves reminders and client_meetings for these clients — both carry their own
+// separate agent_id, not just client_id — to the new owner, so nothing pending silently
+// disappears from either advisor's view.
+export async function reassignClients(clientIds: string[], newOwnerId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    if (!newOwnerId) return { ok: false, error: "Pick an advisor to assign to." };
+    if (clientIds.length === 0) return { ok: false, error: "Select at least one client." };
+
+    const admin = createAdminClient();
+
+    const { error: clientError } = await admin.from("clients").update({ owner_id: newOwnerId }).in("id", clientIds);
+    if (clientError) return { ok: false, error: clientError.message };
+
+    const { error: remindersError } = await admin
+      .from("reminders")
+      .update({ agent_id: newOwnerId })
+      .in("client_id", clientIds);
+    if (remindersError) return { ok: false, error: remindersError.message };
+
+    const { error: meetingsError } = await admin
+      .from("client_meetings")
+      .update({ agent_id: newOwnerId })
+      .in("client_id", clientIds);
+    if (meetingsError) return { ok: false, error: meetingsError.message };
+
+    revalidatePath("/admin/invite");
+    revalidatePath("/clients");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not reassign." };
+  }
+}

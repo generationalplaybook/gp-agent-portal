@@ -1692,12 +1692,8 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Advisor Portal. Likely involves customizing the email templates in Supabase's dashboard
   (Authentication → Email Templates) and possibly a custom SMTP sender down the line.
 
-- **Manage / remove advisors.** The "Your Team" list on the Invite Agents page currently only
-  lets an admin change someone's role (Advisor/Admin) via a dropdown. There's no way to remove
-  an advisor's access entirely (e.g. someone leaves the team). Needs a "Remove" action —
-  likely disabling/deleting their profile access rather than deleting their Supabase auth user
-  outright, so their historical client data/notes aren't orphaned. Worth deciding: should a
-  removed advisor's clients get reassigned to someone, or just become admin-only visible?
+- **Manage / remove advisors — BUILT 9/6, SQL REQUIRED.** See the full writeup further down
+  ("Advisor Remove Access + client reassignment") — the "Remove" action asked for here is done.
 
 - **Minor clients / guardian tracking.** When the main person on a policy is under 18 at the
   time they're added, need a pop-up (on the new client form, and probably editable later) to
@@ -1928,6 +1924,43 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   only change (`src/lib/kb-data.ts` is a static file, not a database table) — no schema change, no
   SQL to run.
 
+- **Advisor Remove Access + client reassignment — BUILT 9/6, SQL REQUIRED.** Karina wants admins
+  to add and remove advisors from the portal itself, without going into Supabase directly. Adding
+  already existed (the invite flow). Removing didn't, and it's more involved than it sounds:
+  `clients.owner_id` was `not null references profiles(id) on delete cascade` — actually deleting
+  an advisor's profile row would silently cascade-delete every client (and everything hanging off
+  them: notes, tasks, products, illustrations) they owned. Flagged this to Karina before building
+  anything — she confirmed this should be a safe "remove access," not a real delete.
+  **What it does:** on the "Your Team" list (Invite Agents page), each advisor now has a "Remove
+  access" action (two-step confirm, matching the app's usual pattern) that: bans their Supabase
+  auth login via the admin API (they can no longer sign in at all), stamps a new
+  `profiles.disabled_at` so the row shows a "Removed [date]" badge, and sets `owner_id` to NULL on
+  every client they owned — moving their whole book into a new "Unassigned Clients" section
+  further down the same page, rather than deleting anything or leaving it stuck under a login
+  nobody can use. Removed advisors get a "Restore access" button in place of the role dropdown if
+  you need to undo it — this un-bans the login and clears `disabled_at`, but does NOT move their
+  clients back (whatever an admin already reassigned stays reassigned).
+  **Reassignment:** the new "Unassigned Clients" section lists every client with no owner and lets
+  an admin assign them one at a time, or select several and assign them all to the same advisor in
+  one action — per Karina, "someone may leave their book of business to anyone or one person," so
+  both single and batch reassignment are supported. Reassigning also moves that client's reminders
+  and meetings to the new advisor (both tables carry their own separate `agent_id`, not just
+  `client_id` — easy to miss, would otherwise leave pending reminders invisible to everyone) —
+  see `reassignClients` in `admin/invite/actions.ts`.
+  **Also touched:** both daily cron routes (`check-birthdays`, `check-conversion-deadlines`) now
+  skip clients with no owner rather than trying to insert a reminder with a null `agent_id` —
+  the conversion-deadline one specifically does NOT mark itself "sent" when skipped, so the
+  reminder fires correctly once an admin reassigns the client instead of silently being lost.
+  **New:** `profiles.disabled_at` (nullable timestamptz). **Changed:** `clients.owner_id` is now
+  nullable (was `not null`) — this is the one to read carefully before running, since it loosens
+  an existing constraint rather than just adding a column, though it's non-destructive (no data
+  changes, no existing row is affected until you actually remove someone). SQL to run against
+  Karina's live Supabase project — see `migration_add_advisor_removal.sql`.
+  **One thing I couldn't verify from here:** "Restore access" un-bans a login by sending
+  `ban_duration: "none"` to Supabase's admin API, which is documented as the way to clear an
+  existing ban — but please actually test that a restored advisor can log back in the first time
+  you use it, since this couldn't be checked against a live Supabase project from this session.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does
@@ -1943,6 +1976,12 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Ameritas Annuities, Nationwide Life, Nationwide Annuities, MOO Life, MOO Annuities)
   to wire into the Downloads page's `downloads-data.ts`.
 
-- **Terms of Service text.** `src/lib/terms.ts` currently has clearly-labeled placeholder
-  text for the "Proprietary Technology Notice" agents accept on first login. Needs
-  Karina's real, verbatim legal text before this is production-ready.
+- **Terms of Service text — RESOLVED 9/6, no longer blocked.** This had been sitting in "Blocked
+  on Karina" since it needed her real legal text — but the literal "PLACEHOLDER TEXT" label was
+  actually already removed back on 8/27, and what's live in `src/lib/terms.ts` is a working draft
+  (confidentiality, no competing use, client data ownership, revocable access, "verify before you
+  rely on it") that was never actually a raw placeholder, just never attorney-reviewed. Checked
+  back in with Karina 9/6 on whether to keep it, revise it, or wait for real counsel-reviewed
+  text — her call: keep the current draft as final for now. No code change needed; just noting
+  this is resolved and moving it out of "Blocked." Revisit only if she gets real legal text later
+  (drop it into `TERMS_TEXT` verbatim and bump `TERMS_VERSION` so everyone gets re-prompted).

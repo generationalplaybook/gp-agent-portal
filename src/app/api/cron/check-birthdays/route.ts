@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
     .from("clients")
     .select("id, full_name, owner_id, birth_date")
     .eq("turned_18_notice_sent", false)
-    .not("birth_date", "is", null);
+    .not("birth_date", "is", null)
+    // Unassigned clients (owner_id null, left over from an advisor's access being removed —
+    // see admin/invite/actions.ts) have nobody to send this reminder to yet; skip them until an
+    // admin reassigns them, rather than trying to insert a reminder with a null agent_id.
+    .not("owner_id", "is", null);
 
   if (candidatesError) {
     return NextResponse.json({ error: candidatesError.message }, { status: 500 });
@@ -101,7 +105,8 @@ export async function GET(request: NextRequest) {
     .from("clients")
     .select("id, full_name, owner_id, birth_date")
     .eq("turned_59_half_notice_sent", false)
-    .not("birth_date", "is", null);
+    .not("birth_date", "is", null)
+    .not("owner_id", "is", null);
 
   const turning59HalfResults: { client_id: string; full_name: string }[] = [];
 
