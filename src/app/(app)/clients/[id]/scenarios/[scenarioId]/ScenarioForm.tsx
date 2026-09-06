@@ -473,9 +473,9 @@ export default function ScenarioForm({
             </label>
             <div className="mb-1.5 grid max-w-md grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex items-center gap-1.5">
+                <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
                     Level
                   </span>
                 </span>
@@ -486,9 +486,9 @@ export default function ScenarioForm({
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex items-center gap-1.5">
+                <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
                     Increasing
                   </span>
                 </span>
@@ -514,9 +514,9 @@ export default function ScenarioForm({
             </p>
             <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex items-center gap-1.5">
+                <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
                     Level
                   </span>
                 </span>
@@ -527,9 +527,9 @@ export default function ScenarioForm({
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex items-center gap-1.5">
+                <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-                  <span className="rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
                     Increasing
                   </span>
                 </span>

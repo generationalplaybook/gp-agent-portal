@@ -1845,6 +1845,15 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     policy number are still always typed in by hand — those are specific to the actual issued
     policy, nothing to autofill there. No SQL for this part.
 
+- **Minimum to Avoid Lapse / Face Value label rows uneven — BUILT 9/6.** Karina: the Level/Increasing
+  field pairs on Policy Premium and Initial Death Benefit looked lopsided — the label + pill badge
+  sat inline on one line, and since "Increasing" is a longer word than "Level," only the second
+  column's badge wrapped onto its own line, pushing that column's input box down while the first
+  column's stayed put. Fixed by always stacking the pill badge on its own line directly under the
+  field name (`ScenarioForm.tsx`), for both pairs, instead of only wrapping when it happened not to
+  fit — now both columns are the same shape regardless of which badge word is longer. No schema
+  change, no SQL to run.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does
