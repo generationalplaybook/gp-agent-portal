@@ -500,9 +500,10 @@ export default function ScenarioForm({
               </label>
             </div>
             <p className="mb-5 max-w-md text-[11px] text-[#8b6a00]">
-              Increasing keeps the death benefit&rsquo;s full face amount at risk for life (Level&rsquo;s shrinks as
-              cash value grows), so cost of insurance is higher and this minimum typically climbs every year rather
-              than leveling off — confirm the actual year-by-year schedule on the carrier&rsquo;s illustration.
+              Increasing keeps the death benefit&rsquo;s full face amount at risk for life, so cost of insurance is
+              higher and this minimum typically keeps climbing every year. Level&rsquo;s net amount at risk shrinks
+              as cash value grows, which can help offset that rise — but isn&rsquo;t a guarantee it stops climbing —
+              confirm the actual year-by-year schedule on the carrier&rsquo;s illustration.
             </p>
 
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>

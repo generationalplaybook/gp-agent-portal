@@ -567,15 +567,20 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         y += 14;
         // Karina, 9/5: asked whether this minimum actually climbs over time under Increasing —
         // researched (Option A/Level's net amount at risk shrinks as cash value grows, so its
-        // cost of insurance can flatten; Option B/Increasing's net amount at risk stays at the
-        // full face amount for life, and COI rates also rise with attained age regardless of
-        // election, so the two compound and this minimum typically keeps climbing rather than
-        // leveling off). Flagged on the PDF so a client doesn't read this single number as fixed.
+        // cost of insurance can be partly offset; Option B/Increasing's net amount at risk stays
+        // at the full face amount for life, and COI rates also rise with attained age regardless
+        // of election, so the two compound and this minimum typically keeps climbing).
+        // Karina, 9/6: asked us to re-verify this before trusting it — re-researched against
+        // additional independent sources (confirmed the mechanism), then asked to soften the
+        // Level side of the wording since "levels off" overstated what Level actually guarantees
+        // (underperforming cash value or no such offset at all can still leave Level climbing
+        // too — Level just has a mechanism that CAN offset it, not a promise that it will).
+        // Flagged on the PDF so a client doesn't read this single number as fixed either way.
         doc.setFont("helvetica", "italic");
         doc.setFontSize(7.5);
         setText(GOLD);
         const nl = doc.splitTextToSize(
-          "Increasing keeps the full face amount at risk for life, so this minimum typically rises every year rather than leveling off — confirm the year-by-year schedule on the carrier's illustration.",
+          "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops — confirm the year-by-year schedule on the carrier's illustration.",
           W - 2 * M
         );
         doc.text(nl, M, y);

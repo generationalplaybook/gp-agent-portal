@@ -1812,6 +1812,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     Sources: [Universal Life Insurance Death Benefit Options A vs B Compared](https://theinsuranceproblog.com/universal-life-insurance-death-benefit-options/),
     [Universal Life Insurance: Flexible Premiums, Option A vs B](https://legalclarity.org/universal-life-insurance-flexible-premiums-option-a-vs-b/),
     [Universal Life Insurance Expenses: The Complete Breakdown](https://theinsuranceproblog.com/universal-life-insurance-expense-breakdown/).
+  - **Update 9/6: re-verified, then softened, since this note is client-facing (it's on the PDF).**
+    Karina wasn't sure it was all true and asked us to check before trusting it. Re-researched
+    against independent sources beyond the original two blog posts — confirmed the same
+    net-amount-at-risk mechanics from an insurance-technical explainer
+    ([Hazard & Handling](https://hazardandhandling.com/posts/how-age-affects-cost-of-insurance-in-universal-life-policies):
+    "the increasing death benefit option automatically adds cash value growth to the base death
+    benefit... maintains higher net amount at risk and could result in steeper COI charges"), plus
+    a Maryland Insurance Administration consumer advisory confirming cost-of-insurance rises with
+    age generally on any UL policy. The mechanism holds up. One nuance found worth fixing in the
+    wording: the original note implied Level's minimum reliably "levels off," which overstates
+    it — Level's shrinking net amount at risk *can* offset the age-based rate increase, but isn't
+    a guarantee (underperforming cash value, or a policy with no offset built in, can still leave
+    Level's minimum climbing too). Reworded on both `ScenarioForm.tsx` and `illustration-pdf.ts`
+    to say Level "can help offset" the rise rather than implying it stops climbing — the "confirm
+    the actual year-by-year schedule on the carrier's illustration" caveat stays, since that's
+    doing the real work regardless of which election. No schema change, no SQL to run.
   - No schema change, no SQL to run for either item.
 
 - **Retired auto-convert-to-Product on Illustration Scenarios — BUILT 9/5, SQL REQUIRED.** Karina,
