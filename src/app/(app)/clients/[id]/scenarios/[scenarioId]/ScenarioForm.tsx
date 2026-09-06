@@ -648,6 +648,81 @@ export default function ScenarioForm({
               milestones={data.milestones}
               onChange={(milestones) => setData({ ...data, milestones })}
             />
+
+            <div className="mt-5 rounded-md border border-[#D9CFBA] p-3">
+              <label className="flex items-center gap-2 text-xs font-semibold text-[#2E2E2E]">
+                <input
+                  type="checkbox"
+                  checked={!!data.hasIncomeRider}
+                  onChange={(e) =>
+                    setData({
+                      ...data,
+                      hasIncomeRider: e.target.checked,
+                      incomeStartTiming: e.target.checked ? data.incomeStartTiming ?? "immediate" : data.incomeStartTiming,
+                    })
+                  }
+                  className="h-3.5 w-3.5"
+                />
+                This annuity has an income rider
+              </label>
+
+              {data.hasIncomeRider && (
+                <div className="mt-3 flex flex-col gap-3">
+                  <div className="flex gap-4 text-xs text-[#666]">
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="income-start-timing"
+                        checked={(data.incomeStartTiming ?? "immediate") === "immediate"}
+                        onChange={() => setData({ ...data, incomeStartTiming: "immediate" })}
+                      />
+                      Starts immediately
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="income-start-timing"
+                        checked={data.incomeStartTiming === "deferred"}
+                        onChange={() => setData({ ...data, incomeStartTiming: "deferred" })}
+                      />
+                      Starts at a future age
+                    </label>
+                  </div>
+
+                  <div className="grid max-w-md grid-cols-2 gap-3">
+                    {data.incomeStartTiming === "deferred" && (
+                      <label className="flex flex-col gap-1 text-xs text-[#666]">
+                        Age Income Starts
+                        <input
+                          value={data.incomeStartAge ?? ""}
+                          onChange={(e) => setData({ ...data, incomeStartAge: e.target.value })}
+                          placeholder="e.g. 65"
+                          className={inputClass}
+                        />
+                      </label>
+                    )}
+                    <label className="flex flex-col gap-1 text-xs text-[#666]">
+                      Monthly Income Amount
+                      <DollarInput
+                        value={data.incomeMonthlyAmount ?? ""}
+                        onChange={(v) => setData({ ...data, incomeMonthlyAmount: v })}
+                        className={inputClass}
+                      />
+                    </label>
+                  </div>
+
+                  <p className="max-w-md text-[11px] text-[#8b6a00]">
+                    Whatever accumulation value is left unused when the client passes goes to the
+                    beneficiary as a death benefit — but unlike a life insurance death benefit, this
+                    isn&rsquo;t automatically fully tax-free. Only the return of principal (what was
+                    originally paid in) passes tax-free; any growth above that is taxed to the
+                    beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in
+                    full). Confirm the specifics on the carrier&rsquo;s illustration and with a tax
+                    advisor for the client&rsquo;s situation.
+                  </p>
+                </div>
+              )}
+            </div>
           </>
         )}
 

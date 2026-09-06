@@ -436,6 +436,37 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += 140;
     }
 
+    // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
+    if (data.hasIncomeRider) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(OBSIDIAN);
+      doc.text("Income Rider", M, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const timing =
+        data.incomeStartTiming === "deferred"
+          ? "Starts at age " + (data.incomeStartAge || "—")
+          : "Starts immediately";
+      const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
+      doc.text(timing + " — " + amount, M, y);
+      y += 16;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GOLD);
+      const incomeNote = doc.splitTextToSize(
+        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
+        W - 2 * M
+      );
+      doc.text(incomeNote, M, y);
+      y += incomeNote.length * 10 + 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+    }
+
     if (data.notes) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -960,6 +991,37 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         ],
       });
       y += 140;
+    }
+
+    // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
+    if (data.hasIncomeRider) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(OBSIDIAN);
+      doc.text("Income Rider", M, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      const timing =
+        data.incomeStartTiming === "deferred"
+          ? "Starts at age " + (data.incomeStartAge || "—")
+          : "Starts immediately";
+      const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
+      doc.text(timing + " — " + amount, M, y);
+      y += 16;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GOLD);
+      const incomeNote = doc.splitTextToSize(
+        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
+        W - 2 * M
+      );
+      doc.text(incomeNote, M, y);
+      y += incomeNote.length * 10 + 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
     }
 
     if (data.notes) {

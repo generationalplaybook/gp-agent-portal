@@ -110,6 +110,16 @@ export interface AnnuityIllustration {
   initialPremium: string;
   milestones: AnnuityMilestone[];
   notes: string;
+  // Income rider — added 9/6 per Karina: when the annuity has a lifetime-income rider attached,
+  // record when the income turns on and what it pays, so that shows on the summary alongside the
+  // accumulation/death-benefit milestones above. Optional/additive — every existing annuity
+  // scenario has none of these set and behaves exactly as before.
+  hasIncomeRider?: boolean;
+  // "immediate" = income is already turned on / starts right away; "deferred" = income starts at
+  // a future age (incomeStartAge). Only meaningful when hasIncomeRider is true.
+  incomeStartTiming?: "immediate" | "deferred";
+  incomeStartAge?: string; // only used/entered when incomeStartTiming is "deferred"
+  incomeMonthlyAmount?: string; // the monthly income amount once it starts, either way
 }
 
 export type IllustrationData = CashValueIllustration | TermIllustration | FinalExpenseIllustration | AnnuityIllustration;

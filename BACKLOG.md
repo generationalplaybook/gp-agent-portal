@@ -1870,6 +1870,64 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   fit — now both columns are the same shape regardless of which badge word is longer. No schema
   change, no SQL to run.
 
+- **Annuity income rider fields — BUILT 9/6.** Karina, on an Annuity scenario: when there's an
+  income rider attached, wanted a checkbox that reveals whether income starts immediately or at a
+  future age, and what the monthly amount is either way. Added a "This annuity has an income rider"
+  checkbox to the annuity scenario editor (`ScenarioForm.tsx`) — once checked, shows an
+  Immediate/Starts-at-a-future-age choice, an "Age Income Starts" field (deferred only), and a
+  Monthly Income Amount field either way. New `AnnuityIllustration.hasIncomeRider` (boolean),
+  `incomeStartTiming` ("immediate" | "deferred"), `incomeStartAge`, `incomeMonthlyAmount` — all
+  optional/additive in `illustration.ts`, so every existing annuity scenario is unaffected. Shows
+  on both the on-screen editor and the generated PDF (`illustration-pdf.ts`, both the Scenario and
+  per-product Illustration generators) once checked.
+  **Important correction on the accompanying note — please read before this reaches a client.**
+  Karina also asked for a note saying unused money "goes to the beneficiary as a death benefit...
+  completely tax free because it's a death benefit." Researched this before writing it onto a
+  client-facing PDF, since it's a materially different claim from the Level/Increasing research
+  earlier — **it's not accurate as stated.** An annuity's death benefit is taxed very differently
+  from a life insurance death benefit: life insurance death benefits are generally fully income-
+  tax-free, but an annuity's is NOT — only the return of principal (what was actually paid in)
+  passes tax-free to the beneficiary; any growth/earnings above that are taxed to the beneficiary
+  as ordinary income, and a qualified (IRA) annuity's death benefit is generally taxed in full.
+  Confirmed independently by [Guardian Life](https://www.guardianlife.com/annuities/death-benefits)
+  ("annuity death benefits receive different tax treatment than life insurance death benefits...
+  beneficiaries only pay taxes on annuity earnings") and
+  [SmartAsset](https://smartasset.com/retirement/how-are-non-qualified-annuities-taxed-to-beneficiaries)
+  ("any earnings on the annuity are taxable as ordinary income... beneficiaries do not receive a
+  step-up in basis for non-qualified annuities"). Built the note with the corrected version instead
+  of what was originally described — worded as: unused value passes to the beneficiary as a death
+  benefit, but unlike life insurance this isn't automatically fully tax-free — principal passes tax
+  free, growth is taxed as ordinary income to the beneficiary, qualified annuities are generally
+  taxed in full — and to confirm specifics with the carrier's illustration and a tax advisor.
+  **Please double check this wording reads right to you before it goes out to any client** — happy
+  to adjust the phrasing, just didn't want to ship the "completely tax free" version since that's
+  not correct and this is the kind of claim that could cause a real problem downstream. No schema
+  change, no SQL to run.
+
+- **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
+  through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
+  client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the
+  policy, they get less than the same face amount on Level, because the acceleration percentage/
+  cap applies against whatever death benefit is actually IN FORCE at claim time — and Increasing
+  hasn't grown into its eventual target yet in those early years. Confirmed this is really how
+  accelerated benefit riders work via a real carrier disclosure — North American's Chronic Illness
+  Accelerated Benefit Rider bases the accelerated amount on the death benefit as of the election
+  date, not a future target (25457/5721429/NAM-1080.pdf on northamericancompany.com). This wasn't
+  connected anywhere in the existing Knowledge Base — the "Living Benefits" entry covered claim
+  mechanics generally, and the "Death Benefit Options — Level vs. Increasing" entry covered the
+  DBO timing tradeoff, but nothing tied the two together.
+  Added the connection to both entries in `kb-data.ts` (so whichever one an advisor pulls up, they
+  see it): a client on Increasing has less accessible via a living-benefit claim in the early
+  years (on top of having less built-up cash value that early too), and — per Karina — if
+  Increasing is still the right fit for other reasons but near-term protection/access still
+  matters to the client, the recommendation is to pair it with a term policy at the same time and
+  split the client's budget across the two, so there's real full coverage from day one either way
+  while the IUL grows into its Increasing target. Added to the `does`/`agent`/`client`/
+  `highlights` fields of both entries, plus new search tags on each (living benefits ↔ increasing/
+  term pairing/split budget) so either one surfaces from a search on the other's terms. Content-
+  only change (`src/lib/kb-data.ts` is a static file, not a database table) — no schema change, no
+  SQL to run.
+
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in
   production ("Minified React error #441..."), even when the code does
