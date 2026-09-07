@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   // the product card itself ("Convertible — exam now required").
   const { data: candidates, error: candidatesError } = await supabase
     .from("client_products")
-    .select("id, product_name, client_id, conversion_deadline, clients(id, full_name, owner_id)")
+    .select("id, product_name, client_id, conversion_deadline, clients!client_id(id, full_name, owner_id)")
     .eq("conversion_reminder_sent", false)
     .not("conversion_deadline", "is", null)
     .gte("conversion_deadline", todayStr)
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   // Same window/shape, but for the final (exam-required) conversion deadline.
   const { data: finalCandidates, error: finalCandidatesError } = await supabase
     .from("client_products")
-    .select("id, product_name, client_id, final_conversion_deadline, clients(id, full_name, owner_id)")
+    .select("id, product_name, client_id, final_conversion_deadline, clients!client_id(id, full_name, owner_id)")
     .eq("final_conversion_reminder_sent", false)
     .not("final_conversion_deadline", "is", null)
     .gte("final_conversion_deadline", todayStr)

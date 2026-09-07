@@ -44,7 +44,7 @@ export default async function HomePage() {
     supabase
       .from("client_products")
       .select(
-        "id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, client_id, clients(id, full_name)"
+        "id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, client_id, clients!client_id(id, full_name)"
       )
       .is("converted_at", null)
       .is("term_contacted_at", null),

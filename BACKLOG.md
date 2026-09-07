@@ -2378,6 +2378,31 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   change.
   **No SQL beyond the migration above** — the weekday change is pure formatting.
 
+- **Real root cause of the empty Outreach/Time-Sensitive lists found — BUILT 9/8, same day.**
+  The error-surfacing added above immediately paid off: instead of a silent empty state, the home
+  page showed the actual database error — "Could not embed because more than one relationship was
+  found for 'client_products' and 'clients'." That's a genuine, previously-invisible bug, and it
+  had nothing to do with the SQL migration.
+  **Root cause:** `client_products` has two separate foreign keys pointing at `clients` —
+  `client_id` (whose client this policy belongs to) and `owner_client_id` (added later, for when
+  someone else — e.g. a parent — owns a juvenile policy). Supabase auto-generates the `clients(...)`
+  join from whichever foreign key it can find, and once a second one existed, it could no longer
+  tell which relationship you meant — so the whole query started failing outright. This wasn't
+  something my broadening introduced; the query shape (`clients(id, full_name)` on a
+  `client_products` select) already looked like this before 9/7, so this has likely been silently
+  broken since `owner_client_id` was added. That silent failure — not the SQL migration, not a
+  data issue on your specific product — is why "Needs Outreach: 0" showed up in the first place;
+  I couldn't have found it without the error text actually surfacing.
+  **Fix:** told Supabase explicitly which foreign key to use for the join —
+  `clients!client_id(id, full_name)` instead of `clients(id, full_name)` — in the home page query
+  and the Outreach view's query. I also found and fixed the exact same bug in the daily
+  conversion-deadline cron job (`check-conversion-deadlines`), which uses the same join shape
+  twice — meaning the 60-days-out auto-reminders for a term policy's no-exam/final conversion
+  deadlines have likely not been firing at all since `owner_client_id` was added. That's now
+  fixed too, so those should start creating reminders again on its next scheduled run.
+  **No SQL to run** — this was a query-shape bug in the app code only, nothing to change in the
+  database.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
