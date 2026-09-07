@@ -144,6 +144,24 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
   const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
 
+  // Page-break-aware layout — added 9/7 per Karina: "dont try to cram everyrhing on one page if
+  // it doesnt fit." Before this, the ONLY page-break check in this generator ran once at the very
+  // end (see the comment further down, near the advisor/disclaimer block), so nothing mid-page
+  // ever stopped a chart, box, or table from starting near the bottom and running off the physical
+  // page edge — which is exactly what happened once the Death Benefit Milestones boxes (added
+  // earlier the same day) pushed a typical cash_value scenario tall enough to clip the Death
+  // Benefit Over Time chart. ensureSpace(needed) is called right before each block whose height is
+  // knowable ahead of drawing it (boxes, tables, charts) — if it wouldn't fit in what's left on the
+  // current page, it starts a fresh page for that whole block instead of letting it spill across
+  // the boundary and get cut off.
+  const PAGE_MAX_Y = 770;
+  function ensureSpace(needed: number) {
+    if (y + needed > PAGE_MAX_Y) {
+      doc.addPage();
+      y = 60;
+    }
+  }
+
   // Header
   setFill(OBSIDIAN);
   doc.rect(0, 0, W, 70, "F");
@@ -189,7 +207,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.text("No milestones entered yet.", M, y);
       y += 20;
     } else {
-      // Table
+      // Table — same page-break reasoning as generateScenarioIllustrationPDF's identical check.
+      ensureSpace(20 + 14 + milestones.length * 16 + 14);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(OBSIDIAN);
@@ -220,7 +239,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
 
       const xLabels = milestones.map((m) => m.label);
 
-      // Cash value chart
+      // Cash value chart — same page-break reasoning as generateScenarioIllustrationPDF's charts.
+      ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(GREEN);
@@ -244,7 +264,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       });
       y += 130;
 
-      // Death benefit chart
+      // Death benefit chart — same page-break reasoning as the Cash Value chart's check above.
+      ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(BLUE);
@@ -274,6 +295,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -322,6 +344,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -363,6 +386,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -384,6 +408,11 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.text("No milestones entered yet.", M, y);
       y += 20;
     } else {
+      // Table + chart together: header/rule/rows (16 + 14 + rows*16 + 14) plus the chart block
+      // itself (~156, same reasoning as the cash_value charts elsewhere in this file but this
+      // one's 120pt tall instead of 110). Checked as one combined block since an annuity scenario
+      // is rarely long enough to need a break between its table and its single chart.
+      ensureSpace(16 + 14 + milestones.length * 16 + 14 + 156);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(OBSIDIAN);
@@ -438,6 +467,9 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
 
     // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
     if (data.hasIncomeRider) {
+      // Conservative estimate (header + amount line + the wrapped tax-treatment note, which runs
+      // ~4-5 lines at this width/size) — same reasoning as the Policy Premium check above.
+      ensureSpace(120);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(OBSIDIAN);
@@ -472,6 +504,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -528,6 +561,24 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
   const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
 
+  // Page-break-aware layout — added 9/7 per Karina: "dont try to cram everyrhing on one page if
+  // it doesnt fit." Before this, the ONLY page-break check in this generator ran once at the very
+  // end (see the comment further down, near the advisor/disclaimer block), so nothing mid-page
+  // ever stopped a chart, box, or table from starting near the bottom and running off the physical
+  // page edge — which is exactly what happened once the Death Benefit Milestones boxes (added
+  // earlier the same day) pushed a typical cash_value scenario tall enough to clip the Death
+  // Benefit Over Time chart. ensureSpace(needed) is called right before each block whose height is
+  // knowable ahead of drawing it (boxes, tables, charts) — if it wouldn't fit in what's left on the
+  // current page, it starts a fresh page for that whole block instead of letting it spill across
+  // the boundary and get cut off.
+  const PAGE_MAX_Y = 770;
+  function ensureSpace(needed: number) {
+    if (y + needed > PAGE_MAX_Y) {
+      doc.addPage();
+      y = 60;
+    }
+  }
+
   // Header
   setFill(OBSIDIAN);
   doc.rect(0, 0, W, 70, "F");
@@ -569,6 +620,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     const hasMinimumPremiumLevel = !!(data.minimumPremium && data.minimumPremium.trim());
     const hasMinimumPremiumIncreasing = !!(data.minimumPremiumIncreasing && data.minimumPremiumIncreasing.trim());
     if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
+      // Rough upper-bound estimate (header + up to 3 dollar lines + the wrapped Increasing note +
+      // trailing gap) — doesn't need to be exact like the boxes/table/chart checks below, just
+      // enough to keep this whole block from starting so close to the bottom that it'd split.
+      ensureSpace(140);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(GRAY);
@@ -630,6 +685,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     const hasInitialDbLevel = !!(data.initialDeathBenefit && data.initialDeathBenefit.trim());
     const hasInitialDbIncreasing = !!(data.initialDeathBenefitIncreasing && data.initialDeathBenefitIncreasing.trim());
     if (hasInitialDbLevel || hasInitialDbIncreasing) {
+      ensureSpace(62); // exact height of this block, see the trailing `y += 62` below
       const both = hasInitialDbLevel && hasInitialDbIncreasing;
       const boxW = both ? (W - 2 * M - 12) / 2 : W - 2 * M;
       const drawInitialDbBox = (x: number, amount: string, label: string) => {
@@ -663,6 +719,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
 
     if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
+      ensureSpace(52); // exact height of this block, see the trailing `y += 52` below
       setFill([245, 240, 220]);
       doc.roundedRect(M, y, W - 2 * M, 40, 4, 4, "F");
       doc.setFont("helvetica", "bold");
@@ -696,15 +753,20 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // chart's legend, so a client can visually connect the two sections.
     const dbTargets = (data.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
     if (dbTargets.length > 0) {
+      const twoUp = dbTargets.length > 1;
+      const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
+      const dbBoxH = 58;
+      const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
+      // Exact height: the section header (12) plus every row of boxes — computed up front so the
+      // header and its boxes are guaranteed to land on the same page rather than the header
+      // printing at the very bottom of one page with its boxes stranded on the next.
+      ensureSpace(12 + dbRows * (dbBoxH + 10));
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(GRAY);
       doc.text("DEATH BENEFIT MILESTONES", M, y);
       y += 12;
-
-      const twoUp = dbTargets.length > 1;
-      const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
-      const dbBoxH = 58;
       const drawAgeMarker = (x: number, markerY: number, color: RGB, dashed: boolean, label: string) => {
         doc.setDrawColor(color[0], color[1], color[2]);
         doc.setLineWidth(2);
@@ -739,7 +801,6 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         drawAgeMarker(boxX + 14, boxY + 44, BLUE, false, levelLabel);
         drawAgeMarker(boxX + 14, boxY + 53, LIGHT_BLUE, true, increasingLabel);
       });
-      const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
       y += dbRows * (dbBoxH + 10) + 4;
     }
 
@@ -765,6 +826,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
 
       // Table — two-part Level vs. Increasing, same column layout as the original per-product
       // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width).
+      // Exact height: header row (20) + rule gap (14) + one line per milestone (16 each) + trailing
+      // gap before the chart (14) — keeps the header from landing alone at the bottom of a page
+      // with its rows stranded on the next.
+      ensureSpace(20 + 14 + milestones.length * 16 + 14);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(OBSIDIAN);
@@ -799,6 +864,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       // Cash value chart — Level solid, Increasing dashed — same legend pattern as the original
       // per-product Illustration's Guaranteed/Non-Guaranteed charts, plus each track above only
       // appears here if it actually has data (see hasAnyValue).
+      // This is the block that was actually getting clipped before 9/7's page-break fix — a
+      // title-height chart runs ~146pt (title + legend gap + the 110pt chart itself), so this
+      // guarantees the whole chart, not just its title, starts on a page with room for it.
+      ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(GREEN);
@@ -820,6 +889,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += 130;
 
       // Death benefit chart — same Level/Increasing split.
+      ensureSpace(146); // same reasoning as the Cash Value chart's check above
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(BLUE);
@@ -846,6 +916,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -894,6 +965,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -980,6 +1052,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }
@@ -1001,6 +1074,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.text("No milestones entered yet.", M, y);
       y += 20;
     } else {
+      // Table + chart together: header/rule/rows (16 + 14 + rows*16 + 14) plus the chart block
+      // itself (~156, same reasoning as the cash_value charts elsewhere in this file but this
+      // one's 120pt tall instead of 110). Checked as one combined block since an annuity scenario
+      // is rarely long enough to need a break between its table and its single chart.
+      ensureSpace(16 + 14 + milestones.length * 16 + 14 + 156);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(OBSIDIAN);
@@ -1055,6 +1133,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
 
     // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
     if (data.hasIncomeRider) {
+      // Conservative estimate (header + amount line + the wrapped tax-treatment note, which runs
+      // ~4-5 lines at this width/size) — same reasoning as the Policy Premium check above.
+      ensureSpace(120);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(OBSIDIAN);
@@ -1089,6 +1170,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+      ensureSpace(nl.length * 12 + 10);
       doc.text(nl, M, y);
       y += nl.length * 12 + 10;
     }

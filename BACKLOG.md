@@ -1966,6 +1966,31 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   69/68) to confirm the boxes fit cleanly side by side with no overlap before shipping this.
   Touched: `illustration-pdf.ts` only — no change to the form inputs, no SQL to run.
 
+- **PDF page breaks fixed — charts were getting cut off — BUILT 9/7, same day.** Karina, after
+  the boxes above shipped and pushed a typical cash_value scenario taller: "now the graphs get
+  cutoff. dont try to cram everyrhing on one page if it doesnt fit." Root cause: this generator
+  only ever had ONE page-break check, at the very end (right before the "Prepared by"/disclaimer
+  footer) — everything above that just kept drawing at increasing y with nothing stopping a chart,
+  box, or table from starting near the bottom of a page and running straight off the physical
+  edge. The new Death Benefit Milestones boxes were what finally pushed a typical scenario past
+  that edge mid-chart.
+  **Fix:** added an `ensureSpace(neededHeight)` check, called right before every block whose
+  height can be known ahead of drawing it — the Policy Premium text, the Initial Death Benefit
+  boxes, the Death Benefit Increase note box, the Death Benefit Milestones boxes, the milestones
+  table, both charts (Cash Value and Death Benefit), the Notes text, and the annuity table/chart
+  and Income Rider block — in both `generateIllustrationPDF` (per-product) and
+  `generateScenarioIllustrationPDF` (scenarios), since both share the same charts and were both at
+  risk. If a block wouldn't fit in what's left on the current page, it now starts a fresh page for
+  that whole block instead of spilling across the boundary and clipping. A scenario with this much
+  content (Policy Premium + both DB boxes + DB Increase note + 2 Death Benefit Milestone targets +
+  a 4-row table + 2 charts) now runs to 2 pages instead of 1, which is the intended trade-off —
+  nothing is cut off, and the "Prepared by" footer still lands right after the last chart rather
+  than orphaned alone on its own page.
+  **Verified, not just built:** rendered the actual generator (not a mockup) with Karina's real
+  numbers from her screenshot — same client, same $500K/$1M targets, same milestone table — and
+  confirmed both charts now print in full across the 2 resulting pages before shipping this.
+  Touched: `illustration-pdf.ts` only, both PDF generator functions — no SQL to run.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the
