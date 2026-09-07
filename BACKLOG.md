@@ -1952,6 +1952,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   behavior change. Touched: `IllustrationForm.tsx`, `ScenarioForm.tsx`. No SQL to run, no schema
   change — purely a client-side save-timing change, same server actions as before.
 
+- **Death Benefit Milestones made visual — BUILT 9/7, same day.** Karina, right after seeing the
+  new section on a real PDF: "can the death benefit milestones be more visual in layout?" The
+  original version was plain text lines ("$500,000 reached — Level: age 55 · Increasing: age
+  53"), which blended into the page sitting right below the colored Initial Death Benefit boxes.
+  Reworked to match: each target now gets its own rounded box, two per row (same side-by-side
+  pattern as the Initial Death Benefit boxes above it) — big dollar amount, then a small "Level"
+  / "Increasing" line under it with a colored marker (solid vs. dashed) for each age. Used blue
+  rather than green specifically to match the Death Benefit (Level)/(Increasing) chart further
+  down this same PDF — same colors, same solid-vs-dashed convention as that chart's legend — so
+  the two sections visually connect instead of the milestone boxes looking unrelated to the chart
+  right below them. Rendered a sample PDF with Karina's own numbers ($500K/$1M, ages 55/53 and
+  69/68) to confirm the boxes fit cleanly side by side with no overlap before shipping this.
+  Touched: `illustration-pdf.ts` only — no change to the form inputs, no SQL to run.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the

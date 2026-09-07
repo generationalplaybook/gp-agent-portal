@@ -687,24 +687,60 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // separate from the detailed age-by-age table below. Only targets with an amount actually
     // filled in are shown; an age left blank on one side (Level vs. Increasing) prints as "—"
     // rather than being silently dropped, so it's clear that side just wasn't entered.
+    // Reworked 9/7, same day, per Karina: "can the death benefit milestones be more visual in
+    // layout?" — the plain text-line version blended into the page next to the colored Initial
+    // Death Benefit boxes above it. Now each target gets its own box, two per row (matching the
+    // Initial Death Benefit boxes' side-by-side pattern), in blue rather than green specifically
+    // to match the Death Benefit (not Cash Value) chart's color coding further down this same
+    // page — Level solid blue, Increasing dashed light blue, same colors and dash style as that
+    // chart's legend, so a client can visually connect the two sections.
     const dbTargets = (data.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
     if (dbTargets.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(GRAY);
       doc.text("DEATH BENEFIT MILESTONES", M, y);
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      setText(OBSIDIAN);
-      dbTargets.forEach((t) => {
-        const amount = "$" + formatMoney(t.targetAmount);
-        const levelAge = t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—";
-        const increasingAge = t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—";
-        doc.text(amount + " reached — Level: " + levelAge + "   ·   Increasing: " + increasingAge, M, y);
-        y += 14;
+      y += 12;
+
+      const twoUp = dbTargets.length > 1;
+      const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
+      const dbBoxH = 58;
+      const drawAgeMarker = (x: number, markerY: number, color: RGB, dashed: boolean, label: string) => {
+        doc.setDrawColor(color[0], color[1], color[2]);
+        doc.setLineWidth(2);
+        if (dashed) doc.setLineDashPattern([2, 1.5], 0);
+        doc.line(x, markerY, x + 12, markerY);
+        doc.setLineDashPattern([], 0);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        setText(CHARCOAL);
+        doc.text(label, x + 16, markerY + 2.5);
+      };
+      dbTargets.forEach((t, i) => {
+        const col = twoUp ? i % 2 : 0;
+        const row = twoUp ? Math.floor(i / 2) : i;
+        const boxX = col === 0 ? M : M + dbBoxW + 12;
+        const boxY = y + row * (dbBoxH + 10);
+        // Re-set the fill immediately before each box for the same reason as drawInitialDbBox
+        // above — text draws in between would otherwise clobber the fill color for the next box.
+        setFill([230, 236, 245]);
+        doc.roundedRect(boxX, boxY, dbBoxW, dbBoxH, 4, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        setText(BLUE);
+        doc.text("$" + formatMoney(t.targetAmount), boxX + 14, boxY + 22);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        setText(CHARCOAL);
+        doc.text("Death Benefit Reached", boxX + 14, boxY + 33);
+        const levelLabel = "Level: " + (t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—");
+        const increasingLabel =
+          "Increasing: " + (t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—");
+        drawAgeMarker(boxX + 14, boxY + 44, BLUE, false, levelLabel);
+        drawAgeMarker(boxX + 14, boxY + 53, LIGHT_BLUE, true, increasingLabel);
       });
-      y += 10;
+      const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
+      y += dbRows * (dbBoxH + 10) + 4;
     }
 
     const milestones = data.milestones.filter((m) => m.label.trim());
