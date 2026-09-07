@@ -5,9 +5,14 @@
 // shows up in the SERVER's timezone, not the advisor's. This tiny client
 // component defers formatting to the browser, where `toLocaleString()`
 // correctly uses the viewer's real local timezone.
+//
+// Default includes the weekday (Karina, 9/8: "we should show the day, like, if it's Tuesday...
+// if I'm looking at this at a glance, I might say, oh, no, I'm good to go on that day when
+// you're really not" — because dateStyle/timeStyle can't be combined with an explicit weekday
+// field, this spells every field out instead of using the old { dateStyle, timeStyle } shorthand.
 export default function LocalDateTime({
   iso,
-  options = { dateStyle: "medium", timeStyle: "short" },
+  options = { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" },
 }: {
   iso: string;
   options?: Intl.DateTimeFormatOptions;

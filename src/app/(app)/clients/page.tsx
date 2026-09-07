@@ -37,7 +37,7 @@ export default async function ClientsPage({
   // getNextOutreachMilestone in lib/products.ts for why. Fetched regardless of which view is
   // active so the "Outreach" chip's count badge always reflects reality, same pattern as Needs
   // Review above.
-  const { data: termProductsRaw } = await supabase
+  const { data: termProductsRaw, error: termProductsError } = await supabase
     .from("client_products")
     .select(
       "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, client_id, clients(id, full_name)"
@@ -168,11 +168,16 @@ export default async function ClientsPage({
 
       {outreachView ? (
         <div className="flex flex-col gap-6">
+          {termProductsError && (
+            <div className="rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-4 text-sm font-semibold text-[#8B1A1A]">
+              Couldn&rsquo;t load the outreach list — {termProductsError.message}
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8b6a00]">
               Needs Outreach ({needsOutreach.length})
             </p>
-            {needsOutreach.length === 0 && (
+            {needsOutreach.length === 0 && !termProductsError && (
               <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-6 text-center text-sm text-[#707070]">
                 Nothing needs outreach right now.
               </div>

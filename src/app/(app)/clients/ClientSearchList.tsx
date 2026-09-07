@@ -102,7 +102,7 @@ export default function ClientSearchList({
                 {nextReminder && (
                   <div className="text-right text-xs text-[#707070]">
                     Follow up<br />
-                    <LocalDateTime iso={nextReminder} options={{ dateStyle: "medium" }} />
+                    <LocalDateTime iso={nextReminder} options={{ weekday: "short", month: "short", day: "numeric", year: "numeric" }} />
                   </div>
                 )}
               </Link>

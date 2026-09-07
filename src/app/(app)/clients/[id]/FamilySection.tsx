@@ -208,7 +208,7 @@ export default function FamilySection({
                 {m.nextReminder && (
                   <p className="text-[11px] text-[#707070]">
                     Next reminder:{" "}
-                    {new Date(m.nextReminder.remind_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    {new Date(m.nextReminder.remind_at).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                     {m.nextReminder.message ? ` — ${m.nextReminder.message}` : ""}
                   </p>
                 )}

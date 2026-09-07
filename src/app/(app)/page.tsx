@@ -19,7 +19,13 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: clients }, { data: meetings }, { data: reminders }, { data: termProductsRaw }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: clients },
+    { data: meetings },
+    { data: reminders },
+    { data: termProductsRaw, error: termProductsError },
+  ] = await Promise.all([
     supabase.from("profiles").select("first_name").eq("id", user.id).single(),
     supabase.from("clients").select("id, stage"),
     supabase
@@ -153,13 +159,19 @@ export default async function HomePage() {
                 <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
                 <br />
                 <span className="text-[#666]">
-                  {p.productName} — {p.milestone.label} {formatDateOnly(p.milestone.date)}
+                  {p.productName} — {p.milestone.label}{" "}
+                  {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </div>
             ))}
           </div>
         )}
-        {urgentTermProducts.length === 0 && (
+        {termProductsError && (
+          <p className="mt-4 text-xs font-semibold text-[#8B1A1A]">
+            Couldn&rsquo;t load this — {termProductsError.message}
+          </p>
+        )}
+        {!termProductsError && urgentTermProducts.length === 0 && (
           <p className="mt-4 text-xs text-[#555]">Nothing urgent right now.</p>
         )}
         <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
@@ -231,7 +243,10 @@ export default async function HomePage() {
             {previewMeetings.map((m) => (
               <div key={m.id} className="flex items-baseline justify-between gap-3 py-1.5 text-xs">
                 <span className="whitespace-nowrap text-[#555]">
-                  <LocalDateTime iso={m.meeting_at} options={{ dateStyle: "medium", timeStyle: "short" }} />
+                  <LocalDateTime
+                    iso={m.meeting_at}
+                    options={{ weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }}
+                  />
                 </span>
                 <span className="truncate font-semibold text-[#1C1C1C]">{m.clientName}</span>
               </div>

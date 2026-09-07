@@ -79,7 +79,8 @@ export default function TermOutreachRow({
         </p>
         {milestone ? (
           <p className="mt-0.5 text-xs text-[#666]">
-            {milestone.label}: {formatDateOnly(milestone.date)}
+            {milestone.label}:{" "}
+            {formatDateOnly(milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
           </p>
         ) : (
           <p className="mt-0.5 text-xs text-[#999]">No date on file yet — edit this product to add one.</p>

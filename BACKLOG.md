@@ -2348,6 +2348,36 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   alter table public.client_products add column if not exists annuity_contract_end_date date;
   ```
 
+- **Time-Sensitive/Outreach still showing nothing + weekday added to every date — BUILT 9/8.**
+  Karina, after the fix above: the product page now correctly says "Term ends October 1, 2026,"
+  but the home page's Time-Sensitive banner still says "Nothing urgent right now," and the
+  Outreach view still shows "Needs Outreach: 0" — worse than before, since the previous fix landed
+  and the badge itself is right.
+  **Most likely cause: the SQL migration from the previous entry hasn't been run yet.** Both the
+  home page query and the Outreach view's query now select the new `annuity_contract_end_date`
+  column — if that column doesn't exist yet in your actual Supabase database, the whole query
+  fails outright (not just for the one product — for everything), which would produce exactly
+  this symptom: both lists totally empty even though the underlying data and code are otherwise
+  correct. **Please run this in the Supabase SQL Editor if you haven't yet:**
+  ```sql
+  alter table public.client_products add column if not exists annuity_contract_end_date date;
+  ```
+  I also added error surfacing so this kind of failure is never silent again — if that query fails
+  for any reason (missing column or anything else), the home page banner and the Outreach view now
+  show the actual database error message in red instead of quietly rendering an empty state that
+  looks identical to "nothing to show." If you run the migration and it's still empty, whatever
+  shows up in that red text will tell us exactly what's wrong.
+  **Weekday added everywhere a date is shown.** Karina: "we should show the day, like, if it's
+  Tuesday... if I'm looking at this at a glance, I might say, oh, no, I'm good to go on that day
+  when you're really not." Every meeting, reminder, and outreach/follow-up date across the app now
+  reads like "Tue, Sep 8, 2026" (with time for meetings) instead of just the date — home page
+  previews, the Meetings and Reminders tabs, the "Follow up" date on Clients/Team list rows, a
+  family member's next-reminder line on a client's profile, and the Outreach queue's milestone
+  dates. Left unchanged: purely informational timestamps that aren't about scheduling (e.g. a
+  financial plan's "Last updated" date) — flag it if you want weekday there too, it's a small
+  change.
+  **No SQL beyond the migration above** — the weekday change is pure formatting.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
