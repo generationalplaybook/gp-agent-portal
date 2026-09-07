@@ -683,6 +683,30 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += 52;
     }
 
+    // Death Benefit Milestones — added 9/7 per Karina: a quick "hits $X at age Y" highlight,
+    // separate from the detailed age-by-age table below. Only targets with an amount actually
+    // filled in are shown; an age left blank on one side (Level vs. Increasing) prints as "—"
+    // rather than being silently dropped, so it's clear that side just wasn't entered.
+    const dbTargets = (data.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
+    if (dbTargets.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText(GRAY);
+      doc.text("DEATH BENEFIT MILESTONES", M, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      setText(OBSIDIAN);
+      dbTargets.forEach((t) => {
+        const amount = "$" + formatMoney(t.targetAmount);
+        const levelAge = t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—";
+        const increasingAge = t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—";
+        doc.text(amount + " reached — Level: " + levelAge + "   ·   Increasing: " + increasingAge, M, y);
+        y += 14;
+      });
+      y += 10;
+    }
+
     const milestones = data.milestones.filter((m) => m.label.trim());
     if (milestones.length === 0) {
       doc.setFont("helvetica", "italic");

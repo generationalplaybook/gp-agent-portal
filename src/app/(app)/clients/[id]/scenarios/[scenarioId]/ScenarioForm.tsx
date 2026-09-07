@@ -7,14 +7,22 @@ import RidersField from "../../RidersField";
 import {
   emptyCashValueMilestone,
   emptyAnnuityMilestone,
+  emptyDeathBenefitTarget,
   type IllustrationData,
   type CashValueMilestone,
   type AnnuityMilestone,
+  type DeathBenefitTarget,
   type FinalExpenseIllustration,
 } from "@/lib/illustration";
 import { generateScenarioIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
 
 const MAX_CASH_VALUE_MILESTONES = 5;
+// Death Benefit Milestones (the quick "hits $X at age Y" highlight, distinct from the detailed
+// per-age table above) always shows at least 2 rows — Karina's own example was two targets
+// ($500K/$1M) — and caps at 4, same reasoning as the 5-cap above: keep it to a quick highlight,
+// not another full table.
+const MAX_DEATH_BENEFIT_TARGETS = 4;
+const MIN_DEATH_BENEFIT_TARGETS = 2;
 import { saveScenario, markScenarioChosen, undoScenarioChosen, deleteScenario } from "../actions";
 
 interface Scenario {
@@ -126,6 +134,98 @@ function CashValueMilestonesEditor({
         </button>
       ) : (
         <p className="text-xs text-[#707070]">Maximum of {MAX_CASH_VALUE_MILESTONES} milestones.</p>
+      )}
+    </div>
+  );
+}
+
+// The quick "at what age does the death benefit hit $X" highlight — added 9/7 per Karina.
+// Deliberately lighter than CashValueMilestonesEditor above: one target dollar amount per row,
+// plus the age it's reached under each election (Level and Increasing can hit the same target at
+// different ages, since Increasing starts lower and grows into it). Always at least
+// MIN_DEATH_BENEFIT_TARGETS rows — Remove only appears once there are more than the minimum, so
+// an advisor can never end up with zero or one row and lose the two-target layout Karina asked for.
+function DeathBenefitTargetsEditor({
+  targets,
+  onChange,
+}: {
+  targets: DeathBenefitTarget[];
+  onChange: (t: DeathBenefitTarget[]) => void;
+}) {
+  function update(id: string, patch: Partial<DeathBenefitTarget>) {
+    onChange(targets.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }
+  function remove(id: string) {
+    onChange(targets.filter((t) => t.id !== id));
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {targets.map((t, i) => (
+        <div key={t.id} className="rounded-md border border-[#D9CFBA] p-3">
+          <div className="mb-3 flex items-end justify-between gap-2">
+            <label className="flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
+              {i === 0 ? "Death Benefit Target" : `Death Benefit Target ${i + 1}`}
+              <DollarInput
+                value={t.targetAmount}
+                onChange={(v) => update(t.id, { targetAmount: v })}
+                placeholder="e.g. 500,000"
+                className={inputClass + " w-full"}
+              />
+            </label>
+            {targets.length > MIN_DEATH_BENEFIT_TARGETS && (
+              <button
+                type="button"
+                onClick={() => remove(t.id)}
+                className="mb-1.5 text-xs text-[#8B1A1A] underline hover:text-[#6b1414]"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              <span className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold text-[#1C1C1C]">Age It&rsquo;s Reached</span>
+                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  Level
+                </span>
+              </span>
+              <input
+                value={t.levelAge}
+                onChange={(e) => update(t.id, { levelAge: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="e.g. 45"
+                inputMode="numeric"
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              <span className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold text-[#1C1C1C]">Age It&rsquo;s Reached</span>
+                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                  Increasing
+                </span>
+              </span>
+              <input
+                value={t.increasingAge}
+                onChange={(e) => update(t.id, { increasingAge: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="e.g. 52"
+                inputMode="numeric"
+                className={inputClass + " w-full"}
+              />
+            </label>
+          </div>
+        </div>
+      ))}
+      {targets.length < MAX_DEATH_BENEFIT_TARGETS ? (
+        <button
+          type="button"
+          onClick={() => onChange([...targets, emptyDeathBenefitTarget()])}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add Target
+        </button>
+      ) : (
+        <p className="text-xs text-[#707070]">Maximum of {MAX_DEATH_BENEFIT_TARGETS} targets.</p>
       )}
     </div>
   );
@@ -564,7 +664,23 @@ export default function ScenarioForm({
               />
             </label>
 
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Milestones</h2>
+            <p className="mb-4 text-xs text-[#707070]">
+              A quick highlight for the client: at what age does the death benefit reach a target amount, like
+              $500,000 or $1,000,000? Since Level and Increasing grow into a target differently, the age can be
+              different for each — leave one blank if it doesn&rsquo;t apply. This is separate from the detailed
+              age-by-age table below.
+            </p>
+            <DeathBenefitTargetsEditor
+              targets={
+                data.deathBenefitTargets && data.deathBenefitTargets.length > 0
+                  ? data.deathBenefitTargets
+                  : [emptyDeathBenefitTarget(), emptyDeathBenefitTarget()]
+              }
+              onChange={(deathBenefitTargets) => setData({ ...data, deathBenefitTargets })}
+            />
+
+            <h2 className="mb-1 mt-5 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#707070]">
               For each age that matters, enter the illustrated numbers under both death benefit options — Level
               and Increasing — pulled straight from the carrier&rsquo;s side-by-side illustration, so the client can

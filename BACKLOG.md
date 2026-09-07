@@ -1914,6 +1914,26 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   not correct and this is the kind of claim that could cause a real problem downstream. No schema
   change, no SQL to run.
 
+- **Death Benefit Milestones (IUL/WL scenarios) — BUILT 9/7.** Karina: "should we also have
+  milestone death benefit? two fields. so I can show at what age it hits 500K and what age 1M...
+  advisor inputs the age and the amount." This is deliberately separate from the existing
+  age-by-age Milestones table (which answers "at age Y, what's the cash value / death benefit?")
+  — this new section answers the inverse: "at what age does the death benefit reach a specific
+  target, like $500,000?" Since Level and Increasing grow into a target differently (Level pays
+  the full face amount from day one, Increasing starts lower and grows into it over years), each
+  target gets its own Level age and Increasing age rather than one shared age — confirmed with
+  Karina this should track per election, not one general age.
+  **What it does:** a new "Death Benefit Milestones" section on the cash_value Scenario form
+  (between Death Benefit Increase and the detailed Milestones table), always showing at least 2
+  rows to start (Karina's own example was two targets), each with a dollar-amount target and two
+  age fields (Level / Increasing). "+ Add Target" goes up to 4; "Remove" only appears once there
+  are more than 2, so it can never collapse below the two-target layout she asked for. Shows on
+  the scenario's PDF summary too, as a short "$500,000 reached — Level: age 45 · Increasing: age
+  52" line per target (only targets with an amount entered print; a blank age on either side
+  prints as "—" rather than being dropped, so it's clear that side just wasn't entered).
+  Optional/additive (`deathBenefitTargets` on `CashValueIllustration`) — every existing scenario
+  is unaffected. No SQL to run.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the

@@ -32,6 +32,22 @@ export interface AnnuityMilestone {
   deathBenefit: string;
 }
 
+// A quick "what age does this hit $X" highlight — added 9/7 per Karina, distinct from the
+// detailed per-age Milestones table (CashValueMilestone) above. That table answers "at age Y,
+// what's the cash value / death benefit?" — this answers the inverse: "at what age does the
+// death benefit reach a specific target amount, like $500,000 or $1,000,000?" Since Level and
+// Increasing grow into a target differently (Level pays the full face amount from day one so it
+// may already be there; Increasing starts lower and grows into it over years), the age can
+// genuinely differ between the two — so each target gets its own Level age and Increasing age,
+// not one shared age. Leave either age blank if that election doesn't apply or hasn't been
+// illustrated that far out.
+export interface DeathBenefitTarget {
+  id: string;
+  targetAmount: string;
+  levelAge: string;
+  increasingAge: string;
+}
+
 // IUL, Whole Life, and "Other" all get the same cash-value-over-time shape — the growth
 // mechanics differ but what's worth showing a client is the same: cash value and death benefit,
 // guaranteed vs. non-guaranteed, at a handful of milestone ages. Final Expense Whole Life is
@@ -68,6 +84,13 @@ export interface CashValueIllustration {
   monthlyPremium?: string;
   minimumPremium?: string;
   minimumPremiumIncreasing?: string;
+  // Death Benefit Milestones — added 9/7 per Karina: "should we also have milestone death
+  // benefit... so I can show at what age it hits 500K and what age 1M... advisor inputs the age
+  // and the amount." Deliberately separate from the Milestones table above (see the comment on
+  // DeathBenefitTarget) — a short, quick-read highlight rather than the full growth table.
+  // Optional/additive: undefined on every existing scenario; the editor shows 2 blank rows to
+  // start (Karina confirmed 2 as the default) but lets an advisor add more.
+  deathBenefitTargets?: DeathBenefitTarget[];
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,
@@ -150,6 +173,10 @@ export function emptyCashValueMilestone(): CashValueMilestone {
 
 export function emptyAnnuityMilestone(): AnnuityMilestone {
   return { id: newId(), label: "", accumulationValue: "", incomeValue: "", deathBenefit: "" };
+}
+
+export function emptyDeathBenefitTarget(): DeathBenefitTarget {
+  return { id: newId(), targetAmount: "", levelAge: "", increasingAge: "" };
 }
 
 export function emptyIllustrationFor(productType: string | null | undefined): IllustrationData {
