@@ -123,7 +123,7 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
             placeholder="Product name * (e.g. North American Builder Plus IUL 4)"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select
               value={productType}
               onChange={(e) => setProductType(e.target.value)}

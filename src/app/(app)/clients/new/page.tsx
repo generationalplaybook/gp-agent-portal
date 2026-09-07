@@ -18,7 +18,7 @@ export default async function NewClientPage({
       )}
 
       <form action={createClientRecord} className="flex flex-col gap-4 rounded-lg border border-[#D9CFBA] bg-white p-6">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             First name *
             <input
@@ -61,7 +61,7 @@ export default async function NewClientPage({
             className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
           />
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             Birthdate
             <input
@@ -86,7 +86,7 @@ export default async function NewClientPage({
             </select>
           </label>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             City
             <input

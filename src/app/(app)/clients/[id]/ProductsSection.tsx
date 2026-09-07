@@ -173,7 +173,7 @@ export default function ProductsSection({
             placeholder="Product name * (e.g. Ameritas 30-Year Term with Living Benefits)"
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select
               value={fields.product_type}
               onChange={(e) => {
@@ -198,7 +198,7 @@ export default function ProductsSection({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Issue date
               <input
@@ -286,7 +286,7 @@ export default function ProductsSection({
                   className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
                 />
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Final conversion deadline (exam required, e.g. up to age 75)
                   <input
@@ -314,7 +314,7 @@ export default function ProductsSection({
               />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {!isAnnuity && (
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Face amount
@@ -349,7 +349,7 @@ export default function ProductsSection({
           )}
           {isAnnuity && (
             <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Ongoing contribution (if flexible-premium)
                   <DollarInput

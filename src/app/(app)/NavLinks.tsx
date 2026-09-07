@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const LINKS = [
+// Shared with MobileNav.tsx — the same 9 links, so the mobile drawer never drifts out of sync
+// with the desktop bar. This full row of 9 only fits from md: (768px) up; below that it's fully
+// hidden (see layout.tsx) in favor of MobileNav's hamburger drawer, since a 9-item horizontal row
+// simply doesn't fit on a phone screen — there isn't a smaller-but-still-horizontal version of
+// this that would still be legible.
+export const LINKS = [
   { href: "/", label: "Home" },
   { href: "/clients", label: "Clients" },
   { href: "/meetings", label: "Meetings" },

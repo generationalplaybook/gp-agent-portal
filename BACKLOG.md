@@ -2,6 +2,20 @@
 
 Things Karina has asked to defer to a future build, so they don't get lost.
 
+## ⚠ Needs Testing — built, but NOT yet verified by Karina
+
+- **"Restore access" un-ban — flagged 9/6, Karina knows and does not plan to test right away.**
+  Part of the Advisor Remove Access + client reassignment feature (full writeup under
+  "Requested" below). "Remove access" (ban an advisor's login) has no reason to be broken — it's
+  the same shape as other admin actions already in use. The one piece that's genuinely unverified
+  is the UNDO: "Restore access" sends `ban_duration: "none"` to Supabase's admin API to clear an
+  existing ban, which is Supabase's documented way to do it, but this could not be tested against
+  a live Supabase project from this session. If "Remove access" is ever used on a real advisor and
+  then undone with "Restore access," confirm that advisor can actually log back in — if `"none"`
+  doesn't behave as documented, the fix is straightforward (a separate code path is needed) but
+  someone would be stuck locked out until it's caught. Karina has been told and is intentionally
+  not testing this right away — leaving this flagged here so it isn't forgotten later.
+
 ## Low priority — someday, not urgent
 
 - **Quick links — flagged 9/1, NOT important right now but needs to be addressed at some point.**
@@ -1960,6 +1974,41 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `ban_duration: "none"` to Supabase's admin API, which is documented as the way to clear an
   existing ban — but please actually test that a restored advisor can log back in the first time
   you use it, since this couldn't be checked against a live Supabase project from this session.
+
+- **Mobile responsiveness — full pass — BUILT 9/7.** Karina: "Can we refine mobile version so
+  advisors can put the portal on their home screens and access it right away so we don't have to
+  build an app just yet." Turned out the home-screen piece (Add to Home Screen / PWA installability
+  — `manifest.json`, `apple-touch-icon.png`, the `metadata`/`viewport` exports in `layout.tsx`) was
+  already fully built before this session and working — so I reframed this as being about the
+  actual mobile layout, which was still "very jumbled" per earlier feedback. Asked Karina how much
+  to cover; she said "Full pass, everything at once."
+  **What was wrong:** two systemic causes, not one-off bugs. (1) The top nav bar hard-rendered all
+  9 links (`Home, Clients, Meetings, Reminders, Team, Knowledge Base, Client Analyzer, Compare,
+  Downloads`) in a single row with no mobile fallback — on a phone these either wrapped into a mess
+  or overflowed off-screen. (2) Dozens of form/detail sections across the app used a bare
+  `grid-cols-2` / `grid-cols-3` (no responsive prefix), so two or three fields were forced onto one
+  row no matter how narrow the screen, squeezing labels and inputs unreadably small.
+  **What it does now:** (1) Nav — `NavLinks.tsx`'s link list is now exported and shared with a new
+  `MobileNav.tsx`, a hamburger button (visible only below `md:`, 768px) that opens a full-width
+  drawer with all 9 links plus My Profile / Invite Agents (admins) / Sign out, closes itself on
+  link click, backdrop click, or Escape. `layout.tsx` shows the existing desktop row only at `md:`
+  and up, the hamburger only below it. (2) Grids — every bare `grid-cols-2`/`grid-cols-3` I found
+  (38 instances across 9 files: client intake/new-client forms, illustration forms, family/products
+  sections, scenario forms including the annuity income-rider fields added this session, the client
+  analyzer, and the public client-intake form) now reads `grid-cols-1 sm:grid-cols-2` /
+  `grid-cols-1 sm:grid-cols-3` — single column on a phone, back to the original layout at `sm:`
+  (640px) and up. (3) Added `overflow-x: hidden` on `body` in `globals.css` as a safety net — a
+  narrow miss I didn't specifically catch can no longer force the whole page to scroll sideways on
+  a phone; it clips instead of breaking the layout (doesn't fix an individual component's width,
+  just contains the damage).
+  **Confirmed already fine and left untouched:** the home dashboard, client/team detail pages
+  (`lg:grid-cols-[2fr_1fr]`), the Compare page's one `<table>` (already `overflow-x-auto`-wrapped),
+  and Profile's Carrier Logins / State Licenses tabs (already had their own responsive
+  `grid-cols-2 sm:grid-cols-N` pattern from 9/3). Login/signup/set-password pages had no issues.
+  **No SQL required** — this is entirely front-end (React/Tailwind/CSS), nothing touches the
+  database. **Ask Karina:** this was a systemic sweep based on the patterns that actually cause
+  "jumbled" mobile layouts, not a screen-by-screen click-through on a real phone — if any specific
+  screen still looks off once you're testing on your phone, flag it and I'll spot-fix it directly.
 
 - **Server action error handling.** Discovered while fixing the Invite Agents crash:
   Next.js hides any THROWN error from a server action behind a generic message in

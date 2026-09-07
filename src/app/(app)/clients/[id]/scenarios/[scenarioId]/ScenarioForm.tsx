@@ -82,12 +82,12 @@ function CashValueMilestonesEditor({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
                 Level Death Benefit
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Cash Value
                   <DollarInput value={m.cvNonGuaranteed} onChange={(v) => update(m.id, { cvNonGuaranteed: v })} className={inputClass + " w-full"} />
@@ -102,7 +102,7 @@ function CashValueMilestonesEditor({
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
                 Increasing Death Benefit
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Cash Value
                   <DollarInput value={m.cvIncreasing ?? ""} onChange={(v) => update(m.id, { cvIncreasing: v })} className={inputClass + " w-full"} />
@@ -165,7 +165,7 @@ function AnnuityMilestonesEditor({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Accumulation Value
               <DollarInput
@@ -232,7 +232,7 @@ function FinalExpenseOptionsEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           Guaranteed Death Benefit
           <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
@@ -251,7 +251,7 @@ function FinalExpenseOptionsEditor({
               Remove
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Guaranteed Death Benefit
               <DollarInput
@@ -280,7 +280,7 @@ function FinalExpenseOptionsEditor({
               Remove
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Guaranteed Death Benefit
               <DollarInput
@@ -442,7 +442,7 @@ export default function ScenarioForm({
           {scenario.product_type ?? "Product type"} — the product type was set when this scenario was created and
           can&rsquo;t be changed here (delete and start a new one if it was picked wrong).
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Product name
             <input value={productName} onChange={(e) => setProductName(e.target.value)} className={inputClass} />
@@ -471,7 +471,7 @@ export default function ScenarioForm({
                 className={inputClass}
               />
             </label>
-            <div className="mb-1.5 grid max-w-md grid-cols-2 gap-4">
+            <div className="mb-1.5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
@@ -513,7 +513,7 @@ export default function ScenarioForm({
               each age. Carriers can quote a different starting face amount for Level vs. Increasing even though
               both work toward the same eventual target.
             </p>
-            <div className="mb-5 grid max-w-md grid-cols-2 gap-4">
+            <div className="mb-5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 <span className="flex flex-col gap-1">
                   <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
@@ -580,7 +580,7 @@ export default function ScenarioForm({
         {data.kind === "term" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Death Benefit
                 <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
@@ -689,7 +689,7 @@ export default function ScenarioForm({
                     </label>
                   </div>
 
-                  <div className="grid max-w-md grid-cols-2 gap-3">
+                  <div className="grid max-w-md grid-cols-1 sm:grid-cols-2 gap-3">
                     {data.incomeStartTiming === "deferred" && (
                       <label className="flex flex-col gap-1 text-xs text-[#666]">
                         Age Income Starts

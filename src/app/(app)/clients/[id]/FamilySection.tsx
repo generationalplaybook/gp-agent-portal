@@ -333,7 +333,7 @@ export default function FamilySection({
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
@@ -368,7 +368,7 @@ export default function FamilySection({
                   className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
                 />
               )}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
                   Birthdate
                   <input

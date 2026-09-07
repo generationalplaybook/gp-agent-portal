@@ -209,7 +209,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Date of Birth">
           <input type="date" value={inputs.dob} onChange={(e) => set("dob", e.target.value)} className={inputClass} />
         </Field>
@@ -240,7 +240,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </select>
       </Field>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Field label="Height (ft)">
           <input
             type="number"
@@ -469,7 +469,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           </Field>
         </>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Annual Income" optional>
           <CurrencyInput
             value={inputs.income ?? ""}

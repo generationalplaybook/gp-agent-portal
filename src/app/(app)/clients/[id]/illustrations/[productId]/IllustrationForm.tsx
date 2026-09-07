@@ -57,7 +57,7 @@ function CashValueMilestonesEditor({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Cash Value — Guaranteed
               <DollarInput value={m.cvGuaranteed} onChange={(v) => update(m.id, { cvGuaranteed: v })} className={inputClass + " w-full"} />
@@ -130,7 +130,7 @@ function AnnuityMilestonesEditor({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Accumulation Value
               <DollarInput
@@ -241,7 +241,7 @@ export default function IllustrationForm({
         {data.kind === "term" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Death Benefit
                 <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
@@ -283,7 +283,7 @@ export default function IllustrationForm({
               Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
               life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Guaranteed Death Benefit
                 <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
