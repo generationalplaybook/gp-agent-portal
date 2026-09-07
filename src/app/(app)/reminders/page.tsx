@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ReminderRow from "../ReminderRow";
+import AddReminderButton from "./AddReminderButton";
 import type { ReminderOwner } from "./actions";
 
 export default async function RemindersPage() {
@@ -30,10 +31,13 @@ export default async function RemindersPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Reminders</h1>
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="font-serif text-2xl text-[#1C1C1C]">Reminders</h1>
+        <AddReminderButton />
+      </div>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {pending.length === 0 && (
-          <p className="text-sm text-[#707070]">No reminders set. Add one from a client&rsquo;s or recruit&rsquo;s profile.</p>
+          <p className="text-sm text-[#707070]">No reminders set. Add one above, or from a client&rsquo;s or recruit&rsquo;s profile.</p>
         )}
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {pending.map((r) => (

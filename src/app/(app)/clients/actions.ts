@@ -291,6 +291,10 @@ export async function addMeeting(
   if (error) throw new Error(error.message);
 
   revalidatePath(`/clients/${clientId}`);
+  // Added 9/7 — a meeting can now also be created from the global Meetings tab itself (see
+  // AddMeetingButton.tsx), not just from a client's profile, so that list needs to refresh too.
+  // Mirrors deleteMeeting below, which already revalidates both for the same reason.
+  revalidatePath("/meetings");
 }
 
 export async function deleteMeeting(meetingId: string, clientId: string): Promise<void> {
@@ -364,6 +368,33 @@ export async function searchFamilyCandidates(
 
   if (error || !data) return [];
   return data.filter((c) => !excludeIds.includes(c.id));
+}
+
+// Powers the client picker on the Meetings/Reminders "quick add" flow (ClientPicker.tsx) — added
+// 9/7 per Karina: "right now, it's too many steps [to schedule a meeting]... it could be much
+// faster by just going into one of the tabs that I need," rather than having to open a specific
+// client's profile first. Deliberately a separate action from searchFamilyCandidates above (same
+// underlying query) rather than reusing it with an empty excludeIds array: that one's return shape
+// is family-linking-specific (stage, no birth_date) and its name ties it to that feature, so a
+// second small action keeps each call site's intent obvious. Includes birth_date so the picker can
+// show it as a disambiguator when two results share the same name (Karina: "when there is a client
+// that's got the same name, it also shows their birth date underneath their name").
+export async function searchClientsForPicker(
+  query: string
+): Promise<{ id: string; full_name: string; birth_date: string | null }[]> {
+  const { supabase } = await requireUser();
+  const q = query.trim();
+  if (!q) return [];
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, full_name, birth_date")
+    .ilike("full_name", `%${q}%`)
+    .order("full_name")
+    .limit(15);
+
+  if (error || !data) return [];
+  return data;
 }
 
 export async function linkExistingFamilyMember(

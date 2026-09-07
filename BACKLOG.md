@@ -2128,6 +2128,48 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   the DB Increase note but no DB Milestones or Cash Value Increasing data, to confirm the wider gaps
   don't look excessive when less content follows. No SQL to run.
 
+- **Quick-add Meeting/Reminder from their own tabs — BUILT 9/7.** Karina: "for meetings and
+  reminders when you're on that tab, you should be able to put in... add meeting... where somebody
+  can create a meeting... right from that tab, and then they can start typing in the client's name
+  and it auto populates... right now, it's too many steps. If I'm on meetings and I'm like, oh, I
+  need to schedule a meeting real quick, I have to go to the clients tab and then have to find the
+  client." Also asked how to tell apart clients who share a name in that search: "when there is a
+  client that's got the same name, it also shows their birth date underneath their name."
+  **What was built:** a "+ Add Meeting" button on `/meetings` and a "+ Add Reminder" button on
+  `/reminders` (top-right of the page, next to the title — same style as the Clients tab's
+  "+ New Client"), each opening a small centered modal with a client-search field, a date/time
+  picker, and the same fields the per-client cards already collect (location + notes for meetings,
+  a note for reminders). Both modals call the exact same `addMeeting`/`addReminder` server actions
+  the existing per-client cards (`MeetingsCard.tsx`/`RemindersCard.tsx`) already use — no new
+  insert logic, no schema change, just a second way to reach the same action without opening a
+  client's profile first.
+  **New shared client picker** (`ClientPicker.tsx`) — search-as-you-type against a new
+  `searchClientsForPicker` action (`clients/actions.ts`, same ILIKE-on-full_name/limit-15 pattern
+  as the existing family-linking picker, `searchFamilyCandidates`, just without that one's
+  family-specific exclude-list and stage field). Picking a result fills the client in; a "Change"
+  link clears it and re-opens the search.
+  **Disambiguation:** if two or more of the current search results share the same name, each of
+  those rows shows its birth date underneath (formatted from the `birth_date` column, e.g. "Mar 14,
+  1985"; "No birth date on file" if it's blank, so it's clear there's nothing to tell them apart
+  with rather than looking like the picker forgot). Names that aren't ambiguous in the current
+  result set show nothing extra, so this doesn't clutter the normal case. This is deliberately
+  scoped to "only when it matters" rather than always showing birth date — Karina's message offered
+  both ("or it should just show the birth date all the time or something") so I picked the less
+  noisy option; easy to flip to "always show it" if that turns out to be preferred once she's used
+  it live.
+  **Reminders note:** the picker on `/reminders` only searches clients, not recruits — Karina's ask
+  was specifically about clients, and the existing recruit-reminder flow (from a recruit's own
+  profile page) is untouched.
+  **Not visually tested against real data** — this sandbox has no live Supabase session/browser to
+  click through against Karina's actual client list, so verification here was `npm run lint` +
+  `npm run build` (full TypeScript type-check across every changed/new file) only, not a screenshot
+  like the PDF work above. Worth a quick real click-through once applied — flag anything off with
+  the modal, the search, or the birth-date disambiguation and it's a fast fix.
+  **No SQL to run** — no schema changes, `addMeeting` picked up one more `revalidatePath("/meetings")`
+  call (mirroring what `deleteMeeting` already did) so the global list refreshes when a meeting is
+  added from `/meetings` itself, not just from a client's page; `addReminder` already revalidated
+  `/reminders` for every write, so no change needed there.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the

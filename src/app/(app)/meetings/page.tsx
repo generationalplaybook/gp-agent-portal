@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import MeetingRow from "./MeetingRow";
+import AddMeetingButton from "./AddMeetingButton";
 
 // One place to see every upcoming meeting across every client, soonest first — pulled together
 // from client_meetings, which is the same table each client's "Meetings & Calls" card reads
@@ -25,10 +26,13 @@ export default async function MeetingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Meetings</h1>
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="font-serif text-2xl text-[#1C1C1C]">Meetings</h1>
+        <AddMeetingButton />
+      </div>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {upcoming.length === 0 && (
-          <p className="text-sm text-[#707070]">No upcoming meetings. Add one from a client&rsquo;s profile.</p>
+          <p className="text-sm text-[#707070]">No upcoming meetings. Add one above, or from a client&rsquo;s profile.</p>
         )}
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {upcoming.map((m) => {
