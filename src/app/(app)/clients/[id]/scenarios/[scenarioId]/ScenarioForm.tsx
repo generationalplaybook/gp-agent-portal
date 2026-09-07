@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DollarInput from "../../DollarInput";
 import RidersField from "../../RidersField";
@@ -441,7 +441,7 @@ export default function ScenarioForm({
   const converted = !!scenario.converted_product_id;
   const [chosenAt, setChosenAt] = useState<string | null>(scenario.chosen_at);
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     setStatus("saving");
     setError("");
     try {
@@ -452,7 +452,33 @@ export default function ScenarioForm({
       setError(e instanceof Error ? e.message : "Could not save scenario.");
       setStatus("idle");
     }
-  }
+  }, [scenario.id, clientId, productName, carrier, notes, data]);
+
+  // Autosave — added 9/7 per Karina: "can illustration input auto save like the client profile
+  // info does? not hitting save and losing info can be tedious." Same reasoning as the identical
+  // block in IllustrationForm.tsx: the client profile form saves per-field on blur, but that
+  // doesn't map cleanly onto this form's deeply nested milestone/target editors (none of which
+  // have an onBlur of their own) — so instead this watches the whole editable surface
+  // (productName, carrier, notes, data) and autosaves 1.5s after the last change. The manual Save
+  // button, and handleMarkChosen's own explicit save-before-marking below, are both left in place
+  // exactly as they were — autosave just means neither should ever actually find unsaved work
+  // waiting for it.
+  const hasMountedRef = useRef(false);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      // Skip the very first run — this state just loaded from the database, nothing new to save.
+      hasMountedRef.current = true;
+      return;
+    }
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      handleSave();
+    }, 1500);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [productName, carrier, notes, data, handleSave]);
 
   function handleDownload() {
     generateScenarioIllustrationPDF(
@@ -855,7 +881,8 @@ export default function ScenarioForm({
 
         {error && <p className="mt-3 text-xs text-[#8B1A1A]">{error}</p>}
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        <p className="mt-3 text-[11px] text-[#8b8b8b]">Changes save automatically as you type.</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-3">
           <button
             type="button"
             disabled={status === "saving"}

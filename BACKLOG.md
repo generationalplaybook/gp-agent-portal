@@ -1934,6 +1934,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Optional/additive (`deathBenefitTargets` on `CashValueIllustration`) — every existing scenario
   is unaffected. No SQL to run.
 
+- **Illustration/Scenario forms now autosave — BUILT 9/7.** Karina: "can illustration input auto
+  save like the client profile info does? not hitting save and losing info can be tedious." The
+  client profile form (ContactInfoForm.tsx) saves per-field on blur, but that pattern doesn't map
+  cleanly onto the Illustration/Scenario forms — the milestone/target/rider editors are deeply
+  nested sub-components with no onBlur of their own, and threading one down through every one of
+  them would be far more invasive than this needed. Instead, both forms now watch their whole
+  editable state (Illustration: `data`; Scenario: product name, carrier, notes, and `data`) and
+  autosave 1.5 seconds after the last change — long enough that a burst of typing doesn't trigger
+  a save per keystroke, short enough that closing the tab or clicking away a couple seconds after
+  the last edit won't lose anything. Uses the exact same save action and "Saving…/Saved ✓"
+  indicator the manual Save button already used — autosave and the button both just call it.
+  **The manual Save button stays** (so does the explicit save `handleMarkChosen` already did
+  before marking a scenario chosen) — nothing about how those work changed, autosave just means
+  neither should ever actually find unsaved work waiting for it. Added a small "Changes save
+  automatically as you type" line above the button row on both forms so it's not a silent
+  behavior change. Touched: `IllustrationForm.tsx`, `ScenarioForm.tsx`. No SQL to run, no schema
+  change — purely a client-side save-timing change, same server actions as before.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import DollarInput from "../../DollarInput";
 import RidersField from "../../RidersField";
 import {
@@ -178,7 +178,7 @@ export default function IllustrationForm({
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState("");
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     setStatus("saving");
     setError("");
     try {
@@ -189,7 +189,33 @@ export default function IllustrationForm({
       setError(e instanceof Error ? e.message : "Could not save illustration.");
       setStatus("idle");
     }
-  }
+  }, [clientId, product.id, product.product_type, data]);
+
+  // Autosave — added 9/7 per Karina: "can illustration input auto save like the client profile
+  // info does? not hitting save and losing info can be tedious." The client profile form
+  // (ContactInfoForm.tsx) saves on blur field-by-field, but that pattern doesn't map cleanly onto
+  // this form — the milestone/rider editors are deeply nested sub-components with no onBlur of
+  // their own, and threading one down through all of them would be far more invasive than this
+  // form needs. Simpler and just as effective: watch the whole `data` object and, 1.5s after the
+  // last change (so a burst of keystrokes doesn't trigger a save per keystroke), call the same
+  // save the Save button uses. The manual Save button stays too, for anyone who wants to force an
+  // immediate save rather than wait out the debounce.
+  const hasMountedRef = useRef(false);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      // Skip the very first run — `data` just loaded from the database, there's nothing new to save.
+      hasMountedRef.current = true;
+      return;
+    }
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      handleSave();
+    }, 1500);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [data, handleSave]);
 
   function handleDownload() {
     generateIllustrationPDF(
@@ -332,7 +358,8 @@ export default function IllustrationForm({
 
         {error && <p className="mt-3 text-xs text-[#8B1A1A]">{error}</p>}
 
-        <div className="mt-5 flex items-center gap-3">
+        <p className="mt-3 text-[11px] text-[#8b8b8b]">Changes save automatically as you type.</p>
+        <div className="mt-1.5 flex items-center gap-3">
           <button
             type="button"
             disabled={status === "saving"}
