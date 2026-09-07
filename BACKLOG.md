@@ -2170,6 +2170,29 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   added from `/meetings` itself, not just from a client's page; `addReminder` already revalidated
   `/reminders` for every write, so no change needed there.
 
+- **PDF milestones table: "Age Age 65" fixed — BUILT 9/7.** Karina: "the PDF has a mistake. It says
+  age age sixty five, age age eighty five. We need to move age to the top as a heading, like how
+  cash value, cash value level, cash value increasing, death benefit level, death benefit increasing
+  is a heading... put age on that line, and then don't have age there again in the line."
+  **Root cause:** in `generateScenarioIllustrationPDF`, the milestones table's first column header
+  was blank, and the row below it printed `"Age " + m.label` — but `CashValueMilestone.label` is
+  itself a freeform field an advisor types as e.g. "Age 65" (that's literally the example in its own
+  doc comment), so typing "Age 65" as the label produced "Age Age 65" once the code's own "Age "
+  prefix was added on top. The same doubled-up text was also feeding the Cash Value/Death Benefit
+  charts' x-axis tick labels below the table, so the bug showed up in three places on the PDF, not
+  just the one Karina spotted.
+  **Fix:** first column now has "Age" as its own bold heading (matching the other four column
+  headings' style), and the row prints `m.label` as typed, with no forced prefix — same fix applied
+  to the chart x-axis labels. Also added the same "Age" heading to the per-product
+  `generateIllustrationPDF`'s equivalent table for consistency (that one's row never had the double-
+  prefix bug, since it never added "Age " itself, but it also had no heading — now both generators
+  match). Only touches the cash_value milestones tables specifically — the annuity milestones table
+  (Year 5/Year 10-style labels, a different field with different conventions) is untouched.
+  **Verified:** re-rendered both generators with milestone labels of "Age 65"/"Age 85" (the same
+  values Karina's screenshot showed) — table now reads "Age" as the heading with a clean "Age 65" /
+  "Age 85" in each row, and both charts' x-axis labels read the same way, no doubling anywhere.
+  Touched: `illustration-pdf.ts` only — no SQL to run.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the

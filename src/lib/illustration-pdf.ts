@@ -242,7 +242,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(8);
       setText(OBSIDIAN);
       const colX = [M, M + 105, M + 220, M + 335, M + 450];
-      const headers = ["", "Cash Value\n(Guaranteed)", "Cash Value\n(Non-Guar.)", "Death Benefit\n(Guaranteed)", "Death Benefit\n(Non-Guar.)"];
+      const headers = ["Age", "Cash Value\n(Guaranteed)", "Cash Value\n(Non-Guar.)", "Death Benefit\n(Guaranteed)", "Death Benefit\n(Non-Guar.)"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 110 }));
       y += 20;
       doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
@@ -919,7 +919,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       setText(OBSIDIAN);
       const colX = [M, M + 105, M + 220, M + 335, M + 450];
       const colMaxW = 110;
-      const headers = ["", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
+      // "Age" heading fixed 9/7 per Karina: this column used to have no header, and the row below
+      // separately prepended "Age " to whatever the advisor typed as the milestone label — since
+      // that label is usually already something like "Age 65" (CashValueMilestone.label's own
+      // doc comment gives that as the first example), the two together printed "Age Age 65" on
+      // the PDF. Now "Age" is the column heading, same as the other four, and the row below prints
+      // whatever was typed as-is — no more forced prefix.
+      const headers = ["Age", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: colMaxW }));
       y += 20;
       doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
@@ -932,7 +938,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       milestones.forEach((m) => {
         setText(OBSIDIAN);
         doc.setFont("helvetica", "bold");
-        doc.text("Age " + m.label, colX[0], y);
+        doc.text(m.label, colX[0], y);
         doc.setFont("helvetica", "normal");
         setText(CHARCOAL);
         doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
@@ -946,7 +952,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       // own lead-in below.
       y += 26;
 
-      const xLabels = milestones.map((m) => "Age " + m.label);
+      // Same "Age Age 65" fix as the table above — the chart's x-axis tick labels no longer
+      // double up the "Age " prefix on top of whatever's already in the milestone label.
+      const xLabels = milestones.map((m) => m.label);
 
       // Cash value chart — Level solid, Increasing dashed — same legend pattern as the original
       // per-product Illustration's Guaranteed/Non-Guaranteed charts, plus each track above only
