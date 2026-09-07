@@ -5,10 +5,12 @@ import Link from "next/link";
 import { markTermContacted, undoTermContacted } from "./actions";
 import type { TermMilestone, TermUrgency } from "@/lib/products";
 import { termUrgencyLabel } from "@/lib/products";
+import { formatDateOnly } from "@/lib/dates";
 
-// One row in the "Term" view on the Clients page (Karina, 9/4) — every term policy (convertible
-// or not), soonest-relevant-date first. "Mark Touched Base" moves it into the Contacted group
-// below without deleting it or losing track of when it was reached out to.
+// One row in the "Outreach" view on the Clients page (Karina, 9/4, broadened 9/7 beyond term
+// policies to any product with a relevant end date) — soonest-relevant-date first. "Mark Touched
+// Base" moves it into the Contacted group below without deleting it or losing track of when it
+// was reached out to.
 
 const URGENCY_STYLES: Record<TermUrgency, { badge: string; border: string }> = {
   overdue: { badge: "bg-[#8B1A1A] text-white", border: "border-l-4 border-l-[#8B1A1A]" },
@@ -77,7 +79,7 @@ export default function TermOutreachRow({
         </p>
         {milestone ? (
           <p className="mt-0.5 text-xs text-[#666]">
-            {milestone.label}: {new Date(milestone.date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+            {milestone.label}: {formatDateOnly(milestone.date)}
           </p>
         ) : (
           <p className="mt-0.5 text-xs text-[#999]">No date on file yet — edit this product to add one.</p>

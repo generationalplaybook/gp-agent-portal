@@ -12,6 +12,7 @@ import {
 } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus, getTermUrgency } from "@/lib/products";
+import { formatDateOnly } from "@/lib/dates";
 
 // Ongoing-contribution frequency values map to these plain-English labels wherever they're
 // displayed on an annuity's read-only card.
@@ -96,6 +97,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     annuity_contribution_frequency: p.annuity_contribution_frequency ?? "",
     contract_value: p.contract_value != null ? String(p.contract_value) : "",
     annuity_surrender_end_date: p.annuity_surrender_end_date ?? "",
+    annuity_contract_end_date: p.annuity_contract_end_date ?? "",
   };
 }
 
@@ -383,15 +385,26 @@ export default function ProductRow({
                 className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Surrender period ends
-              <input
-                type="date"
-                value={fields.annuity_surrender_end_date}
-                onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Surrender charge period ends
+                <input
+                  type="date"
+                  value={fields.annuity_surrender_end_date}
+                  onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Annuity contract end date
+                <input
+                  type="date"
+                  value={fields.annuity_contract_end_date}
+                  onChange={(e) => set("annuity_contract_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
           </div>
         )}
         <textarea
@@ -446,9 +459,10 @@ export default function ProductRow({
   // permanent product type, which never shows an expiration at all (Karina, 9/4).
   const displayExpiration = isPermanent ? null : effectiveTermEnd ?? product.expiration_date;
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
-  // A heads-up cue as the surrender period approaches — same 60/30-day language as the Term tab,
-  // but this isn't wired into a separate outreach queue (yet); just a bit of color on the card.
+  // A heads-up cue as the surrender period / contract end approaches — same 60/30-day language as
+  // the Outreach view (both dates are now wired into that queue too — see lib/products.ts).
   const surrenderUrgency = product.annuity_surrender_end_date ? getTermUrgency(product.annuity_surrender_end_date) : null;
+  const contractEndUrgency = product.annuity_contract_end_date ? getTermUrgency(product.annuity_contract_end_date) : null;
   const SURRENDER_TONE: Record<string, string> = {
     overdue: "text-[#707070]",
     critical: "text-[#8B1A1A] font-semibold",
@@ -580,10 +594,9 @@ export default function ProductRow({
 
       {(product.issue_date || displayExpiration) && (
         <p className="text-xs text-[#707070]">
-          {product.issue_date && `Issued ${new Date(product.issue_date).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+          {product.issue_date && `Issued ${formatDateOnly(product.issue_date)}`}
           {product.issue_date && displayExpiration && " · "}
-          {displayExpiration &&
-            `Expires ${new Date(displayExpiration).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+          {displayExpiration && `Expires ${formatDateOnly(displayExpiration)}`}
         </p>
       )}
 
@@ -597,10 +610,9 @@ export default function ProductRow({
 
       {product.no_exam_declined_at && (
         <p className="text-xs text-[#8b6a00]">
-          No-exam window declined by client on{" "}
-          {new Date(product.no_exam_declined_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+          No-exam window declined by client on {formatDateOnly(product.no_exam_declined_at)}
           {product.final_conversion_deadline &&
-            ` — exam required to convert until ${new Date(product.final_conversion_deadline).toLocaleDateString(undefined, { dateStyle: "medium" })}`}
+            ` — exam required to convert until ${formatDateOnly(product.final_conversion_deadline)}`}
         </p>
       )}
 
@@ -624,7 +636,11 @@ export default function ProductRow({
         </p>
       )}
 
-      {isAnnuity && (product.contract_value != null || product.annuity_contribution_amount != null || product.annuity_surrender_end_date) && (
+      {isAnnuity &&
+        (product.contract_value != null ||
+          product.annuity_contribution_amount != null ||
+          product.annuity_surrender_end_date ||
+          product.annuity_contract_end_date) && (
         <div className="flex flex-col gap-0.5 text-xs text-[#707070]">
           {product.contract_value != null && <p>Contract value: ${product.contract_value.toLocaleString()}</p>}
           {product.annuity_contribution_amount != null && (
@@ -636,8 +652,12 @@ export default function ProductRow({
           )}
           {product.annuity_surrender_end_date && (
             <p className={surrenderUrgency ? SURRENDER_TONE[surrenderUrgency] : undefined}>
-              Surrender period ends{" "}
-              {new Date(product.annuity_surrender_end_date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+              Surrender charge period ends {formatDateOnly(product.annuity_surrender_end_date)}
+            </p>
+          )}
+          {product.annuity_contract_end_date && (
+            <p className={contractEndUrgency ? SURRENDER_TONE[contractEndUrgency] : undefined}>
+              Contract ends {formatDateOnly(product.annuity_contract_end_date)}
             </p>
           )}
         </div>

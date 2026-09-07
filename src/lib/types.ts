@@ -357,6 +357,11 @@ export interface ClientProduct {
   // When the surrender-charge period ends — the carrier's own early-withdrawal penalty, distinct
   // from the IRS's 59 1/2 penalty (see clients.turned_59_half_notice_sent).
   annuity_surrender_end_date: string | null;
+  // The annuity contract's own maturity/end date (added 9/7) — e.g. a 5/7/10/15-year contract's
+  // term. Distinct from annuity_surrender_end_date above: the surrender charge period is usually
+  // shorter than (or equal to) the contract itself. Both dates now feed the Outreach queue — see
+  // getNextOutreachMilestone in lib/products.ts.
+  annuity_contract_end_date: string | null;
   created_at: string;
   updated_at: string;
 }

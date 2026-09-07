@@ -21,19 +21,25 @@
 // been filled in yet — so any term policy that already had an expiration date on file before
 // this feature existed lights up immediately, with nothing to re-enter.
 
+import { parseDateOnly } from "./dates";
+
 export interface ProductStatus {
   label: string;
   tone: "good" | "warn" | "bad";
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+// All of expirationDate/conversionDeadline/finalConversionDeadline/termEndDate/etc. below are
+// plain `date` columns — parsed via parseDateOnly (see lib/dates.ts) rather than `new Date(...)`
+// directly, since this file is imported from both server and client components and the latter
+// would otherwise display/compute one day early for any advisor west of UTC.
+function fmtDate(dateStr: string): string {
+  return parseDateOnly(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-function daysUntil(dateIso: string): number {
+function daysUntil(dateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(dateIso);
+  const target = parseDateOnly(dateStr);
   return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
@@ -48,7 +54,7 @@ export function getProductStatus(
   today.setHours(0, 0, 0, 0);
 
   if (expirationDate) {
-    const exp = new Date(expirationDate);
+    const exp = parseDateOnly(expirationDate);
     if (today > exp) return { label: "Expired", tone: "bad" };
   }
 
@@ -56,7 +62,7 @@ export function getProductStatus(
   // quietly passed — still show whether an exam-required conversion is still possible.
   if (noExamDeclinedAt) {
     if (finalConversionDeadline) {
-      const final = new Date(finalConversionDeadline);
+      const final = parseDateOnly(finalConversionDeadline);
       if (today <= final) {
         return { label: `No-exam window declined — exam required to convert until ${fmtDate(finalConversionDeadline)}`, tone: "warn" };
       }
@@ -66,14 +72,14 @@ export function getProductStatus(
   }
 
   if (conversionDeadline) {
-    const deadline = new Date(conversionDeadline);
+    const deadline = parseDateOnly(conversionDeadline);
     if (today <= deadline) {
       return { label: `Convertible, no exam until ${fmtDate(conversionDeadline)}`, tone: "good" };
     }
     // No-exam window has passed (but wasn't explicitly declared declined) — exam-required
     // conversion may still be open up to the final deadline, if one was recorded.
     if (finalConversionDeadline) {
-      const final = new Date(finalConversionDeadline);
+      const final = parseDateOnly(finalConversionDeadline);
       if (today <= final) {
         return { label: `Convertible — exam now required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
       }
@@ -83,7 +89,7 @@ export function getProductStatus(
   }
 
   if (finalConversionDeadline) {
-    const final = new Date(finalConversionDeadline);
+    const final = parseDateOnly(finalConversionDeadline);
     if (today <= final) {
       return { label: `Convertible — exam required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
     }
@@ -103,11 +109,15 @@ export function getProductStatus(
 }
 
 // ─────────────────────────────────────────────────────────────
-// Term outreach — powers the new "Term" view on the Clients page (Karina, 9/4: "it needs to just
-// go to the term tab in order of what's expiring first so the adviser can go in and start looking
-// at them"). A term product can have up to three tracked dates (no-exam conversion deadline,
-// final/exam-required conversion deadline, or a plain term end date for a non-convertible term) —
-// this picks the ONE that's actually relevant right now to sort and color the list by.
+// Outreach — powers the "Outreach" view on the Clients page and the "Time-Sensitive" banner on
+// the home page (Karina, 9/4: "it needs to just go to the term tab in order of what's expiring
+// first so the adviser can go in and start looking at them"). Originally term-only, gated behind
+// the is_convertible ("this is a term policy") checkbox — broadened 9/7 per Karina: "this also
+// shouldn't be just term policies. It should be for anything that has an end date that an adviser
+// would need to touch base with the client for." So this no longer depends on is_convertible at
+// all — any product with a relevant date on file (term or annuity) is a candidate; a product with
+// none of these fields set (permanent life, a quote with nothing filled in yet, etc.) simply
+// yields no milestone and drops out of the queue on its own.
 // ─────────────────────────────────────────────────────────────
 
 export interface TermMilestone {
@@ -115,30 +125,37 @@ export interface TermMilestone {
   label: string;
 }
 
-export interface TermMilestoneSource {
+export interface OutreachMilestoneSource {
   conversion_deadline: string | null;
   final_conversion_deadline: string | null;
   term_end_date: string | null;
   // Fallback for term_end_date — see the 9/4 note above the ProductStatus section. Only used
   // when term_end_date itself is empty.
   expiration_date?: string | null;
+  // Annuity-specific dates (annuity_contract_end_date added 9/7 alongside this broadening) —
+  // never populated on the same row as the term fields above, since a product is either an
+  // annuity or it isn't.
+  annuity_surrender_end_date?: string | null;
+  annuity_contract_end_date?: string | null;
 }
 
-// Prefer the earliest of the three dates that's still upcoming (today or later). If everything
-// tracked has already passed, fall back to the most recently passed one — an overdue term is
+// Prefer the earliest of the tracked dates that's still upcoming (today or later). If everything
+// tracked has already passed, fall back to the most recently passed one — an overdue milestone is
 // exactly why the advisor still needs to see it, not a reason for it to quietly disappear.
-export function getNextTermMilestone(product: TermMilestoneSource): TermMilestone | null {
+export function getNextOutreachMilestone(product: OutreachMilestoneSource): TermMilestone | null {
   const candidates: TermMilestone[] = [];
   if (product.conversion_deadline) candidates.push({ date: product.conversion_deadline, label: "No-exam conversion window" });
   if (product.final_conversion_deadline) candidates.push({ date: product.final_conversion_deadline, label: "Final conversion deadline" });
   const termExpiration = product.term_end_date ?? product.expiration_date ?? null;
   if (termExpiration) candidates.push({ date: termExpiration, label: "Term expiration date" });
+  if (product.annuity_surrender_end_date) candidates.push({ date: product.annuity_surrender_end_date, label: "Surrender charge period ends" });
+  if (product.annuity_contract_end_date) candidates.push({ date: product.annuity_contract_end_date, label: "Annuity contract end date" });
   if (candidates.length === 0) return null;
 
-  const upcoming = candidates.filter((c) => daysUntil(c.date) >= 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const upcoming = candidates.filter((c) => daysUntil(c.date) >= 0).sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime());
   if (upcoming.length > 0) return upcoming[0];
 
-  return candidates.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  return candidates.sort((a, b) => parseDateOnly(b.date).getTime() - parseDateOnly(a.date).getTime())[0];
 }
 
 export type TermUrgency = "overdue" | "critical" | "soon" | "later";

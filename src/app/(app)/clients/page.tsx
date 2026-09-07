@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
-import { getNextTermMilestone, getTermUrgency, type TermMilestone, type TermUrgency } from "@/lib/products";
+import { getNextOutreachMilestone, getTermUrgency, type TermMilestone, type TermUrgency } from "@/lib/products";
+import { parseDateOnly } from "@/lib/dates";
 import TermOutreachRow from "./TermOutreachRow";
 import ClientSearchList from "./ClientSearchList";
 
@@ -12,7 +13,7 @@ export default async function ClientsPage({
 }) {
   const { stage, view } = await searchParams;
   const needsReview = view === "needs_review";
-  const termView = view === "term";
+  const outreachView = view === "outreach";
   const supabase = await createClient();
 
   let query = supabase.from("clients").select("*").order("updated_at", { ascending: false });
@@ -21,7 +22,7 @@ export default async function ClientsPage({
   } else if (stage && CLIENT_STAGES.some((s) => s.value === stage)) {
     query = query.eq("stage", stage as ClientStage);
   }
-  const { data: clients, error } = termView ? { data: null, error: null } : await query;
+  const { data: clients, error } = outreachView ? { data: null, error: null } : await query;
 
   // Separate from the stage filter above — drives the "Needs Review" chip's count badge
   // regardless of which filter is currently active.
@@ -30,45 +31,51 @@ export default async function ClientsPage({
     .select("id", { count: "exact", head: true })
     .eq("intake_pending_review", true);
 
-  // Term outreach (Karina, 9/4) — every term policy (convertible or not) that hasn't been
-  // converted yet, so an advisor can shop new coverage or just touch base before it ends. Fetched
-  // regardless of which view is active so the "Term" chip's count badge always reflects reality,
-  // same pattern as Needs Review above.
+  // Outreach (Karina, 9/4, broadened 9/7) — every product with a relevant end date (term or
+  // annuity) that hasn't been converted yet, so an advisor can shop new coverage or just touch
+  // base before it ends. No longer gated on is_convertible — see the comment above
+  // getNextOutreachMilestone in lib/products.ts for why. Fetched regardless of which view is
+  // active so the "Outreach" chip's count badge always reflects reality, same pattern as Needs
+  // Review above.
   const { data: termProductsRaw } = await supabase
     .from("client_products")
     .select(
-      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, term_contacted_at, client_id, clients(id, full_name)"
+      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, client_id, clients(id, full_name)"
     )
-    .eq("is_convertible", true)
     .is("converted_at", null);
 
-  const termProducts = (termProductsRaw ?? []).map((p) => {
-    const client = p.clients as unknown as { id: string; full_name: string } | null;
-    const milestone: TermMilestone | null = getNextTermMilestone({
-      conversion_deadline: p.conversion_deadline,
-      final_conversion_deadline: p.final_conversion_deadline,
-      term_end_date: p.term_end_date,
-      expiration_date: p.expiration_date,
-    });
-    const urgency: TermUrgency | null = milestone ? getTermUrgency(milestone.date) : null;
-    return {
-      id: p.id,
-      product_name: p.product_name,
-      product_type: p.product_type,
-      carrier: p.carrier,
-      client_id: p.client_id,
-      clientName: client?.full_name ?? "Unknown client",
-      contacted: !!p.term_contacted_at,
-      milestone,
-      urgency,
-    };
-  });
+  const termProducts = (termProductsRaw ?? [])
+    .map((p) => {
+      const client = p.clients as unknown as { id: string; full_name: string } | null;
+      const milestone: TermMilestone | null = getNextOutreachMilestone({
+        conversion_deadline: p.conversion_deadline,
+        final_conversion_deadline: p.final_conversion_deadline,
+        term_end_date: p.term_end_date,
+        expiration_date: p.expiration_date,
+        annuity_surrender_end_date: p.annuity_surrender_end_date,
+        annuity_contract_end_date: p.annuity_contract_end_date,
+      });
+      if (!milestone) return null;
+      const urgency: TermUrgency | null = getTermUrgency(milestone.date);
+      return {
+        id: p.id,
+        product_name: p.product_name,
+        product_type: p.product_type,
+        carrier: p.carrier,
+        client_id: p.client_id,
+        clientName: client?.full_name ?? "Unknown client",
+        contacted: !!p.term_contacted_at,
+        milestone,
+        urgency,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
 
   const sortByMilestone = (a: (typeof termProducts)[number], b: (typeof termProducts)[number]) => {
     if (!a.milestone && !b.milestone) return 0;
     if (!a.milestone) return 1;
     if (!b.milestone) return -1;
-    return new Date(a.milestone.date).getTime() - new Date(b.milestone.date).getTime();
+    return parseDateOnly(a.milestone.date).getTime() - parseDateOnly(b.milestone.date).getTime();
   };
 
   const needsOutreach = termProducts.filter((p) => !p.contacted).sort(sortByMilestone);
@@ -106,7 +113,7 @@ export default async function ClientsPage({
         <Link
           href="/clients"
           className={`rounded-full border px-3 py-1 text-xs font-medium ${
-            !stage && !needsReview && !termView ? "border-[#1C1C1C] bg-[#1C1C1C] text-white" : "border-[#D9CFBA] text-[#2E2E2E]"
+            !stage && !needsReview && !outreachView ? "border-[#1C1C1C] bg-[#1C1C1C] text-white" : "border-[#D9CFBA] text-[#2E2E2E]"
           }`}
         >
           All
@@ -116,9 +123,9 @@ export default async function ClientsPage({
             key={s.value}
             href={`/clients?stage=${s.value}`}
             className={`rounded-full border px-3 py-1 text-xs font-medium ${
-              !needsReview && !termView && stage === s.value ? "text-white" : "border-[#D9CFBA] text-[#2E2E2E]"
+              !needsReview && !outreachView && stage === s.value ? "text-white" : "border-[#D9CFBA] text-[#2E2E2E]"
             }`}
-            style={!needsReview && !termView && stage === s.value ? { backgroundColor: s.color, borderColor: s.color } : {}}
+            style={!needsReview && !outreachView && stage === s.value ? { backgroundColor: s.color, borderColor: s.color } : {}}
           >
             {s.label}
           </Link>
@@ -142,15 +149,15 @@ export default async function ClientsPage({
         )}
         {termProducts.length > 0 && (
           <Link
-            href="/clients?view=term"
+            href="/clients?view=outreach"
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-              termView ? "border-[#8b6a00] bg-[#8b6a00] text-white" : "border-[#8b6a00] text-[#8b6a00]"
+              outreachView ? "border-[#8b6a00] bg-[#8b6a00] text-white" : "border-[#8b6a00] text-[#8b6a00]"
             }`}
           >
-            Term
+            Outreach
             <span
               className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                termView ? "bg-white/25 text-white" : "bg-[#8b6a00] text-white"
+                outreachView ? "bg-white/25 text-white" : "bg-[#8b6a00] text-white"
               }`}
             >
               {needsOutreach.length}
@@ -159,7 +166,7 @@ export default async function ClientsPage({
         )}
       </div>
 
-      {termView ? (
+      {outreachView ? (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8b6a00]">

@@ -576,6 +576,12 @@ export interface ProductFields {
   annuity_contribution_frequency?: string;
   contract_value?: string;
   annuity_surrender_end_date?: string;
+  // The annuity's own maturity/contract-end date (added 9/7, per Karina: "if it's a five year, a
+  // seven year, a ten or a fifteen year, we need to know what that date is") — distinct from
+  // annuity_surrender_end_date (the carrier's early-withdrawal penalty window) above; an annuity
+  // contract can outlast its surrender charge period. Now wired into the Outreach queue alongside
+  // it — see getNextOutreachMilestone in lib/products.ts.
+  annuity_contract_end_date?: string;
 }
 
 function parseNumberOrNull(v?: string): number | null {
@@ -620,6 +626,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
     annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
     contract_value: parseNumberOrNull(fields.contract_value),
     annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
+    annuity_contract_end_date: fields.annuity_contract_end_date?.trim() || null,
   });
   if (error) throw new Error(error.message);
 
@@ -658,6 +665,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
       contract_value: parseNumberOrNull(fields.contract_value),
       annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
+      annuity_contract_end_date: fields.annuity_contract_end_date?.trim() || null,
     })
     .eq("id", productId);
   if (error) throw new Error(error.message);

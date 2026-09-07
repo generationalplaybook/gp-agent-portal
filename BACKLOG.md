@@ -2298,6 +2298,56 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   caused a reported issue yet, but the same silent-masking risk applies to all of them.
   Worth a pass to convert them the same way if more mystery "#441" errors show up.
 
+- **Annuity contract end date + date off-by-one bug fix + Outreach broadened beyond term —
+  BUILT 9/7.** Karina: "when I'm putting in a product as an annuity for a client, there's issue
+  date, policy number, initial premium, surrender period ends... but we also need a date for
+  annuity contract end. Like, if it's a five year, a seven year, a ten or a fifteen year, we need
+  to know what that date is so that we can prepare for it." Then, separately in the same message:
+  a term policy entered with issuance 10/1/2016 and term expiration 10/1/2026 showed the right
+  red "Term ends..." warning but the wrong date on it (September 30 instead of October 1), and
+  didn't show up on the home page's Time-Sensitive section or in the Clients "Term" view's Needs
+  Outreach count even though it's ~24 days out — "This also shouldn't be just term policies. It
+  should be for anything that has an end date that an adviser would need to touch base with the
+  client for."
+  **Three separate things, all fixed:**
+  (1) **New "Annuity contract end date" field.** Added alongside the existing "Surrender period
+  ends" field (relabeled "Surrender charge period ends" for clarity — that one is the carrier's
+  early-withdrawal-penalty window, this new one is the contract's own maturity date; an annuity
+  can outlast its surrender period). New `annuity_contract_end_date` column — **run the migration
+  below**. I didn't reorder the rest of the annuity form (issue date/policy number/premium) since
+  it wasn't clear whether you meant reorder-the-whole-form or just this one field — flag it if you
+  actually wanted the full sequence reshuffled.
+  (2) **The date-off-by-one bug.** Root cause: a plain Postgres `date` column comes back as a bare
+  "2026-10-01" string, and `new Date("2026-10-01")` parses that as UTC midnight — which then
+  displays as the previous day in any US timezone behind UTC (i.e. everywhere in the US). This was
+  hitting every date-only field displayed in a browser: issue date, expiration date, no-exam-
+  declined date, final conversion deadline, term end date/"Term ends..." badge, and the annuity
+  surrender/contract-end dates. Fixed with a new shared helper (`src/lib/dates.ts`) that parses the
+  year/month/day directly instead of going through UTC, applied everywhere these dates get
+  formatted. (The reverse mistake — "fixing" a real timestamp field like `converted_at` or
+  `term_contacted_at` the same way — would have broken those, so I left them alone; they're
+  genuine instants, not calendar dates, and were already displaying correctly.)
+  (3) **Outreach broadened beyond term.** The "Term" view/chip on Clients is now "Outreach", and
+  no longer requires the "this is a term policy" checkbox to be checked — any product with a
+  relevant date on file (term expiration, either conversion deadline, or now either annuity date)
+  shows up, is sorted soonest-first, and can be marked "Touched Base" the same way as before. Same
+  broadening on the home page's banner (renamed "Time-Sensitive Term" → "Time-Sensitive"). A
+  permanent policy (Whole Life/IUL/Final Expense) with no relevant date on file still doesn't show
+  up — nothing forces it into the queue.
+  **On the "Needs Outreach: 0" report specifically:** I traced the query and computation logic
+  carefully and it looks correct — a term product with `is_convertible` true, not converted, not
+  marked contacted should have appeared even before this fix, and the badge you saw ("Term ends
+  September 30") could only have rendered if `is_convertible` was already true on that product. I
+  couldn't reproduce it without your live data, so I can't rule out a one-off (maybe the save
+  didn't stick, or the page hadn't refreshed). The broadening in (3) should make this whole class
+  of "why isn't this showing up" issue much less likely going forward either way. If it's still
+  showing 0 for that product after this update, open it in Edit and double check the term/date
+  fields saved the way you expect, and let me know if they didn't.
+  **SQL to run** (Supabase SQL Editor, additive/non-destructive):
+  ```sql
+  alter table public.client_products add column if not exists annuity_contract_end_date date;
+  ```
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

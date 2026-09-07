@@ -40,6 +40,7 @@ const EMPTY_FIELDS: ProductFields = {
   annuity_contribution_frequency: "",
   contract_value: "",
   annuity_surrender_end_date: "",
+  annuity_contract_end_date: "",
 };
 
 export default function ProductsSection({
@@ -383,15 +384,26 @@ export default function ProductsSection({
                   className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Surrender period ends
-                <input
-                  type="date"
-                  value={fields.annuity_surrender_end_date}
-                  onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
-                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                />
-              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Surrender charge period ends
+                  <input
+                    type="date"
+                    value={fields.annuity_surrender_end_date}
+                    onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Annuity contract end date
+                  <input
+                    type="date"
+                    value={fields.annuity_contract_end_date}
+                    onChange={(e) => set("annuity_contract_end_date", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+              </div>
             </div>
           )}
           <textarea

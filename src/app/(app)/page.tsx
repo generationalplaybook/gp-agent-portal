@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
-import { getNextTermMilestone, getTermUrgency } from "@/lib/products";
+import { getNextOutreachMilestone, getTermUrgency } from "@/lib/products";
+import { formatDateOnly, parseDateOnly } from "@/lib/dates";
 import LocalDateTime from "./LocalDateTime";
 
 // The landing page after login (built 9/3, replacing the old straight-to-/clients redirect —
@@ -29,16 +30,16 @@ export default async function HomePage() {
       .from("reminders")
       .select("id, remind_at, message, sent_at, client_id, recruit_id, clients(id, full_name), recruits(id, full_name)")
       .order("remind_at", { ascending: true }),
-    // Time-sensitive term policies (Karina, 9/4): "it should also show up on the dashboard...
-    // so it doesn't get missed." Same is_convertible + not-yet-converted + not-yet-contacted
-    // universe as the Term view on /clients, narrowed here to just the urgent ones (60 days out
-    // or overdue).
+    // Time-sensitive outreach (Karina, 9/4): "it should also show up on the dashboard... so it
+    // doesn't get missed." Broadened 9/7 to cover any product with a relevant end date (term or
+    // annuity), not just term policies — see the comment above getNextOutreachMilestone in
+    // lib/products.ts. Same not-yet-converted + not-yet-contacted universe as the Outreach view
+    // on /clients, narrowed here to just the urgent ones (60 days out or overdue).
     supabase
       .from("client_products")
       .select(
-        "id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, client_id, clients(id, full_name)"
+        "id, product_name, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, client_id, clients(id, full_name)"
       )
-      .eq("is_convertible", true)
       .is("converted_at", null)
       .is("term_contacted_at", null),
   ]);
@@ -80,16 +81,18 @@ export default async function HomePage() {
     });
   const previewRecruitReminders = recruitReminders.slice(0, 3);
 
-  // Time-Sensitive Term — every not-yet-contacted term policy within 60 days of its next
-  // deadline (or already past it), soonest/most-overdue first, so nothing gets missed.
+  // Time-Sensitive — every not-yet-contacted product (term or annuity) within 60 days of its
+  // next relevant date (or already past it), soonest/most-overdue first, so nothing gets missed.
   const urgentTermProducts = (termProductsRaw ?? [])
     .map((p) => {
       const client = p.clients as unknown as { id: string; full_name: string } | null;
-      const milestone = getNextTermMilestone({
+      const milestone = getNextOutreachMilestone({
         conversion_deadline: p.conversion_deadline,
         final_conversion_deadline: p.final_conversion_deadline,
         term_end_date: p.term_end_date,
         expiration_date: p.expiration_date,
+        annuity_surrender_end_date: p.annuity_surrender_end_date,
+        annuity_contract_end_date: p.annuity_contract_end_date,
       });
       if (!milestone) return null;
       const urgency = getTermUrgency(milestone.date);
@@ -104,7 +107,7 @@ export default async function HomePage() {
       };
     })
     .filter((p): p is NonNullable<typeof p> => p !== null)
-    .sort((a, b) => new Date(a.milestone.date).getTime() - new Date(b.milestone.date).getTime());
+    .sort((a, b) => parseDateOnly(a.milestone.date).getTime() - parseDateOnly(b.milestone.date).getTime());
   const previewUrgentTerm = urgentTermProducts.slice(0, 3);
 
   const greetingName = profile?.first_name || "there";
@@ -116,11 +119,12 @@ export default async function HomePage() {
         <p className="mt-1 text-sm text-[#555]">Here&rsquo;s where things stand today.</p>
       </div>
 
-      {/* Time-Sensitive Term — Karina, 9/4: "it should also show up on the dashboard as things
+      {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
           the adviser needs to immediately get to... so it doesn't get missed." A banner rather
-          than one of the even grid cards below, since the whole point is that it stands out. */}
+          than one of the even grid cards below, since the whole point is that it stands out.
+          Broadened 9/7 beyond term policies — see the comment on the termProductsRaw query above. */}
       <Link
-        href="/clients?view=term"
+        href="/clients?view=outreach"
         className={`mb-6 flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
           urgentTermProducts.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
         }`}
@@ -131,7 +135,7 @@ export default async function HomePage() {
               urgentTermProducts.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
             }`}
           >
-            Time-Sensitive Term
+            Time-Sensitive
           </span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={urgentTermProducts.length > 0 ? "#8B1A1A" : "#555555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" />
@@ -149,8 +153,7 @@ export default async function HomePage() {
                 <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
                 <br />
                 <span className="text-[#666]">
-                  {p.productName} — {p.milestone.label}{" "}
-                  {new Date(p.milestone.date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                  {p.productName} — {p.milestone.label} {formatDateOnly(p.milestone.date)}
                 </span>
               </div>
             ))}
@@ -160,7 +163,7 @@ export default async function HomePage() {
           <p className="mt-4 text-xs text-[#555]">Nothing urgent right now.</p>
         )}
         <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-          View term policies &rarr;
+          View outreach queue &rarr;
         </span>
       </Link>
 

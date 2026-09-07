@@ -1299,3 +1299,16 @@ alter table public.illustration_scenarios add column if not exists chosen_at tim
 -- ─────────────────────────────────────────────────────────────
 alter table public.clients alter column owner_id drop not null;
 alter table public.profiles add column if not exists disabled_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────
+-- 44. Annuity contract end date + Outreach broadened beyond term (added 9/7) — Karina: "if it's a
+-- five year, a seven year, a ten or a fifteen year, we need to know what that date is so that we
+-- can prepare for it and we get an alert." annuity_contract_end_date is the contract's own
+-- maturity date, distinct from annuity_surrender_end_date (section 41) — the carrier's early-
+-- withdrawal-penalty window, which is usually shorter than (or equal to) the contract itself.
+-- No schema change was needed for the outreach-broadening half of this request (the Outreach view
+-- on /clients and the Time-Sensitive banner on the home page no longer gate on is_convertible, and
+-- now also consider both annuity date columns) — that's purely app-code, see getNextOutreachMilestone
+-- in src/lib/products.ts.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists annuity_contract_end_date date;
