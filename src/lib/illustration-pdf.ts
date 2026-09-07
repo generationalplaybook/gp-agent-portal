@@ -19,16 +19,33 @@ export interface IllustrationPdfInput {
   advisor?: AdvisorInfo;
 }
 
-const OBSIDIAN: RGB = [28, 28, 28];
-const CHARCOAL: RGB = [46, 46, 46];
-const SAND: RGB = [217, 207, 186];
-const GREEN: RGB = [30, 107, 60];
-const WARM: RGB = [250, 248, 244];
-const GRAY: RGB = [102, 102, 102];
-const BLUE: RGB = [27, 79, 138];
-const GOLD: RGB = [139, 106, 0];
-const LIGHT_GREEN: RGB = [140, 190, 155]; // guaranteed line — muted twin of GREEN
-const LIGHT_BLUE: RGB = [140, 170, 205]; // guaranteed twin of BLUE
+// Palette gone fully monochrome 9/7, fifth round. Karina noticed the previous round ("Not yet
+// done — the header rule color" below, now resolved) still left GREEN/BLUE/GOLD doing exactly the
+// thing that round had just fixed for the header: colors this document invented that aren't
+// actually part of the real generationalplaybook.com brand (her screenshot showed a strictly
+// neutral site — cream/off-white and near-black, no hue at all). She asked to talk it through
+// before any more building: I explained GREEN/BLUE/GOLD weren't decorative, they were functional
+// — letting a client tell Cash Value numbers apart from Death Benefit numbers at a glance across
+// the tables and charts — but agreed that's still an invented color, just for a different reason.
+// Asked her to choose between keeping that functional color-coding, going fully monochrome (data
+// series told apart by weight/line-style/section-header instead of hue), or one muted accent used
+// sparingly. She chose fully monochrome.
+//
+// So GREEN, BLUE, GOLD, LIGHT_GREEN, and LIGHT_BLUE are retired. Every box, chart, and section
+// label in this file now draws from the same four neutrals below. Where two data series used to
+// be told apart by color within the SAME chart or box pair (Non-Guaranteed vs. Guaranteed, Level
+// vs. Increasing, Accumulation Value vs. Income Value), they're now told apart by OBSIDIAN-solid
+// vs. GRAY-dashed instead — the dash pattern was already doing part of that job for the
+// Guaranteed/Increasing lines; the Accumulation/Income annuity chart didn't have a dash difference
+// before (it relied entirely on GOLD vs. BLUE), so that one call site adds `dashed: true` to Income
+// Value now that it can't lean on color. NEUTRAL_FILL replaces every box's tinted fill (the old
+// green/blue/gold-tinted rounded rects) with one light cream fill sampled from Karina's screenshot
+// — every box now reads as the same "highlighted number" treatment regardless of what it's about.
+const OBSIDIAN: RGB = [42, 45, 47]; // primary text/headings, emphasized numbers, solid data lines — matches the site's near-black
+const CHARCOAL: RGB = [78, 81, 83]; // body/secondary text, italic caveats
+const SAND: RGB = [229, 223, 211]; // hairline rules, muted borders — matches the site's beige swatch
+const GRAY: RGB = [155, 155, 152]; // de-emphasized labels, and now also the secondary/dashed line in any two-series chart or box pair
+const NEUTRAL_FILL: RGB = [244, 241, 235]; // light cream box fill — sampled from the site's own "Colors" screenshot, replaces every green/blue/gold-tinted box
 
 function formatShort(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + "M";
@@ -162,39 +179,51 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     }
   }
 
-  // Header
-  setFill(OBSIDIAN);
-  doc.rect(0, 0, W, 70, "F");
-  setText(WARM);
+  // Header — reworked again 9/7 per Karina, same day: "heading the product name can be much
+  // smaller... so that can move everything up higher... does it have to be in a block? Can we
+  // just put it on the right side in the header?" Product name is back down to 13pt (smaller than
+  // even the original 14pt — it's the wordmark/subtitle stack's third line now, not the headline),
+  // and the separate cream client-info box is gone entirely: client name and product type/carrier
+  // now sit inline in the header, right-aligned opposite the wordmark. This is shorter than the
+  // old header+box combined (which ran to y=104 before any content started), so everything below
+  // starts noticeably higher on the page.
+  // Wordmark + subtitle recolored 9/7, fourth round, per Karina: "Generational playbook should be
+  // in black and the text udner it should be darker but not black just a bit darker to its easier
+  // to read." Wordmark is OBSIDIAN (was WARM/sage-green — she doesn't want the brand name itself
+  // colored). Subtitle reuses CHARCOAL (already defined, dark gray rather than true black) instead
+  // of GRAY — GRAY stays reserved for genuinely secondary text (placeholders, footer disclaimer)
+  // elsewhere in this file, so this doesn't darken those too.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("GENERATIONAL PLAYBOOK", M, 28);
+  setText(OBSIDIAN);
+  doc.text("GENERATIONAL PLAYBOOK", M, 22);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  setText(SAND);
-  doc.text("Policy Illustration Summary  ·  GenerationalPlaybook.com", M, 42);
+  setText(CHARCOAL);
+  doc.text("Policy Illustration Summary", M, 35);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  setText(WARM);
-  doc.text(input.productName, M, 60);
-  y = 95;
-
-  // Client / product info box
-  setFill([245, 240, 232]);
-  doc.roundedRect(M, y, W - 2 * M, 60, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.clientName, M + 14, y + 22);
+  doc.text(input.productName, M, 52);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, W - M, 26, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText(CHARCOAL);
   doc.text(
     [input.productType, input.carrier].filter(Boolean).join("  ·  ") || "—",
-    M + 14,
-    y + 38
+    W - M,
+    40,
+    { align: "right" }
   );
-  y += 78;
+
+  doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
+  doc.setLineWidth(1.5);
+  doc.line(M, 62, W - M, 62);
+  y = 82;
 
   const data = input.data;
 
@@ -216,7 +245,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       const headers = ["", "Cash Value\n(Guaranteed)", "Cash Value\n(Non-Guar.)", "Death Benefit\n(Guaranteed)", "Death Benefit\n(Non-Guar.)"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: 110 }));
       y += 20;
-      doc.setDrawColor(217, 207, 186);
+      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
       y += 14;
@@ -235,7 +264,10 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         doc.text(m.dbNonGuaranteed ? "$" + formatMoney(m.dbNonGuaranteed) : "—", colX[4], y);
         y += 16;
       });
-      y += 14;
+      // 26, not 14 — Karina, 9/7: "the cash value over time, I feel like there needs to be a
+      // little bit more space, so it's pushed down." Same treatment for the Death Benefit chart's
+      // own lead-in below.
+      y += 26;
 
       const xLabels = milestones.map((m) => m.label);
 
@@ -243,12 +275,12 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(GREEN);
+      setText(OBSIDIAN);
       doc.text("CASH VALUE OVER TIME", M, y);
       y += 4;
       drawLegend(doc, M + 150, y - 2.5, [
-        { label: "Non-Guaranteed", color: GREEN },
-        { label: "Guaranteed", color: LIGHT_GREEN, dashed: true },
+        { label: "Non-Guaranteed", color: OBSIDIAN },
+        { label: "Guaranteed", color: GRAY, dashed: true },
       ]);
       y += 12;
       drawLineChart(doc, {
@@ -258,22 +290,24 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         height: 110,
         xLabels,
         series: [
-          { values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: GREEN },
-          { values: milestones.map((m) => parseMoney(m.cvGuaranteed)), color: LIGHT_GREEN, dashed: true },
+          { values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: OBSIDIAN },
+          { values: milestones.map((m) => parseMoney(m.cvGuaranteed)), color: GRAY, dashed: true },
         ],
       });
-      y += 130;
+      // 142, not 130 — same "pushed down" request as the Cash Value chart's lead-in above, applied
+      // to the Death Benefit chart too.
+      y += 142;
 
       // Death benefit chart — same page-break reasoning as the Cash Value chart's check above.
       ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(BLUE);
+      setText(OBSIDIAN);
       doc.text("DEATH BENEFIT OVER TIME", M, y);
       y += 4;
       drawLegend(doc, M + 165, y - 2.5, [
-        { label: "Non-Guaranteed", color: BLUE },
-        { label: "Guaranteed", color: LIGHT_BLUE, dashed: true },
+        { label: "Non-Guaranteed", color: OBSIDIAN },
+        { label: "Guaranteed", color: GRAY, dashed: true },
       ]);
       y += 12;
       drawLineChart(doc, {
@@ -283,8 +317,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         height: 110,
         xLabels,
         series: [
-          { values: milestones.map((m) => parseMoney(m.dbNonGuaranteed)), color: BLUE },
-          { values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: LIGHT_BLUE, dashed: true },
+          { values: milestones.map((m) => parseMoney(m.dbNonGuaranteed)), color: OBSIDIAN },
+          { values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: GRAY, dashed: true },
         ],
       });
       y += 130;
@@ -300,11 +334,11 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "term") {
-    setFill([235, 245, 238]);
+    setFill(NEUTRAL_FILL);
     doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -349,11 +383,11 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "final_expense") {
-    setFill([235, 245, 238]);
+    setFill(NEUTRAL_FILL);
     doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -395,7 +429,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     if (data.initialPremium) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      setText(GOLD);
+      setText(OBSIDIAN);
       doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
       y += 22;
     }
@@ -420,7 +454,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       const headers = ["", "Accumulation Value", "Income Value", "Death Benefit"];
       headers.forEach((h, i) => doc.text(h, colX[i], y));
       y += 16;
-      doc.setDrawColor(217, 207, 186);
+      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
       y += 14;
@@ -443,12 +477,12 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       const xLabels = milestones.map((m) => m.label);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(GOLD);
+      setText(OBSIDIAN);
       doc.text("PROJECTED VALUE OVER TIME", M, y);
       y += 4;
       drawLegend(doc, M + 175, y - 2.5, [
-        { label: "Accumulation Value", color: GOLD },
-        { label: "Income Value", color: BLUE },
+        { label: "Accumulation Value", color: OBSIDIAN },
+        { label: "Income Value", color: GRAY, dashed: true },
       ]);
       y += 12;
       drawLineChart(doc, {
@@ -458,8 +492,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         height: 120,
         xLabels,
         series: [
-          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: GOLD },
-          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: BLUE },
+          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN },
+          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: GRAY, dashed: true },
         ],
       });
       y += 140;
@@ -487,7 +521,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += 16;
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7.5);
-      setText(GOLD);
+      setText(CHARCOAL);
       const incomeNote = doc.splitTextToSize(
         "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
         W - 2 * M
@@ -511,7 +545,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   }
 
   if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
-    doc.setDrawColor(217, 207, 186);
+    doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
     doc.setLineWidth(1);
     doc.line(M, y, W - M, y);
     y += 16;
@@ -537,6 +571,21 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     770,
     { maxWidth: 612 - 2 * M }
   );
+
+  // Site URL moved out of the header and into a page footer — Karina, 9/7: "the generational
+  // playbook dot com that is right next to policy illustration summary should move to the bottom
+  // of each page in the center, like, as a footer." Looped across every page (not just the last,
+  // where the disclaimer above lands) since a multi-page illustration should carry it on each one.
+  // Placed at y=787, just below the disclaimer's lowest possible line on the last page (baseline
+  // 770 plus one wrapped line at this font size lands around 778-780), well inside the 792pt page.
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    setText(GRAY);
+    doc.text("GenerationalPlaybook.com", W / 2, 787, { align: "center" });
+  }
 
   if (action === "view") {
     window.open(doc.output("bloburl"), "_blank");
@@ -579,39 +628,51 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
   }
 
-  // Header
-  setFill(OBSIDIAN);
-  doc.rect(0, 0, W, 70, "F");
-  setText(WARM);
+  // Header — reworked again 9/7 per Karina, same day: "heading the product name can be much
+  // smaller... so that can move everything up higher... does it have to be in a block? Can we
+  // just put it on the right side in the header?" Product name is back down to 13pt (smaller than
+  // even the original 14pt — it's the wordmark/subtitle stack's third line now, not the headline),
+  // and the separate cream client-info box is gone entirely: client name and product type/carrier
+  // now sit inline in the header, right-aligned opposite the wordmark. This is shorter than the
+  // old header+box combined (which ran to y=104 before any content started), so everything below
+  // starts noticeably higher on the page.
+  // Wordmark + subtitle recolored 9/7, fourth round, per Karina: "Generational playbook should be
+  // in black and the text udner it should be darker but not black just a bit darker to its easier
+  // to read." Wordmark is OBSIDIAN (was WARM/sage-green — she doesn't want the brand name itself
+  // colored). Subtitle reuses CHARCOAL (already defined, dark gray rather than true black) instead
+  // of GRAY — GRAY stays reserved for genuinely secondary text (placeholders, footer disclaimer)
+  // elsewhere in this file, so this doesn't darken those too.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("GENERATIONAL PLAYBOOK", M, 28);
+  setText(OBSIDIAN);
+  doc.text("GENERATIONAL PLAYBOOK", M, 22);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  setText(SAND);
-  doc.text("Policy Illustration Summary  ·  GenerationalPlaybook.com", M, 42);
+  setText(CHARCOAL);
+  doc.text("Policy Illustration Summary", M, 35);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  setText(WARM);
-  doc.text(input.productName, M, 60);
-  y = 95;
-
-  // Client / product info box
-  setFill([245, 240, 232]);
-  doc.roundedRect(M, y, W - 2 * M, 60, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.clientName, M + 14, y + 22);
+  doc.text(input.productName, M, 52);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, W - M, 26, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText(CHARCOAL);
   doc.text(
     [input.productType, input.carrier].filter(Boolean).join("  ·  ") || "—",
-    M + 14,
-    y + 38
+    W - M,
+    40,
+    { align: "right" }
   );
-  y += 78;
+
+  doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
+  doc.setLineWidth(1.5);
+  doc.line(M, 62, W - M, 62);
+  y = 82;
 
   const data = input.data;
 
@@ -624,9 +685,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       // trailing gap) — doesn't need to be exact like the boxes/table/chart checks below, just
       // enough to keep this whole block from starting so close to the bottom that it'd split.
       ensureSpace(140);
+      // Recolored 9/7, fourth round, per Karina: "the polciy premium should be black and bold" —
+      // was GRAY (already bold). Matches the DEATH BENEFIT MILESTONES label below for consistency.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      setText(GRAY);
+      setText(OBSIDIAN);
       doc.text("POLICY PREMIUM", M, y);
       y += 14;
       doc.setFont("helvetica", "normal");
@@ -664,7 +727,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         // Flagged on the PDF so a client doesn't read this single number as fixed either way.
         doc.setFont("helvetica", "italic");
         doc.setFontSize(7.5);
-        setText(GOLD);
+        setText(CHARCOAL);
         const nl = doc.splitTextToSize(
           "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops — confirm the year-by-year schedule on the carrier's illustration.",
           W - 2 * M
@@ -678,7 +741,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += 10;
     }
 
-    // Initial Death Benefit — Level and Increasing each get their own green box, side by side
+    // Initial Death Benefit — Level and Increasing each get their own box, side by side
     // when both are filled in (a carrier can quote a different starting face amount for each
     // election), full-width when only one is (keeps older, single-election scenarios looking the
     // same as before this split).
@@ -691,14 +754,18 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       const drawInitialDbBox = (x: number, amount: string, label: string) => {
         // Re-set the fill immediately before each rect, not once up front: jsPDF's text draws
         // (setText below) use the same underlying fill color as shapes, so drawing this box's own
-        // label text would otherwise clobber the light-green fill before the second box gets to
-        // use it — bit us on the first render of this two-box layout (second box came out
-        // near-black, the leftover CHARCOAL label-text color from the first box's draw).
-        setFill([235, 245, 238]);
+        // label text would otherwise clobber NEUTRAL_FILL before the second box gets to use it —
+        // bit us on the first render of this two-box layout (second box came out near-black, the
+        // leftover CHARCOAL label-text color from the first box's draw).
+        // Colors retired entirely 9/7, fifth round (see the palette comment at the top of this
+        // file) — this box used to be blue (death-benefit boxes were blue, Cash Value was green);
+        // now every box in this document, regardless of what it's about, uses the same neutral
+        // cream fill and the same black text, per Karina's "fully monochrome" call.
+        setFill(NEUTRAL_FILL);
         doc.roundedRect(x, y, boxW, 50, 4, 4, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(both ? 15 : 18);
-        setText(GREEN);
+        setText(OBSIDIAN);
         doc.text("$" + formatMoney(amount), x + 14, y + 30);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
@@ -719,12 +786,16 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
 
     if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
-      ensureSpace(52); // exact height of this block, see the trailing `y += 52` below
-      setFill([245, 240, 220]);
+      // 66, not 52 — Karina, 9/7: the "If cash value is left untouched..." box needed more room
+      // below it before Death Benefit Milestones starts ("it's too close to that box"). Box itself
+      // is still 40pt tall; the extra 14pt is trailing whitespace, matched here and in the trailing
+      // `y += 66` below so pagination still reserves exactly what this block now uses.
+      ensureSpace(66);
+      setFill(NEUTRAL_FILL);
       doc.roundedRect(M, y, W - 2 * M, 40, 4, 4, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(GOLD);
+      setText(OBSIDIAN);
       doc.text(
         "If cash value is left untouched, death benefit begins increasing at age " + data.dbIncreaseAge.trim() + ".",
         M + 12,
@@ -732,12 +803,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       );
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
+      setText(CHARCOAL);
       doc.text(
         "This can be changed at any time by calling the carrier — we recommend periodic policy reviews, which we schedule as part of our service.",
         M + 12,
         y + 29
       );
-      y += 52;
+      y += 66;
     }
 
     // Death Benefit Milestones — added 9/7 per Karina: a quick "hits $X at age Y" highlight,
@@ -745,28 +817,37 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // filled in are shown; an age left blank on one side (Level vs. Increasing) prints as "—"
     // rather than being silently dropped, so it's clear that side just wasn't entered.
     // Reworked 9/7, same day, per Karina: "can the death benefit milestones be more visual in
-    // layout?" — the plain text-line version blended into the page next to the colored Initial
-    // Death Benefit boxes above it. Now each target gets its own box, two per row (matching the
-    // Initial Death Benefit boxes' side-by-side pattern), in blue rather than green specifically
-    // to match the Death Benefit (not Cash Value) chart's color coding further down this same
-    // page — Level solid blue, Increasing dashed light blue, same colors and dash style as that
-    // chart's legend, so a client can visually connect the two sections.
+    // layout?" — the plain text-line version blended into the page next to the Initial Death
+    // Benefit boxes above it. Now each target gets its own box, two per row (matching the Initial
+    // Death Benefit boxes' side-by-side pattern), with Level as a solid marker and Increasing as a
+    // dashed one, same dash convention as the Death Benefit Over Time chart's legend further down
+    // this same page, so a client can visually connect the two sections. (This box, and the
+    // Initial Death Benefit boxes above it, used to also share a blue fill/text color to make that
+    // connection — retired 9/7, fifth round, along with every other color in this document; see
+    // the palette comment up top. The dashed-vs-solid convention alone still does that job.)
     const dbTargets = (data.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
     if (dbTargets.length > 0) {
       const twoUp = dbTargets.length > 1;
       const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
-      const dbBoxH = 58;
+      // 68, not 58 — Karina, 9/7: "the blue boxes need more space at the bottom like the green
+      // ones." The green Initial Death Benefit boxes (50pt tall) have their last text baseline 8pt
+      // above the bottom edge; these boxes stack 4 lines instead of 2, so at the old 58pt they only
+      // had 5pt below the last line — tighter than the green boxes despite having more content.
+      const dbBoxH = 68;
       const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
-      // Exact height: the section header (12) plus every row of boxes — computed up front so the
+      // Exact height: the section header (8) plus every row of boxes — computed up front so the
       // header and its boxes are guaranteed to land on the same page rather than the header
       // printing at the very bottom of one page with its boxes stranded on the next.
-      ensureSpace(12 + dbRows * (dbBoxH + 10));
+      ensureSpace(8 + dbRows * (dbBoxH + 10));
 
+      // Recolored 9/7, fourth round — same as POLICY PREMIUM above, matching section-label pattern.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      setText(GRAY);
+      setText(OBSIDIAN);
       doc.text("DEATH BENEFIT MILESTONES", M, y);
-      y += 12;
+      // 8, not 12 — Karina, 9/7, same round as the extra space above: the label should sit closer
+      // to its own boxes below it, not float between the note box above and the boxes below.
+      y += 8;
       const drawAgeMarker = (x: number, markerY: number, color: RGB, dashed: boolean, label: string) => {
         doc.setDrawColor(color[0], color[1], color[2]);
         doc.setLineWidth(2);
@@ -785,11 +866,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         const boxY = y + row * (dbBoxH + 10);
         // Re-set the fill immediately before each box for the same reason as drawInitialDbBox
         // above — text draws in between would otherwise clobber the fill color for the next box.
-        setFill([230, 236, 245]);
+        setFill(NEUTRAL_FILL);
         doc.roundedRect(boxX, boxY, dbBoxW, dbBoxH, 4, 4, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(15);
-        setText(BLUE);
+        setText(OBSIDIAN);
         doc.text("$" + formatMoney(t.targetAmount), boxX + 14, boxY + 22);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
@@ -798,10 +879,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         const levelLabel = "Level: " + (t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—");
         const increasingLabel =
           "Increasing: " + (t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—");
-        drawAgeMarker(boxX + 14, boxY + 44, BLUE, false, levelLabel);
-        drawAgeMarker(boxX + 14, boxY + 53, LIGHT_BLUE, true, increasingLabel);
+        drawAgeMarker(boxX + 14, boxY + 44, OBSIDIAN, false, levelLabel);
+        drawAgeMarker(boxX + 14, boxY + 53, GRAY, true, increasingLabel);
       });
-      y += dbRows * (dbBoxH + 10) + 4;
+      // 22, not 4 — Karina, 9/7: "the stuff that is under those blue boxes they're too close to
+      // the boxes." The old 4pt gap put the milestones table header almost flush against the
+      // bottom of the boxes; this gives it real breathing room before the next section starts.
+      y += dbRows * (dbBoxH + 10) + 22;
     }
 
     const milestones = data.milestones.filter((m) => m.label.trim());
@@ -838,7 +922,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       const headers = ["", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
       headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: colMaxW }));
       y += 20;
-      doc.setDrawColor(217, 207, 186);
+      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
       y += 14;
@@ -857,7 +941,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
         y += 16;
       });
-      y += 14;
+      // 26, not 14 — Karina, 9/7: "the cash value over time, I feel like there needs to be a
+      // little bit more space, so it's pushed down." Same treatment for the Death Benefit chart's
+      // own lead-in below.
+      y += 26;
 
       const xLabels = milestones.map((m) => "Age " + m.label);
 
@@ -870,40 +957,42 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       ensureSpace(146);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(GREEN);
+      setText(OBSIDIAN);
       doc.text("CASH VALUE OVER TIME", M, y);
       y += 4;
       const cvLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
       const cvSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
       if (cvLevelHas) {
-        cvLegend.push({ label: "Level", color: GREEN });
-        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: GREEN });
+        cvLegend.push({ label: "Level", color: OBSIDIAN });
+        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: OBSIDIAN });
       }
       if (cvIncHas) {
-        cvLegend.push({ label: "Increasing", color: LIGHT_GREEN, dashed: true });
-        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: LIGHT_GREEN, dashed: true });
+        cvLegend.push({ label: "Increasing", color: GRAY, dashed: true });
+        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: GRAY, dashed: true });
       }
       drawLegend(doc, M + 150, y - 2.5, cvLegend);
       y += 12;
       drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: cvSeries });
-      y += 130;
+      // 142, not 130 — same "pushed down" request as the Cash Value chart's lead-in above, applied
+      // to the Death Benefit chart too.
+      y += 142;
 
       // Death benefit chart — same Level/Increasing split.
       ensureSpace(146); // same reasoning as the Cash Value chart's check above
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(BLUE);
+      setText(OBSIDIAN);
       doc.text("DEATH BENEFIT OVER TIME", M, y);
       y += 4;
       const dbLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
       const dbSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
       if (dbLevelHas) {
-        dbLegend.push({ label: "Level", color: BLUE });
-        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: BLUE });
+        dbLegend.push({ label: "Level", color: OBSIDIAN });
+        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: OBSIDIAN });
       }
       if (dbIncHas) {
-        dbLegend.push({ label: "Increasing", color: LIGHT_BLUE, dashed: true });
-        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: LIGHT_BLUE, dashed: true });
+        dbLegend.push({ label: "Increasing", color: GRAY, dashed: true });
+        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: GRAY, dashed: true });
       }
       drawLegend(doc, M + 150, y - 2.5, dbLegend);
       y += 12;
@@ -921,11 +1010,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "term") {
-    setFill([235, 245, 238]);
+    setFill(NEUTRAL_FILL);
     doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -978,11 +1067,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     const hasOption3 = !!((data.deathBenefit3 && data.deathBenefit3.trim()) || (data.levelPremium3 && data.levelPremium3.trim()));
 
     if (!hasOption2 && !hasOption3) {
-      setFill([235, 245, 238]);
+      setFill(NEUTRAL_FILL);
       doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      setText(GREEN);
+      setText(OBSIDIAN);
       doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -1004,7 +1093,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       const boxW = (W - 2 * M - gap * (options.length - 1)) / options.length;
       options.forEach((opt, i) => {
         const x = M + i * (boxW + gap);
-        setFill([235, 245, 238]);
+        setFill(NEUTRAL_FILL);
         doc.roundedRect(x, y, boxW, 78, 4, 4, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -1012,7 +1101,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.text(opt.label.toUpperCase(), x + 12, y + 16);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
-        setText(GREEN);
+        setText(OBSIDIAN);
         doc.text(opt.db ? "$" + formatMoney(opt.db) : "—", x + 12, y + 38);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
@@ -1061,7 +1150,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     if (data.initialPremium) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      setText(GOLD);
+      setText(OBSIDIAN);
       doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
       y += 22;
     }
@@ -1086,7 +1175,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       const headers = ["", "Accumulation Value", "Income Value", "Death Benefit"];
       headers.forEach((h, i) => doc.text(h, colX[i], y));
       y += 16;
-      doc.setDrawColor(217, 207, 186);
+      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
       doc.setLineWidth(1);
       doc.line(M, y, W - M, y);
       y += 14;
@@ -1109,12 +1198,12 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       const xLabels = milestones.map((m) => m.label);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(GOLD);
+      setText(OBSIDIAN);
       doc.text("PROJECTED VALUE OVER TIME", M, y);
       y += 4;
       drawLegend(doc, M + 175, y - 2.5, [
-        { label: "Accumulation Value", color: GOLD },
-        { label: "Income Value", color: BLUE },
+        { label: "Accumulation Value", color: OBSIDIAN },
+        { label: "Income Value", color: GRAY, dashed: true },
       ]);
       y += 12;
       drawLineChart(doc, {
@@ -1124,8 +1213,8 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         height: 120,
         xLabels,
         series: [
-          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: GOLD },
-          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: BLUE },
+          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN },
+          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: GRAY, dashed: true },
         ],
       });
       y += 140;
@@ -1153,7 +1242,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += 16;
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7.5);
-      setText(GOLD);
+      setText(CHARCOAL);
       const incomeNote = doc.splitTextToSize(
         "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
         W - 2 * M
@@ -1193,7 +1282,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   }
 
   if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
-    doc.setDrawColor(217, 207, 186);
+    doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
     doc.setLineWidth(1);
     doc.line(M, y, W - M, y);
     y += 16;
@@ -1219,6 +1308,17 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     Math.max(770, y + 14),
     { maxWidth: 612 - 2 * M }
   );
+
+  // Site URL moved out of the header and into a page footer — see the identical comment in
+  // generateIllustrationPDF above.
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    setText(GRAY);
+    doc.text("GenerationalPlaybook.com", W / 2, 787, { align: "center" });
+  }
 
   if (action === "view") {
     window.open(doc.output("bloburl"), "_blank");

@@ -1991,6 +1991,143 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   confirmed both charts now print in full across the 2 resulting pages before shipping this.
   Touched: `illustration-pdf.ts` only, both PDF generator functions — no SQL to run.
 
+- **PDF color palette and header reworked — BUILT 9/7, same day.** Karina, right after the page-
+  break fix: "the blue boxes need more space at the bottom like the green ones also lets work on
+  the colors in general. i dont like like the thick black header on the pdf. and we need a color
+  pallet that glows and is appealing for the PDF's." Two pieces:
+  **Blue box padding** — the Death Benefit Milestones boxes went from 58pt to 68pt tall. They
+  stack 4 lines (amount, label, Level age, Increasing age) vs. the green Initial Death Benefit
+  boxes' 2, so at the old height they had less room below the last line than the green boxes
+  despite having more content — now they have more breathing room than the green boxes, not less.
+  **Colors and header** — asked Karina to pick a direction rather than guessing on a client-facing
+  document: she chose "Minimal, no block" for the header and "Soft & airy" for the overall
+  palette. Removed the solid black 70pt header bar entirely — the wordmark, subtitle, and product
+  name now sit directly on the white page (product name bumped from 14pt to 20pt so it still reads
+  as the clear focal point), with a thin colored rule marking the end of the header instead of a
+  heavy fill. Softened every color constant in the file (still using the same names everywhere
+  they're already called, so this was a values-only change, not a rewrite of ~130 call sites) —
+  darks eased off pure black/deep tones, the Cash Value green became a soft sage, the Death
+  Benefit blue became a soft slate, the notes/warnings gold became a softer amber, hairline rules
+  lightened. The header's wordmark and rule deliberately reuse the exact same sage as the Cash
+  Value chart (previously an unrelated near-white-on-black color) — the header now visually ties
+  to the Cash Value section instead of standing alone.
+  **Verified:** rendered the actual generator again with the same real scenario used to verify
+  the page-break fix, confirmed the new header, softened colors, and the wider blue boxes all
+  render correctly with no regressions. Touched: `illustration-pdf.ts` only — no SQL to run.
+
+- **PDF header/colors refined again — BUILT 9/7, same day, third round.** Karina, after seeing
+  the reworked header: "heading the product name can be much smaller... so that can move
+  everything up higher... does it have to be in a block? Can we just put it on the right side in
+  the header?... we need to change the colors. I don't like this green and blue gold thing
+  happening... the stuff that is under those blue boxes they're too close to the boxes." Four
+  changes:
+  **Smaller product name, everything moved up** — product name went from the 20pt this same day's
+  earlier rework used down to 13pt, so it reads as the header's third line rather than a headline
+  competing for attention.
+  **Client info out of its own block** — the separate cream "Client / product info box" is gone.
+  Client name and product type/carrier now sit inline in the header, right-aligned opposite the
+  GENERATIONAL PLAYBOOK wordmark — one shorter header instead of a header plus a box, so every
+  section below starts noticeably higher on the page (content that used to start at y=104 now
+  starts at y=82).
+  **Green/blue/gold fixed, not just softened** — the actual complaint was a real inconsistency,
+  not just harsh colors: Initial Death Benefit was colored green even though it's a death-benefit
+  number, while Death Benefit Milestones (right below it) and the Death Benefit Over Time chart
+  (further down) are blue — same concept, two different colors. Initial Death Benefit now uses
+  the same blue as the rest of the death-benefit content; green is reserved for Cash Value only.
+  The remaining gold/amber box (Death Benefit Increase note) stays gold deliberately — it's an
+  advisory callout, the same role gold already plays in the Policy Premium note above it, so
+  keeping it visually distinct from the blue data boxes is intentional, not an oversight.
+  **Spacing under the blue boxes** — the gap between the Death Benefit Milestones boxes and the
+  milestones table below them went from 4pt to 22pt.
+  **Verified:** re-rendered the same real scenario a third time — confirmed the right-aligned
+  client info, the smaller product name, the now-consistent blue, and the wider gap under the
+  boxes, with everything still fitting cleanly across 2 pages and nothing clipped. Touched:
+  `illustration-pdf.ts` only — no SQL to run.
+
+- **PDF header/colors refined again — BUILT 9/7, same day, fourth round.** Karina: "i think
+  Generational playbook should be in black and the text udner it should be darker but not black
+  just a bit darker to its easier to read. the polciy premium should be black and bold under the
+  green line header, the header color should line should maybe me generational playbook color not
+  a green we need to rband this to match the website more when it comes to colors." All four asks
+  are built — three immediately, the fourth (the real brand color) once Karina sent it:
+  **GENERATIONAL PLAYBOOK wordmark → black.** Was the sage-green WARM color, now OBSIDIAN.
+  **Subtitle ("Policy Illustration Summary · GenerationalPlaybook.com") → darker, not full black.**
+  Now uses the existing CHARCOAL constant (a dark gray, not GRAY) — deliberately didn't darken GRAY
+  itself, since GRAY is still used for genuinely secondary text elsewhere (the "No milestones
+  entered yet" placeholders, the footer disclaimer) that wasn't part of this ask.
+  **POLICY PREMIUM and DEATH BENEFIT MILESTONES labels → black and bold.** Both were already bold,
+  just gray — now OBSIDIAN, matching each other.
+  **Header rule color — resolved same day, once Karina sent it.** Her fourth point was the
+  horizontal line under the header shouldn't be "a green," it should be "generational playbook
+  color," and more broadly "we need to rebrand this to match the website more when it comes to
+  colors." I couldn't fetch generationalplaybook.com directly from here to read its real colors off
+  the page, so I asked her for the URL or hex codes instead of guessing again — she sent a
+  screenshot of the site's actual "Colors" section instead. It's a neutral palette: three warm
+  off-white/cream swatches and two near-black charcoal swatches — no green, no accent hue at all.
+  So the sage-green WARM constant this PDF used for the header wordmark and rule was never actually
+  a brand color, just an invented guess from an earlier round. Retired WARM entirely: the header
+  rule (previously sage-green) now reuses OBSIDIAN directly — sampled the screenshot's darkest
+  swatch (~#1C1C1C), which is close enough to OBSIDIAN (#2A2D2F) that reusing it keeps the header
+  genuinely monochrome, matching the real site, instead of adding a fourth near-black constant.
+  SAND was already a close match to the site's beige swatch without any change needed. GREEN/BLUE/
+  GOLD are untouched — those are this document's own semantic colors (Cash Value / Death Benefit /
+  advisory notes), not brand colors, and the real site's neutral palette has no equivalent to
+  compare them against anyway. **Verified:** re-rendered both the scenario and per-product PDFs —
+  wordmark and header rule both read as the same real brand black, subtitle a readable dark gray,
+  Policy Premium and Death Benefit Milestones labels black and bold, everything else unchanged and
+  nothing clipped. Touched: `illustration-pdf.ts` only — no SQL to run.
+
+- **PDF palette gone fully monochrome — BUILT 9/7, same day, fifth round.** Right after the round
+  above shipped, Karina pushed back: "youre still using blue and green though on this example. lets
+  talk tis throigh dont build anyting." She was right — GREEN (Cash Value) and BLUE (Death Benefit)
+  were still there even though her screenshot proved the real site has no color at all. Explained
+  why they existed (functional color-coding so a client can tell two number series apart at a
+  glance, not decoration) and asked her to choose: keep that functional coding, go fully
+  monochrome, or use one muted accent sparingly. She chose fully monochrome.
+  **What changed:** retired GREEN, BLUE, GOLD, LIGHT_GREEN, and LIGHT_BLUE entirely — the file now
+  draws everything from OBSIDIAN (black), CHARCOAL (dark gray), SAND (beige), GRAY, and a new
+  NEUTRAL_FILL (a light cream sampled straight from Karina's "Colors" screenshot, replacing every
+  green/blue/gold-tinted box with one consistent fill). Everywhere two data series used to be told
+  apart by color within the same chart or box pair — Non-Guaranteed vs. Guaranteed, Level vs.
+  Increasing, and the annuity chart's Accumulation Value vs. Income Value — they're now told apart
+  by OBSIDIAN-solid vs. GRAY-dashed instead. Most of those already had a dash difference from the
+  Guaranteed/Increasing convention; the annuity chart didn't (it leaned entirely on gold vs. blue),
+  so Income Value picked up `dashed: true` there for the first time. Every box in the document —
+  Initial Death Benefit, Death Benefit Milestones, the Death Benefit Increase note, Term/Final
+  Expense/Final-Expense-budget-option boxes — now uses the same cream fill and black text
+  regardless of what it's about, instead of a different tint per topic.
+  **Verified:** re-rendered all five illustration shapes (cash_value scenario with every optional
+  section filled in, cash_value per-product chart-only, term, final_expense with 3 budget options,
+  and annuity with an income rider) — confirmed every chart's two lines and every box stayed
+  visually distinguishable using only weight, dash pattern, and the existing bold section headers,
+  with nothing clipped across pages. Touched: `illustration-pdf.ts` only — no SQL to run.
+
+- **PDF spacing + footer polish — BUILT 9/7, same day, sixth round.** Karina, after seeing the
+  monochrome version: "the generational playbook dot com that is right next to policy illustration
+  summary should move to the bottom of each page in the center, like, as a footer. And the if cash
+  value is left untouched, that box, and then underneath it where it says death benefit milestones,
+  there needs to be some more space there. It's too close to that box, and maybe it should be a
+  little bit closer to the box relevant underneath, which is the five hundred thousand showing. And
+  then the graphs, the cash value over time, I feel like there needs to be a little bit more space,
+  so it's pushed down and the same thing for death benefit over time." Four fixes, all in
+  `illustration-pdf.ts`:
+  **Site URL → footer.** "GenerationalPlaybook.com" no longer sits in the header subtitle (now just
+  "Policy Illustration Summary"); it's drawn centered at the bottom of every page instead, looped
+  over `doc.getNumberOfPages()` after all content is drawn so a multi-page illustration carries it
+  on each page, not just the last.
+  **Death Benefit Increase note → Death Benefit Milestones spacing.** The gap after the "If cash
+  value is left untouched..." box grew from 12pt to 26pt of trailing whitespace (box itself
+  unchanged at 40pt), and the gap between the "DEATH BENEFIT MILESTONES" label and its own boxes
+  shrank from 12pt to 8pt — so the label now reads as grouped with the boxes below it, not floating
+  between two sections.
+  **Charts pushed down.** The gap before "CASH VALUE OVER TIME" grew from 14pt to 26pt, and the gap
+  between the Cash Value chart and "DEATH BENEFIT OVER TIME" grew from 130pt to 142pt — applied
+  identically in both `generateIllustrationPDF` and `generateScenarioIllustrationPDF`.
+  **Verified:** re-rendered a full-featured scenario (footer now correctly appears on both pages
+  once the extra chart spacing pushed Death Benefit Over Time to page 2) and a shorter scenario with
+  the DB Increase note but no DB Milestones or Cash Value Increasing data, to confirm the wider gaps
+  don't look excessive when less content follows. No SQL to run.
+
 - **Knowledge Base: Increasing DBO reduces early living-benefit access — BUILT 9/6.** Talked
   through with Karina (nothing to build in the app itself, just Knowledge Base content): if a
   client on Increasing needs to file a Critical/Chronic/Terminal Illness claim early in the
