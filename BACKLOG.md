@@ -2403,6 +2403,40 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   **No SQL to run** — this was a query-shape bug in the app code only, nothing to change in the
   database.
 
+- **Schedule a Call from the Meetings tab — BUILT 9/8.** Karina, looking at the new "Add Meeting"
+  popup: "should this have an option to schedule a call too?" Asked what she meant since a
+  meeting's date/time already covers a phone call logged after the fact — she meant sending her
+  actual Cal.com booking link so the client can pick a time themselves, same as the existing
+  "Schedule a Call" card on a client's own profile (Open Scheduling Page / Copy Link to Send /
+  Book Here widget). Added a "+ Schedule a Call" button next to "+ Add Meeting" on the Meetings
+  tab — pick a client the same way as the quick-add flow, then get those same three actions,
+  personalized with that client's name/email. Reused the existing `ScheduleCallCard` component
+  as-is rather than rebuilding it, so it stays in sync with whatever changes there later. If you
+  haven't set a scheduling link in My Profile, this shows the same "add your link" prompt the
+  client-profile version already shows. **No SQL required.**
+
+- **Outreach queue scoped to what's actually time-sensitive + bumped to 90 days — BUILT 9/8.**
+  Karina, looking at the Outreach view showing 2: "this should not say 2 need outreach that second
+  one is so far away. outreach need should only be the ones that are time sensitive and lets bump
+  the time up to 90 days instead of 60." Two changes: (1) the "soon" urgency window (the same one
+  that decides what counts as time-sensitive on the home page banner too) is now 90 days instead
+  of 60. (2) "Needs Outreach" now only lists products that are actually urgent (critical/soon/
+  overdue) — a product with a real date on file that's just decades out (like the Nov 2055 one
+  you saw) no longer clutters the list next to one that's 24 days out. It's not lost — it simply
+  doesn't appear in Needs Outreach OR Already Touched Base until it crosses into that 90-day
+  window on its own, since it was never contacted either. The "Outreach" chip's badge count now
+  reflects this too, so it won't overcount. **No SQL required.**
+  **On your other question — what happens after Mark Touched Base, is there a resolution/pending
+  state:** right now, no. Clicking it just stamps a timestamp and moves the item into "Already
+  Touched Base" — that's the entire lifecycle inside this view. It stays there indefinitely (with
+  an Undo), with no prompt for what actually happened on that call and no further state. Separately,
+  there IS an existing resolution workflow, but it's not connected to this — on a term product's own
+  card (client profile → Products), "Mark Conversion Pending" → "Mark Converted"/Undo lets you track
+  that a client is actively converting to a new policy, then confirm once it's issued. It's a manual
+  click on the product itself, not something Mark Touched Base leads into. I didn't build anything
+  new here yet since it's not clear what outcome states you actually want tracked — asked you
+  directly in chat rather than guessing and building the wrong thing.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

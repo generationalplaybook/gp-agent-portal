@@ -6,6 +6,10 @@ import { searchClientsForPicker } from "./clients/actions";
 export interface PickedClient {
   id: string;
   full_name: string;
+  // Only populated where a caller actually needs it (e.g. ScheduleCallButton.tsx, to prefill the
+  // client's email on the booking page) — searchClientsForPicker always fetches it, cheap either
+  // way, so every picker gets it whether or not that particular caller uses it.
+  email: string | null;
 }
 
 // A client-search-and-pick input, shared between the Meetings and Reminders "quick add" flows
@@ -42,7 +46,7 @@ export default function ClientPicker({
   onClear: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ id: string; full_name: string; birth_date: string | null }[]>([]);
+  const [results, setResults] = useState<{ id: string; full_name: string; birth_date: string | null; email: string | null }[]>([]);
   const [searching, setSearching] = useState(false);
 
   async function runSearch(q: string) {
@@ -101,7 +105,7 @@ export default function ClientPicker({
             <div
               key={r.id}
               onClick={() => {
-                onPick({ id: r.id, full_name: r.full_name });
+                onPick({ id: r.id, full_name: r.full_name, email: r.email });
                 setResults([]);
               }}
               className="cursor-pointer border-b border-[#EDE8DF] px-3 py-2 text-sm last:border-0 hover:bg-[#F5F0E8]"

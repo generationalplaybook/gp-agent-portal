@@ -378,17 +378,20 @@ export async function searchFamilyCandidates(
 // is family-linking-specific (stage, no birth_date) and its name ties it to that feature, so a
 // second small action keeps each call site's intent obvious. Includes birth_date so the picker can
 // show it as a disambiguator when two results share the same name (Karina: "when there is a client
-// that's got the same name, it also shows their birth date underneath their name").
+// that's got the same name, it also shows their birth date underneath their name"). Also includes
+// email (added 9/8 for ScheduleCallButton.tsx, to prefill the client's email on the booking page,
+// same as ScheduleCallCard.tsx already does from a client's own profile) — harmless to fetch for
+// callers that don't use it.
 export async function searchClientsForPicker(
   query: string
-): Promise<{ id: string; full_name: string; birth_date: string | null }[]> {
+): Promise<{ id: string; full_name: string; birth_date: string | null; email: string | null }[]> {
   const { supabase } = await requireUser();
   const q = query.trim();
   if (!q) return [];
 
   const { data, error } = await supabase
     .from("clients")
-    .select("id, full_name, birth_date")
+    .select("id, full_name, birth_date, email")
     .ilike("full_name", `%${q}%`)
     .order("full_name")
     .limit(15);

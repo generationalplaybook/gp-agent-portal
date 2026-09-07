@@ -78,7 +78,13 @@ export default async function ClientsPage({
     return parseDateOnly(a.milestone.date).getTime() - parseDateOnly(b.milestone.date).getTime();
   };
 
-  const needsOutreach = termProducts.filter((p) => !p.contacted).sort(sortByMilestone);
+  // "Needs Outreach" is deliberately scoped to what's actually time-sensitive right now (within
+  // 90 days, or overdue) — Karina, 9/8: "outreach need should only be the ones that are time
+  // sensitive," not every unconverted/uncontacted product no matter how far off its date is (a
+  // product expiring decades out was showing up here just as loudly as one expiring in 24 days).
+  // A product that isn't urgent yet, and hasn't been contacted, simply doesn't appear in either
+  // list below until it crosses into that window on its own.
+  const needsOutreach = termProducts.filter((p) => !p.contacted && p.urgency !== "later").sort(sortByMilestone);
   const contacted = termProducts.filter((p) => p.contacted).sort(sortByMilestone);
 
   // A client can now have many reminders (see the Reminders card on their profile),

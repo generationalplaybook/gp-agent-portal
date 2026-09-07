@@ -160,14 +160,18 @@ export function getNextOutreachMilestone(product: OutreachMilestoneSource): Term
 
 export type TermUrgency = "overdue" | "critical" | "soon" | "later";
 
-// overdue: already past. critical: 30 days or less. soon: 60 days or less. later: everything
-// else. Karina, 9/4: "the ones that are sixty and then thirty days out should have a red tab or
-// something so it's like, this is high level, check this."
+// overdue: already past. critical: 30 days or less. soon: 90 days or less (bumped up from 60,
+// Karina, 9/8: "lets bump the time up to 90 days instead of 60"). later: everything else — dropped
+// entirely from the Outreach queue and the home page's Time-Sensitive banner, since Karina, same
+// message: "outreach need should only be the ones that are time sensitive," not every unconverted
+// product regardless of how far off its date is. Original cutoffs, Karina 9/4: "the ones that are
+// sixty and then thirty days out should have a red tab or something so it's like, this is high
+// level, check this."
 export function getTermUrgency(dateIso: string): TermUrgency {
   const days = daysUntil(dateIso);
   if (days < 0) return "overdue";
   if (days <= 30) return "critical";
-  if (days <= 60) return "soon";
+  if (days <= 90) return "soon";
   return "later";
 }
 

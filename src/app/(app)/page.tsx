@@ -40,7 +40,7 @@ export default async function HomePage() {
     // doesn't get missed." Broadened 9/7 to cover any product with a relevant end date (term or
     // annuity), not just term policies — see the comment above getNextOutreachMilestone in
     // lib/products.ts. Same not-yet-converted + not-yet-contacted universe as the Outreach view
-    // on /clients, narrowed here to just the urgent ones (60 days out or overdue).
+    // on /clients, narrowed here to just the urgent ones (90 days out or overdue).
     supabase
       .from("client_products")
       .select(
@@ -87,7 +87,7 @@ export default async function HomePage() {
     });
   const previewRecruitReminders = recruitReminders.slice(0, 3);
 
-  // Time-Sensitive — every not-yet-contacted product (term or annuity) within 60 days of its
+  // Time-Sensitive — every not-yet-contacted product (term or annuity) within 90 days of its
   // next relevant date (or already past it), soonest/most-overdue first, so nothing gets missed.
   const urgentTermProducts = (termProductsRaw ?? [])
     .map((p) => {
@@ -150,7 +150,7 @@ export default async function HomePage() {
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{urgentTermProducts.length}</span>
-          <span className="text-sm text-[#555]">within 60 days, not yet touched base</span>
+          <span className="text-sm text-[#555]">within 90 days, not yet touched base</span>
         </div>
         {previewUrgentTerm.length > 0 && (
           <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">

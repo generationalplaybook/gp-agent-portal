@@ -459,7 +459,7 @@ export default function ProductRow({
   // permanent product type, which never shows an expiration at all (Karina, 9/4).
   const displayExpiration = isPermanent ? null : effectiveTermEnd ?? product.expiration_date;
   const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
-  // A heads-up cue as the surrender period / contract end approaches — same 60/30-day language as
+  // A heads-up cue as the surrender period / contract end approaches — same 90/30-day language as
   // the Outreach view (both dates are now wired into that queue too — see lib/products.ts).
   const surrenderUrgency = product.annuity_surrender_end_date ? getTermUrgency(product.annuity_surrender_end_date) : null;
   const contractEndUrgency = product.annuity_contract_end_date ? getTermUrgency(product.annuity_contract_end_date) : null;

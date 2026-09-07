@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import MeetingRow from "./MeetingRow";
 import AddMeetingButton from "./AddMeetingButton";
+import ScheduleCallButton from "./ScheduleCallButton";
 
 // One place to see every upcoming meeting across every client, soonest first — pulled together
 // from client_meetings, which is the same table each client's "Meetings & Calls" card reads
@@ -10,10 +11,22 @@ import AddMeetingButton from "./AddMeetingButton";
 export default async function MeetingsPage() {
   const supabase = await createClient();
 
-  const { data: meetings } = await supabase
-    .from("client_meetings")
-    .select("id, meeting_at, location, notes, source, client_id, clients(id, full_name)")
-    .order("meeting_at", { ascending: true });
+  const [{ data: meetings }, { data: { user } }] = await Promise.all([
+    supabase
+      .from("client_meetings")
+      .select("id, meeting_at, location, notes, source, client_id, clients(id, full_name)")
+      .order("meeting_at", { ascending: true }),
+    supabase.auth.getUser(),
+  ]);
+
+  // Schedule a Call (added 9/8, Karina: "should this have an option to schedule a call too?" on
+  // the Add Meeting popup) — same scheduling_link a client's own profile already offers via
+  // ScheduleCallCard.tsx, just surfaced here too so it's reachable without opening a client first.
+  let schedulingLink: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("scheduling_link").eq("id", user.id).single();
+    schedulingLink = profile?.scheduling_link ?? null;
+  }
 
   const rows = meetings ?? [];
   const upcoming = rows.filter((m) => new Date(m.meeting_at) >= new Date());
@@ -28,7 +41,10 @@ export default async function MeetingsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Meetings</h1>
-        <AddMeetingButton />
+        <div className="flex items-center gap-2">
+          <ScheduleCallButton schedulingLink={schedulingLink} />
+          <AddMeetingButton />
+        </div>
       </div>
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {upcoming.length === 0 && (
