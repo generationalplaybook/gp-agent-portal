@@ -2579,6 +2579,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   the banner steps aside since you're already looking at a full list.
   **No SQL** — same data, just a second (now more visible) way of surfacing it.
 
+- **Needs Outreach banner made directly actionable, not just a preview — BUILT 9/8, same day,
+  right after the entry above.** Karina asked: "once you address one and move it to a category,
+  will another one push up in? So there's always constantly five there." Yes — and to make that
+  actually usable, the banner's 5 rows are now the same live Mark-Touched-Base/Undo rows as the
+  full list, not static preview text you had to click through to act on. Since needsOutreach is
+  freshly queried and re-sorted on every page load, and marking one touched base already
+  revalidates this page, addressing a row here drops it out of the list and the next-soonest item
+  takes the 5th slot automatically the next time the page renders — no separate "refill" logic
+  needed, it just falls out of always taking the top 5 of the current list. (Had to drop the
+  banner's outer Link wrapper for this — a `<select>`/button nested inside an `<a>` doesn't work
+  right — so it's a plain card now with its own small "View all N →" link at the bottom instead.)
+  **No SQL.**
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

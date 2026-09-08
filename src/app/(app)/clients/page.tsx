@@ -9,7 +9,7 @@ import {
   type TermUrgency,
   type OutreachOutcome,
 } from "@/lib/products";
-import { formatDateOnly, parseDateOnly } from "@/lib/dates";
+import { parseDateOnly } from "@/lib/dates";
 import TermOutreachRow from "./TermOutreachRow";
 import ClientSearchList from "./ClientSearchList";
 
@@ -233,42 +233,57 @@ export default async function ClientsPage({
           )}
 
           {!activeSection && !termProductsError && (
-            <Link
-              href="/clients?view=outreach&section=needs"
-              className={`flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
+            // Karina, 9/8: "once you address one and move it to a category, will another one push
+            // up in? So there's always constantly five there." It will — these are real,
+            // actionable rows (not just a preview), so marking one touched base drops it out of
+            // needsOutreach and the next-soonest item takes its place the moment the page
+            // refreshes, same as the full list. Wrapping this whole card in a Link (like the home
+            // page's Time-Sensitive banner does) would have swallowed clicks on each row's own
+            // dropdown/Undo button, so this is a plain div with its own "View all" link instead.
+            <div
+              className={`flex flex-col rounded-lg border p-6 ${
                 needsOutreach.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
               }`}
             >
-              <span
-                className={`text-xs font-semibold uppercase tracking-wide ${
-                  needsOutreach.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
-                }`}
-              >
-                Needs Outreach
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{needsOutreach.length}</span>
-                <span className="text-sm text-[#555]">time-sensitive, not yet touched base</span>
+              <div className="flex items-baseline justify-between gap-2">
+                <span
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    needsOutreach.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
+                  }`}
+                >
+                  Needs Outreach
+                </span>
+                <span className="font-serif text-2xl font-bold text-[#1C1C1C]">{needsOutreach.length}</span>
               </div>
-              {previewNeeds.length > 0 && (
-                <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0 lg:grid-cols-5">
+              {needsOutreach.length === 0 ? (
+                <p className="mt-4 text-xs text-[#555]">Nothing needs outreach right now.</p>
+              ) : (
+                <div className="mt-4 flex flex-col gap-2">
                   {previewNeeds.map((p) => (
-                    <div key={p.id} className="py-1.5 text-xs sm:py-0">
-                      <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
-                      <br />
-                      <span className="text-[#666]">
-                        {p.product_name} — {p.milestone.label}{" "}
-                        {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                    </div>
+                    <TermOutreachRow
+                      key={p.id}
+                      productId={p.id}
+                      clientId={p.client_id}
+                      clientName={p.clientName}
+                      productName={p.product_name}
+                      productType={p.product_type}
+                      carrier={p.carrier}
+                      milestone={p.milestone}
+                      urgency={p.urgency}
+                      contacted={false}
+                    />
                   ))}
                 </div>
               )}
-              {needsOutreach.length === 0 && <p className="mt-4 text-xs text-[#555]">Nothing needs outreach right now.</p>}
-              <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-                {needsOutreach.length > 0 ? "View full list" : "View"} &rarr;
-              </span>
-            </Link>
+              {needsOutreach.length > previewNeeds.length && (
+                <Link
+                  href="/clients?view=outreach&section=needs"
+                  className="mt-4 self-start text-xs font-semibold text-[#1C1C1C] underline underline-offset-2"
+                >
+                  View all {needsOutreach.length} &rarr;
+                </Link>
+              )}
+            </div>
           )}
 
           {activeSection ? (
