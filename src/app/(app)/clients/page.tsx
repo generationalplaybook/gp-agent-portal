@@ -9,7 +9,7 @@ import {
   type TermUrgency,
   type OutreachOutcome,
 } from "@/lib/products";
-import { parseDateOnly } from "@/lib/dates";
+import { formatDateOnly, parseDateOnly } from "@/lib/dates";
 import TermOutreachRow from "./TermOutreachRow";
 import ClientSearchList from "./ClientSearchList";
 
@@ -132,6 +132,12 @@ export default async function ClientsPage({
     ...(contactedLegacy.length > 0 ? [{ key: "legacy" as OutreachSectionKey, label: "Touched Base — No Outcome Recorded", items: contactedLegacy }] : []),
   ];
   const activeSection = section ? outreachSections.find((s) => s.key === section) ?? null : null;
+  // Karina, 9/8, right after the thumbnail grid went in: "show a few, maybe three to five, above
+  // still... so there's something there and you see red, so you're like okay, this has gotta be
+  // worked on urgently." The grid's counts alone didn't convey urgency the way actually seeing a
+  // couple of real names did — this brings that back as a banner, same pattern as the Time-
+  // Sensitive card on the home page (turns red when there's anything overdue/critical/soon).
+  const previewNeeds = needsOutreach.slice(0, 5);
 
   // A client can now have many reminders (see the Reminders card on their profile),
   // so "next follow up" here means the soonest pending one, not a single stored field.
@@ -224,6 +230,45 @@ export default async function ClientsPage({
             <div className="rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-4 text-sm font-semibold text-[#8B1A1A]">
               Couldn&rsquo;t load the outreach list — {termProductsError.message}
             </div>
+          )}
+
+          {!activeSection && !termProductsError && (
+            <Link
+              href="/clients?view=outreach&section=needs"
+              className={`flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
+                needsOutreach.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
+              }`}
+            >
+              <span
+                className={`text-xs font-semibold uppercase tracking-wide ${
+                  needsOutreach.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
+                }`}
+              >
+                Needs Outreach
+              </span>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{needsOutreach.length}</span>
+                <span className="text-sm text-[#555]">time-sensitive, not yet touched base</span>
+              </div>
+              {previewNeeds.length > 0 && (
+                <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0 lg:grid-cols-5">
+                  {previewNeeds.map((p) => (
+                    <div key={p.id} className="py-1.5 text-xs sm:py-0">
+                      <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
+                      <br />
+                      <span className="text-[#666]">
+                        {p.product_name} — {p.milestone.label}{" "}
+                        {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {needsOutreach.length === 0 && <p className="mt-4 text-xs text-[#555]">Nothing needs outreach right now.</p>}
+              <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+                {needsOutreach.length > 0 ? "View full list" : "View"} &rarr;
+              </span>
+            </Link>
           )}
 
           {activeSection ? (

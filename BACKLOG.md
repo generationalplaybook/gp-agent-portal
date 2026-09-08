@@ -2566,6 +2566,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   "Outreach" chip badge in the filter row above still counts Needs Outreach specifically, unchanged.
   **No SQL** — purely a rendering/navigation change, same underlying data and query as before.
 
+- **Needs Outreach banner brought back above the thumbnail grid — BUILT 9/8, same day, right
+  after the entry above.** Karina, right after seeing the grid: "show a few, maybe three to five,
+  above still, like, across the whole page, and then have those boxes underneath just so that
+  there's something there and you see red — so you're like, okay, this has gotta be worked on
+  urgently." The grid's counts alone didn't convey urgency the way actually seeing a couple of
+  real names did. So the Outreach landing view now has, top to bottom: a full-width "Needs
+  Outreach" banner (up to 5 real names/products/dates, turns red — same border/background as the
+  home page's Time-Sensitive card — the moment anything's in it), then the thumbnail grid of every
+  category underneath, unchanged. The banner links straight into the same "Needs Outreach" full
+  list the grid's own card does. Only shown on the grid landing view — once a category's expanded,
+  the banner steps aside since you're already looking at a full list.
+  **No SQL** — same data, just a second (now more visible) way of surfacing it.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
