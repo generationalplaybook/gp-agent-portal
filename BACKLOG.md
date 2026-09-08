@@ -2526,10 +2526,28 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     date becomes a real Reminder ("Renewal check-in due — [product]"), so it resurfaces on its own
     at the date picked, exactly like the outreach reminders already do for the other outcomes.
   Both directions still overwrite the client's pipeline stage the same way "Shopping" already did
-  (same caveat as before: `stage` is one field per client, not per policy) — "Declining" and
-  "Couldn't reach them" are unchanged, no stage or reminder either way.
+  (same caveat as before: `stage` is one field per client, not per policy) — at the time this was
+  built, "Declining" and "Couldn't reach them" were unchanged; see the next entry for Declining.
   **SQL:** none — reuses the existing `outreach_outcome` text column (no DB check constraint on
   it, same as before), just a new value the app code now understands.
+
+- **"Declining / letting it lapse" gets the same follow-up treatment — BUILT 9/8, same day, right
+  after the entry above.** Karina: "for declining and letting lapse we need actions too." Asked
+  her two clarifying questions on exactly what: whether it should move the client's pipeline stage
+  to the existing Declined value, and whether it needed a follow-up reminder like "Keeping as-is"
+  just got. She was unsure on the first ("did they decline to continue coverage or what is it,
+  letting lapse is same I guess") but confirmed yes on the reminder, so this went with the
+  straightforward reading — declining/lapsing IS what the existing Declined pipeline stage already
+  means, so it moves there, same as Keeping moves to Issued and Shopping/Renewing move to Lead.
+  Picking "Declining / letting it lapse" now opens the same inline "Next follow-up?" picker built
+  for "Keeping as-is" (1 yr / 2 yrs / custom date+time) — that control is now shared by both
+  outcomes rather than special-cased to just one. The reminder it creates reads "Check back in —
+  lapsed coverage, [product]." Same overwrite caveat as the other stage-changing outcomes — only
+  "Couldn't reach them" still leaves stage untouched.
+  **If "declining" and "letting it lapse" turn out to need to be two different things after all**
+  (one truly final, one worth a real win-back push) — flag it and this can split the same way
+  "Renewing / keeping as-is" did, now that there's a working pattern for it.
+  **SQL:** none — same `outreach_outcome` column, no new value needed (declining already existed).
 
 ## Blocked on Karina
 

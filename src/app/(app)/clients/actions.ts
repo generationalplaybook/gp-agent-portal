@@ -746,12 +746,13 @@ export async function undoConverted(productId: string, clientId: string): Promis
 // 9/8: originally just a plain "touched base, yes/no" flag — Karina wanted it to capture WHAT
 // actually happened on the call, not just that one happened, so marking touched base now requires
 // picking an outcome. "Couldn't reach them" and "shopping for new coverage" both mean more work is
-// still coming, so those two automatically create a short-term follow-up reminder — "declining" is
-// fully settled, no reminder needed. "Keeping current coverage as-is" is its own case (split out
-// from "renewing" later on 9/8, see the comment on OutreachOutcome in lib/products.ts): the policy
-// itself is done/settled too, but Karina still wants a reminder — just far out, at whatever date
-// she picks (the client isn't due for another check-in for a year or two, not days), so
-// followUpAt is required for this one outcome and ignored for the other four.
+// still coming, so those two automatically create a short-term follow-up reminder. "Keeping
+// current coverage as-is" (split out from "renewing" later on 9/8, see the comment on
+// OutreachOutcome in lib/products.ts) and "Declining / letting it lapse" (given the same treatment
+// right after, same day — "for declining and letting lapse we need actions too") are both settled
+// FOR NOW but still want a reminder far out — the client isn't due for another check-in for a year
+// or two, not days — so followUpAt is required for those two outcomes (via the inline 1yr/2yr/
+// custom picker in TermOutreachRow) and ignored for the other three.
 // OutreachOutcome/OUTREACH_OUTCOME_LABELS live in lib/products.ts, not here — a "use server" file
 // can only export async functions, so a plain constant has to live elsewhere.
 export async function markOutreachOutcome(
@@ -761,7 +762,7 @@ export async function markOutreachOutcome(
   productName: string,
   followUpAt?: string
 ): Promise<void> {
-  if (outcome === "keeping" && !followUpAt) {
+  if ((outcome === "keeping" || outcome === "declining") && !followUpAt) {
     throw new Error("Pick a next follow-up date.");
   }
 
@@ -785,6 +786,8 @@ export async function markOutreachOutcome(
     await addReminder({ clientId }, remindAt.toISOString(), message);
   } else if (outcome === "keeping" && followUpAt) {
     await addReminder({ clientId }, followUpAt, `Renewal check-in due — ${productName}`);
+  } else if (outcome === "declining" && followUpAt) {
+    await addReminder({ clientId }, followUpAt, `Check back in — lapsed coverage, ${productName}`);
   }
 
   // "Shopping for new coverage" AND "Renewing — new policy" both mean there's new business to
@@ -796,15 +799,22 @@ export async function markOutreachOutcome(
   // just continues — so that one moves to Issued instead ("keeping as is should just go back to
   // issued and be done until the next date," same message) and relies on the reminder above to
   // resurface it later rather than sitting in a pipeline stage.
-  // Both directions OVERWRITE the client's current stage — for a client with other coverage
+  // "Declining / letting it lapse" moves to the existing Declined stage — added when Karina asked
+  // for the same "we need actions too" treatment here; she was unsure herself whether declining
+  // and lapsing were really the same thing but was fine treating them as one outcome, so this uses
+  // the CLIENT_STAGES value that already means exactly this ("Declined").
+  // All three directions OVERWRITE the client's current stage — for a client with other coverage
   // already further along, this can move that stage backward or forward too, since `stage` is one
   // field per client, not per policy. Deliberate per her description, but worth knowing.
-  // "Declining" and "Couldn't reach them" don't touch stage at all.
+  // Only "Couldn't reach them" leaves stage untouched.
   if (outcome === "shopping" || outcome === "renewing") {
     const { error: stageError } = await supabase.from("clients").update({ stage: "lead" }).eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "keeping") {
     const { error: stageError } = await supabase.from("clients").update({ stage: "issued" }).eq("id", clientId);
+    if (stageError) throw new Error(stageError.message);
+  } else if (outcome === "declining") {
+    const { error: stageError } = await supabase.from("clients").update({ stage: "declined" }).eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   }
 

@@ -18,8 +18,10 @@ import { formatDateOnly } from "@/lib/dates";
 // 9/8, later same day: picking "Keeping current coverage as-is" needs one more thing before it can
 // fire — a next follow-up date ("keeping as is should just go back to issued and be done until the
 // next date there should be a follow up ... quick selections can be 1yr, 2yrs and custom input").
-// Every other outcome still fires the instant it's picked; this one alone opens a small inline
-// picker first.
+// "Declining / letting it lapse" got the same treatment right after, same day ("for declining and
+// letting lapse we need actions too"). Every other outcome still fires the instant it's picked;
+// these two alone open a small inline picker first.
+const FOLLOWUP_REQUIRED: OutreachOutcome[] = ["keeping", "declining"];
 
 const URGENCY_STYLES: Record<TermUrgency, { badge: string; border: string }> = {
   overdue: { badge: "bg-[#8B1A1A] text-white", border: "border-l-4 border-l-[#8B1A1A]" },
@@ -51,7 +53,7 @@ export default function TermOutreachRow({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [pickingFollowUp, setPickingFollowUp] = useState(false);
+  const [pickingFollowUpFor, setPickingFollowUpFor] = useState<OutreachOutcome | null>(null);
   const [customFollowUp, setCustomFollowUp] = useState("");
   const styles = urgency ? URGENCY_STYLES[urgency] : URGENCY_STYLES.later;
 
@@ -60,7 +62,7 @@ export default function TermOutreachRow({
     setError("");
     try {
       await markOutreachOutcome(productId, clientId, outcome, productName, followUpAt);
-      setPickingFollowUp(false);
+      setPickingFollowUpFor(null);
       setCustomFollowUp("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update.");
@@ -70,14 +72,15 @@ export default function TermOutreachRow({
   }
 
   function handleQuickFollowUp(years: number) {
+    if (!pickingFollowUpFor) return;
     const d = new Date();
     d.setFullYear(d.getFullYear() + years);
-    handlePickOutcome("keeping", d.toISOString());
+    handlePickOutcome(pickingFollowUpFor, d.toISOString());
   }
 
   function handleCustomFollowUp() {
-    if (!customFollowUp) return;
-    handlePickOutcome("keeping", new Date(customFollowUp).toISOString());
+    if (!pickingFollowUpFor || !customFollowUp) return;
+    handlePickOutcome(pickingFollowUpFor, new Date(customFollowUp).toISOString());
   }
 
   async function handleUndo() {
@@ -128,7 +131,7 @@ export default function TermOutreachRow({
         >
           {busy ? "…" : "Undo"}
         </button>
-      ) : pickingFollowUp ? (
+      ) : pickingFollowUpFor ? (
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <p className="text-xs font-medium text-[#666]">Next follow-up?</p>
           <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -168,7 +171,7 @@ export default function TermOutreachRow({
             type="button"
             disabled={busy}
             onClick={() => {
-              setPickingFollowUp(false);
+              setPickingFollowUpFor(null);
               setCustomFollowUp("");
               setError("");
             }}
@@ -183,8 +186,8 @@ export default function TermOutreachRow({
           value=""
           onChange={(e) => {
             const value = e.target.value as OutreachOutcome | "";
-            if (value === "keeping") {
-              setPickingFollowUp(true);
+            if (value && FOLLOWUP_REQUIRED.includes(value)) {
+              setPickingFollowUpFor(value);
             } else if (value) {
               handlePickOutcome(value);
             }
