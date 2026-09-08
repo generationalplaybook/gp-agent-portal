@@ -14,9 +14,11 @@ import TermOutreachRow from "./TermOutreachRow";
 import ClientSearchList from "./ClientSearchList";
 
 // Order resolved outcomes appear in below — "unreachable" first since it's the one that still
-// needs a prompt retry, "shopping" next since it's still active/ongoing, then the two settled
-// outcomes. Karina, 9/8: split into separate sections by outcome rather than one flat list.
-const OUTCOME_ORDER: OutreachOutcome[] = ["unreachable", "shopping", "renewing", "declining"];
+// needs a prompt retry, then "shopping" and "renewing" (both active/ongoing — back in the sales
+// pipeline), then the two settled-for-now outcomes. Karina, 9/8: split into separate sections by
+// outcome rather than one flat list; "keeping" added later the same day when "renewing / keeping
+// as-is" split into two separate outcomes.
+const OUTCOME_ORDER: OutreachOutcome[] = ["unreachable", "shopping", "renewing", "keeping", "declining"];
 
 export default async function ClientsPage({
   searchParams,

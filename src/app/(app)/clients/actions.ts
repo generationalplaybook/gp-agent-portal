@@ -746,16 +746,25 @@ export async function undoConverted(productId: string, clientId: string): Promis
 // 9/8: originally just a plain "touched base, yes/no" flag — Karina wanted it to capture WHAT
 // actually happened on the call, not just that one happened, so marking touched base now requires
 // picking an outcome. "Couldn't reach them" and "shopping for new coverage" both mean more work is
-// still coming, so those two automatically create a follow-up reminder (her call, when asked) —
-// "renewing as-is" and "declining" are both settled outcomes, no reminder needed either way.
+// still coming, so those two automatically create a short-term follow-up reminder — "declining" is
+// fully settled, no reminder needed. "Keeping current coverage as-is" is its own case (split out
+// from "renewing" later on 9/8, see the comment on OutreachOutcome in lib/products.ts): the policy
+// itself is done/settled too, but Karina still wants a reminder — just far out, at whatever date
+// she picks (the client isn't due for another check-in for a year or two, not days), so
+// followUpAt is required for this one outcome and ignored for the other four.
 // OutreachOutcome/OUTREACH_OUTCOME_LABELS live in lib/products.ts, not here — a "use server" file
 // can only export async functions, so a plain constant has to live elsewhere.
 export async function markOutreachOutcome(
   productId: string,
   clientId: string,
   outcome: OutreachOutcome,
-  productName: string
+  productName: string,
+  followUpAt?: string
 ): Promise<void> {
+  if (outcome === "keeping" && !followUpAt) {
+    throw new Error("Pick a next follow-up date.");
+  }
+
   const { supabase } = await requireUser();
   const { error } = await supabase
     .from("client_products")
@@ -774,20 +783,28 @@ export async function markOutreachOutcome(
     // Reuses the Reminders feature's own action rather than inserting into `reminders` directly,
     // so this stays in sync with whatever that table/validation looks like later.
     await addReminder({ clientId }, remindAt.toISOString(), message);
+  } else if (outcome === "keeping" && followUpAt) {
+    await addReminder({ clientId }, followUpAt, `Renewal check-in due — ${productName}`);
   }
 
-  // "Shopping for new coverage" re-enters the client into the sales pipeline (Karina, 9/8: "does
-  // it move to lead section so the advisor can start working on it and then mark it quotes when a
-  // quote is sent... so it doesn't get left and forgotten") — same CLIENT_STAGES pipeline every
-  // new prospect goes through, so it shows back up on the Client Pipeline card and the Lead filter
-  // on Clients, and the advisor moves it forward by hand (Quoted once a quote goes out, etc.) the
-  // same way as any other prospect. This OVERWRITES the client's current stage — for a client who
-  // already has other coverage Issued, this makes them show as "Lead" again, which is deliberate
-  // per her description but worth knowing: it doesn't distinguish "this client's whole
-  // relationship reset to a lead" from "this one policy is up for replacement, the rest of their
-  // book is unaffected." Only touches stage on this specific outcome — the other three don't.
-  if (outcome === "shopping") {
+  // "Shopping for new coverage" AND "Renewing — new policy" both mean there's new business to
+  // work, so both re-enter the client into the sales pipeline (Karina, 9/8: "renewing should move
+  // to lead") — same CLIENT_STAGES pipeline every new prospect goes through, so they show back up
+  // on the Client Pipeline card and the Lead filter on Clients, and the advisor moves it forward by
+  // hand (Quoted once a quote goes out, etc.) the same way as any other prospect.
+  // "Keeping current coverage as-is" means the opposite — nothing to work, the existing policy
+  // just continues — so that one moves to Issued instead ("keeping as is should just go back to
+  // issued and be done until the next date," same message) and relies on the reminder above to
+  // resurface it later rather than sitting in a pipeline stage.
+  // Both directions OVERWRITE the client's current stage — for a client with other coverage
+  // already further along, this can move that stage backward or forward too, since `stage` is one
+  // field per client, not per policy. Deliberate per her description, but worth knowing.
+  // "Declining" and "Couldn't reach them" don't touch stage at all.
+  if (outcome === "shopping" || outcome === "renewing") {
     const { error: stageError } = await supabase.from("clients").update({ stage: "lead" }).eq("id", clientId);
+    if (stageError) throw new Error(stageError.message);
+  } else if (outcome === "keeping") {
+    const { error: stageError } = await supabase.from("clients").update({ stage: "issued" }).eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   }
 

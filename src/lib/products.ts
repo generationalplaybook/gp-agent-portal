@@ -186,11 +186,17 @@ export function termUrgencyLabel(dateIso: string, urgency: TermUrgency): string 
 // clients/actions.ts, which is where this is set. Lives here rather than in that "use server"
 // file since a plain exported constant (not an async function) isn't allowed there — Next.js
 // only allows a "use server" module to export async functions.
-export type OutreachOutcome = "shopping" | "renewing" | "declining" | "unreachable";
+//
+// 9/8, later same day: "renewing" and "keeping as-is" started out as one combined option, but
+// Karina wants them handled differently — "renewing should move to lead. keeping as is should
+// just go back to issued and be done until the next date" — so they're now two separate outcomes.
+// See markOutreachOutcome for what each one actually does.
+export type OutreachOutcome = "shopping" | "renewing" | "keeping" | "declining" | "unreachable";
 
 export const OUTREACH_OUTCOME_LABELS: Record<OutreachOutcome, string> = {
   shopping: "Shopping for new coverage",
-  renewing: "Renewing / keeping as-is",
+  renewing: "Renewing — new policy",
+  keeping: "Keeping current coverage as-is",
   declining: "Declining / letting it lapse",
   unreachable: "Couldn't reach them yet",
 };

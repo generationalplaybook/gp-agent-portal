@@ -14,6 +14,12 @@ import { formatDateOnly } from "@/lib/dates";
 // base to require saying what actually happened, so this is now a "What happened?" dropdown;
 // picking an outcome both records it and moves the row into its outcome-specific section below in
 // one step. "Undo" (on an already-resolved row) clears the outcome and moves it back.
+//
+// 9/8, later same day: picking "Keeping current coverage as-is" needs one more thing before it can
+// fire — a next follow-up date ("keeping as is should just go back to issued and be done until the
+// next date there should be a follow up ... quick selections can be 1yr, 2yrs and custom input").
+// Every other outcome still fires the instant it's picked; this one alone opens a small inline
+// picker first.
 
 const URGENCY_STYLES: Record<TermUrgency, { badge: string; border: string }> = {
   overdue: { badge: "bg-[#8B1A1A] text-white", border: "border-l-4 border-l-[#8B1A1A]" },
@@ -45,18 +51,33 @@ export default function TermOutreachRow({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [pickingFollowUp, setPickingFollowUp] = useState(false);
+  const [customFollowUp, setCustomFollowUp] = useState("");
   const styles = urgency ? URGENCY_STYLES[urgency] : URGENCY_STYLES.later;
 
-  async function handlePickOutcome(outcome: OutreachOutcome) {
+  async function handlePickOutcome(outcome: OutreachOutcome, followUpAt?: string) {
     setBusy(true);
     setError("");
     try {
-      await markOutreachOutcome(productId, clientId, outcome, productName);
+      await markOutreachOutcome(productId, clientId, outcome, productName, followUpAt);
+      setPickingFollowUp(false);
+      setCustomFollowUp("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleQuickFollowUp(years: number) {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + years);
+    handlePickOutcome("keeping", d.toISOString());
+  }
+
+  function handleCustomFollowUp() {
+    if (!customFollowUp) return;
+    handlePickOutcome("keeping", new Date(customFollowUp).toISOString());
   }
 
   async function handleUndo() {
@@ -107,13 +128,66 @@ export default function TermOutreachRow({
         >
           {busy ? "…" : "Undo"}
         </button>
+      ) : pickingFollowUp ? (
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <p className="text-xs font-medium text-[#666]">Next follow-up?</p>
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => handleQuickFollowUp(1)}
+              className="rounded-md border border-[#1C1C1C] bg-[#1C1C1C] px-2.5 py-1.5 text-xs font-semibold text-[#FAF8F4] disabled:opacity-60"
+            >
+              1 yr
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => handleQuickFollowUp(2)}
+              className="rounded-md border border-[#1C1C1C] bg-[#1C1C1C] px-2.5 py-1.5 text-xs font-semibold text-[#FAF8F4] disabled:opacity-60"
+            >
+              2 yrs
+            </button>
+            <input
+              type="datetime-local"
+              disabled={busy}
+              value={customFollowUp}
+              onChange={(e) => setCustomFollowUp(e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-2 py-1.5 text-xs outline-none focus:border-[#1C1C1C]"
+            />
+            <button
+              type="button"
+              disabled={busy || !customFollowUp}
+              onClick={handleCustomFollowUp}
+              className="rounded-md border border-[#D9CFBA] px-2.5 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF] disabled:opacity-60"
+            >
+              {busy ? "…" : "Confirm"}
+            </button>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setPickingFollowUp(false);
+              setCustomFollowUp("");
+              setError("");
+            }}
+            className="text-xs font-medium text-[#707070] underline disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
       ) : (
         <select
           disabled={busy}
           value=""
           onChange={(e) => {
             const value = e.target.value as OutreachOutcome | "";
-            if (value) handlePickOutcome(value);
+            if (value === "keeping") {
+              setPickingFollowUp(true);
+            } else if (value) {
+              handlePickOutcome(value);
+            }
           }}
           className="shrink-0 rounded-md border border-[#1C1C1C] bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] disabled:opacity-60"
         >

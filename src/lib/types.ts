@@ -307,8 +307,9 @@ export interface ClientProduct {
   // contacted before 9/8, back when there was no outcome to record.
   term_contacted_at: string | null;
   // What actually happened on that outreach call (added 9/8, Karina: marking touched base needs
-  // to say what happened, not just that it did) — one of OutreachOutcome in clients/actions.ts:
-  // "shopping" | "renewing" | "declining" | "unreachable". Null until term_contacted_at is set.
+  // to say what happened, not just that it did) — one of OutreachOutcome in lib/products.ts:
+  // "shopping" | "renewing" | "keeping" | "declining" | "unreachable". Null until
+  // term_contacted_at is set.
   outreach_outcome: string | null;
   conversion_notes: string | null;
   // Set true once the 60-days-out auto-reminder has been created for this product's

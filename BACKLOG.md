@@ -2510,6 +2510,27 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      code in the text, that template needs the `{{ .Token }}` variable added in Supabase Dashboard
      → Authentication → Email Templates, but this is expected to work out of the box.
 
+- **"Renewing / keeping as-is" split into two separate outcomes, each with real follow-up
+  actions — BUILT 9/8, same day.** Karina, looking at that combined outcome: "if its renewing or
+  keeping as is we need actions. renewing should move to lead. keeping as is should just go back
+  to issued and be done until the next date there should be a follow up." So that one outcome is
+  now two:
+  - **"Renewing — new policy"** (was half of the old "Renewing / keeping as-is") — behaves like
+    "Shopping for new coverage" now: moves the client's pipeline stage to Lead so the advisor
+    works it forward (Quoted, Applied, Issued) the same as any new prospect. No follow-up reminder
+    (same as shopping) — the pipeline itself is the tracking now.
+  - **"Keeping current coverage as-is"** (the other half) — moves the client's pipeline stage to
+    Issued (nothing to actively work — the existing policy just continues) and now REQUIRES a
+    next follow-up date before it'll save, picked from a small inline control that opens right in
+    the Outreach row: quick "1 yr" / "2 yrs" buttons, or a custom date/time via "Confirm." That
+    date becomes a real Reminder ("Renewal check-in due — [product]"), so it resurfaces on its own
+    at the date picked, exactly like the outreach reminders already do for the other outcomes.
+  Both directions still overwrite the client's pipeline stage the same way "Shopping" already did
+  (same caveat as before: `stage` is one field per client, not per policy) — "Declining" and
+  "Couldn't reach them" are unchanged, no stage or reminder either way.
+  **SQL:** none — reuses the existing `outreach_outcome` text column (no DB check constraint on
+  it, same as before), just a new value the app code now understands.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
