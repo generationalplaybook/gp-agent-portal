@@ -33,20 +33,29 @@ function revalidateForOwner(owner: ReminderOwner) {
   revalidatePath("/reminders");
 }
 
-export async function addReminder(owner: ReminderOwner, remindAtIso: string, message: string): Promise<void> {
+// Returns the new reminder's id — added 9/8 so callers that auto-create a reminder on the
+// caller's behalf (markOutreachOutcome in clients/actions.ts) can hang onto it and delete that
+// exact reminder later if the thing that created it gets undone. Existing callers that don't need
+// the id (AddReminderButton, etc.) just don't use the return value — nothing else changes for them.
+export async function addReminder(owner: ReminderOwner, remindAtIso: string, message: string): Promise<string> {
   const { supabase, user } = await requireUser();
   if (!remindAtIso) throw new Error("Pick a date and time.");
 
-  const { error } = await supabase.from("reminders").insert({
-    client_id: owner.clientId ?? null,
-    recruit_id: owner.recruitId ?? null,
-    agent_id: user.id,
-    remind_at: remindAtIso,
-    message: message.trim() || null,
-  });
+  const { data, error } = await supabase
+    .from("reminders")
+    .insert({
+      client_id: owner.clientId ?? null,
+      recruit_id: owner.recruitId ?? null,
+      agent_id: user.id,
+      remind_at: remindAtIso,
+      message: message.trim() || null,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
 
   revalidateForOwner(owner);
+  return data.id;
 }
 
 export async function updateReminder(

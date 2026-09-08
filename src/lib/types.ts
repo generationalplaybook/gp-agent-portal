@@ -311,6 +311,11 @@ export interface ClientProduct {
   // "shopping" | "renewing" | "keeping" | "declining" | "unreachable". Null until
   // term_contacted_at is set.
   outreach_outcome: string | null;
+  // The auto-created follow-up reminder tied to the outreach_outcome above (added 9/8), so
+  // undoOutreachOutcome in clients/actions.ts can delete that exact reminder instead of leaving it
+  // orphaned in Reminders once the outcome that created it gets undone. Null for a row with no
+  // outcome, or an outcome that doesn't create a reminder ("renewing").
+  outreach_reminder_id: string | null;
   conversion_notes: string | null;
   // Set true once the 60-days-out auto-reminder has been created for this product's
   // conversion_deadline, so the daily cron doesn't create a duplicate every day it's still
