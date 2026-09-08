@@ -20,14 +20,25 @@ import ClientSearchList from "./ClientSearchList";
 // as-is" split into two separate outcomes.
 const OUTCOME_ORDER: OutreachOutcome[] = ["unreachable", "shopping", "renewing", "keeping", "declining"];
 
+// Which "thumbnail" is currently expanded on the Outreach view (Karina, 9/8: "this section should
+// maybe have thumbnails like the home page, so you can click into each list to do your outreach —
+// if all lists are in one long line it can be easy to miss [one]"). "needs" plus every
+// OutreachOutcome plus "legacy" (the pre-outcome-tracking catch-all).
+type OutreachSectionKey = "needs" | OutreachOutcome | "legacy";
+const OUTREACH_SECTION_KEYS: OutreachSectionKey[] = ["needs", ...OUTCOME_ORDER, "legacy"];
+
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string; view?: string }>;
+  searchParams: Promise<{ stage?: string; view?: string; section?: string }>;
 }) {
-  const { stage, view } = await searchParams;
+  const { stage, view, section: sectionParam } = await searchParams;
   const needsReview = view === "needs_review";
   const outreachView = view === "outreach";
+  const section: OutreachSectionKey | null =
+    outreachView && OUTREACH_SECTION_KEYS.includes(sectionParam as OutreachSectionKey)
+      ? (sectionParam as OutreachSectionKey)
+      : null;
   const supabase = await createClient();
 
   let query = supabase.from("clients").select("*").order("updated_at", { ascending: false });
@@ -101,14 +112,26 @@ export default async function ClientsPage({
   // list below until it crosses into that window on its own.
   const needsOutreach = termProducts.filter((p) => !p.contacted && p.urgency !== "later").sort(sortByMilestone);
   // Resolved items split into their own section per outcome (Karina, 9/8) rather than one flat
-  // "Already Touched Base" list. contactedLegacy catches the one case that can't have an outcome:
-  // a row marked touched base before this feature existed (plain markTermContacted, no outcome
-  // recorded) — shown as its own small section so it isn't silently dropped.
+  // "Already Touched Base" list. Unlike before, this keeps every outcome (even a 0-count one) —
+  // the thumbnail grid below wants a full, consistent set of cards to click into, same as the
+  // Client Pipeline card on the home page always shows every stage regardless of count.
+  // contactedLegacy catches the one case that can't have an outcome: a row marked touched base
+  // before this feature existed (plain markTermContacted, no outcome recorded) — its own small
+  // section so it isn't silently dropped, but left out of the thumbnail grid entirely when empty.
   const contactedByOutcome = OUTCOME_ORDER.map((outcome) => ({
     outcome,
     items: termProducts.filter((p) => p.contacted && p.outcome === outcome).sort(sortByMilestone),
-  })).filter((g) => g.items.length > 0);
+  }));
   const contactedLegacy = termProducts.filter((p) => p.contacted && !p.outcome).sort(sortByMilestone);
+
+  // Unified list backing both the thumbnail grid and the expanded single-section view — one shape
+  // for "needs", every outcome, and the legacy catch-all (only included when it actually has rows).
+  const outreachSections: { key: OutreachSectionKey; label: string; items: typeof needsOutreach }[] = [
+    { key: "needs", label: "Needs Outreach", items: needsOutreach },
+    ...contactedByOutcome.map(({ outcome, items }) => ({ key: outcome as OutreachSectionKey, label: OUTREACH_OUTCOME_LABELS[outcome], items })),
+    ...(contactedLegacy.length > 0 ? [{ key: "legacy" as OutreachSectionKey, label: "Touched Base — No Outcome Recorded", items: contactedLegacy }] : []),
+  ];
+  const activeSection = section ? outreachSections.find((s) => s.key === section) ?? null : null;
 
   // A client can now have many reminders (see the Reminders card on their profile),
   // so "next follow up" here means the soonest pending one, not a single stored field.
@@ -202,80 +225,88 @@ export default async function ClientsPage({
               Couldn&rsquo;t load the outreach list — {termProductsError.message}
             </div>
           )}
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#8b6a00]">
-              Needs Outreach ({needsOutreach.length})
-            </p>
-            {needsOutreach.length === 0 && !termProductsError && (
-              <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-6 text-center text-sm text-[#707070]">
-                Nothing needs outreach right now.
-              </div>
-            )}
-            {needsOutreach.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {needsOutreach.map((p) => (
-                  <TermOutreachRow
-                    key={p.id}
-                    productId={p.id}
-                    clientId={p.client_id}
-                    clientName={p.clientName}
-                    productName={p.product_name}
-                    productType={p.product_type}
-                    carrier={p.carrier}
-                    milestone={p.milestone}
-                    urgency={p.urgency}
-                    contacted={false}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
 
-          {contactedByOutcome.map(({ outcome, items }) => (
-            <div key={outcome} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#707070]">
-                {OUTREACH_OUTCOME_LABELS[outcome]} ({items.length})
+          {activeSection ? (
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/clients?view=outreach"
+                className="self-start text-xs font-semibold text-[#1C1C1C] underline underline-offset-2"
+              >
+                &larr; All categories
+              </Link>
+              <p
+                className={`text-xs font-semibold uppercase tracking-wide ${
+                  activeSection.key === "needs" ? "text-[#8b6a00]" : "text-[#707070]"
+                }`}
+              >
+                {activeSection.label} ({activeSection.items.length})
               </p>
-              <div className="flex flex-col gap-2">
-                {items.map((p) => (
-                  <TermOutreachRow
-                    key={p.id}
-                    productId={p.id}
-                    clientId={p.client_id}
-                    clientName={p.clientName}
-                    productName={p.product_name}
-                    productType={p.product_type}
-                    carrier={p.carrier}
-                    milestone={p.milestone}
-                    urgency={p.urgency}
-                    contacted={true}
-                  />
-                ))}
-              </div>
+              {activeSection.items.length === 0 && !termProductsError && (
+                <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-6 text-center text-sm text-[#707070]">
+                  Nothing here right now.
+                </div>
+              )}
+              {activeSection.items.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {activeSection.items.map((p) => (
+                    <TermOutreachRow
+                      key={p.id}
+                      productId={p.id}
+                      clientId={p.client_id}
+                      clientName={p.clientName}
+                      productName={p.product_name}
+                      productType={p.product_type}
+                      carrier={p.carrier}
+                      milestone={p.milestone}
+                      urgency={p.urgency}
+                      contacted={activeSection.key !== "needs"}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-
-          {contactedLegacy.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#707070]">
-                Touched Base — No Outcome Recorded ({contactedLegacy.length})
-              </p>
-              <div className="flex flex-col gap-2">
-                {contactedLegacy.map((p) => (
-                  <TermOutreachRow
-                    key={p.id}
-                    productId={p.id}
-                    clientId={p.client_id}
-                    clientName={p.clientName}
-                    productName={p.product_name}
-                    productType={p.product_type}
-                    carrier={p.carrier}
-                    milestone={p.milestone}
-                    urgency={p.urgency}
-                    contacted={true}
-                  />
-                ))}
-              </div>
+          ) : (
+            // Thumbnail grid (Karina, 9/8): every category as its own clickable card — count plus
+            // a short preview — rather than every list unrolled on one long page where a section
+            // further down was easy to miss.
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {outreachSections.map((s) => {
+                const isNeeds = s.key === "needs";
+                const preview = s.items.slice(0, 3);
+                return (
+                  <Link
+                    key={s.key}
+                    href={`/clients?view=outreach&section=${s.key}`}
+                    className={`flex flex-col rounded-lg border p-5 hover:border-[#1C1C1C] ${
+                      isNeeds && s.items.length > 0 ? "border-[#8b6a00] bg-[#FFFBF0]" : "border-[#D9CFBA] bg-white"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-semibold uppercase tracking-wide ${
+                        isNeeds ? "text-[#8b6a00]" : "text-[#707070]"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="mt-2 font-serif text-3xl font-bold text-[#1C1C1C]">{s.items.length}</span>
+                    <div className="mt-3 flex flex-col divide-y divide-[#EDE8DF]">
+                      {preview.length === 0 && <p className="py-1 text-xs text-[#999]">Nothing here.</p>}
+                      {preview.map((p) => (
+                        <div key={p.id} className="truncate py-1 text-xs">
+                          <span className="font-semibold text-[#1C1C1C]">{p.clientName}</span>
+                          <span className="text-[#707070]"> — {p.product_name}</span>
+                        </div>
+                      ))}
+                      {s.items.length > preview.length && (
+                        <p className="py-1 text-xs text-[#999]">+{s.items.length - preview.length} more</p>
+                      )}
+                    </div>
+                    <span className="mt-auto pt-3 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+                      {s.items.length > 0 ? "View list" : "View"} &rarr;
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

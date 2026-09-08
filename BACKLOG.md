@@ -2549,6 +2549,23 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   "Renewing / keeping as-is" did, now that there's a working pattern for it.
   **SQL:** none — same `outreach_outcome` column, no new value needed (declining already existed).
 
+- **Outreach view turned into clickable thumbnails instead of one long scrolling page — BUILT
+  9/8, same day.** Karina, looking at the Outreach page once it had grown to 7 possible sections
+  (Needs Outreach + the 5 outcome categories + the legacy catch-all): "this section should maybe
+  have thumbnails like the home page, so you can click into each list to do your outreach if all
+  lists are in one long line it can be easy to miss." Landing on `/clients?view=outreach` now
+  shows a grid of cards — one per category, same visual language as the home page's dashboard
+  cards (count, a short 3-item preview, click through) — instead of every list unrolled top to
+  bottom. Clicking a card (`?view=outreach&section=needs|unreachable|shopping|renewing|keeping|
+  declining|legacy`) expands into that one category's full working list (the same
+  Mark-Touched-Base / Undo rows as before), with a "← All categories" link back to the grid.
+  "Needs Outreach" gets the same amber highlight it always had, both as its own card and once
+  expanded. Every outcome category shows as a card even at 0 (matches how the Client Pipeline
+  card on the home page always shows all 6 stages) — only the legacy "no outcome recorded"
+  catch-all is left off the grid entirely when there's nothing in it, same as before. The
+  "Outreach" chip badge in the filter row above still counts Needs Outreach specifically, unchanged.
+  **No SQL** — purely a rendering/navigation change, same underlying data and query as before.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
