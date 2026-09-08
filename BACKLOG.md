@@ -2592,6 +2592,42 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   right — so it's a plain card now with its own small "View all N →" link at the bottom instead.)
   **No SQL.**
 
+- **Outreach categories now "graduate" items out instead of holding them forever — BUILT 9/8,
+  same day, flagged as needing real testing before it's trusted.** Karina: "is that going to
+  filter out so eventually it's not a thousand different things in there?" then walked through
+  each outcome. Rules built, exactly as she gave them:
+  - **Couldn't reach them yet** — unchanged. "That's fine, that's not good to stay as is."
+  - **Shopping for new coverage** — stays put through Lead/Quoted. The moment the client's
+    pipeline stage reaches Applied, it now shows under **Renewing — new policy** instead (without
+    you having to re-pick anything — it's computed live from the client's current stage every time
+    the Outreach page loads, not written into the stored outcome).
+  - **Renewing — new policy** (whether it started there or arrived from Shopping above) — stays
+    visible until the client's pipeline stage reaches **Issued**, then drops off the Outreach page
+    entirely. "Once it's in the issued state, it should move out of that category."
+  - **Keeping current coverage as-is** / **Declining / letting it lapse** — both drop off the
+    Outreach page **14 days** after you record the outcome (she asked what I'd recommend; picked
+    14 as long enough to double-check what was recorded, short enough not to clutter — it's one
+    constant, easy to change).
+  Nothing about this ever deletes or overwrites data — `term_contacted_at` and `outreach_outcome`
+  on the product stay exactly as recorded, permanently. This only changes what still shows up on
+  the Outreach page today; everything is recomputed fresh on every page load from the CURRENT
+  client stage and the recorded date, so it stays right no matter where or how a stage got changed
+  (her own profile, elsewhere) — nothing to keep in sync, nothing that can drift out of date.
+  **Also added, since she asked for it in the same message:** the client's own product now shows
+  this record too — "Outreach: Keeping current coverage as-is — Sep 8, 2026" (or whichever
+  outcome) right on the product card in Products, which wasn't visible anywhere outside the
+  Outreach page before.
+  **Known gap, not covered:** if a client's stage moves to Declined while they're mid-"Shopping"/
+  "Renewing" on a DIFFERENT product (e.g. they declined the new policy after applying), that
+  product doesn't auto-drop — the advisor would mark that product's own outcome as Declining to
+  resolve it. Not something she described, flagging it as a real edge case worth knowing about
+  rather than guessing at a rule for it.
+  **Karina flagged this needs real testing** — walking through Shopping → Applied → Renewing →
+  Issued → drops off, and Keeping/Declining → 14 days → drops off, on a real test client (or a
+  few, with her team) before trusting it day to day.
+  **No SQL** — same columns as before, this is purely how the Outreach page reads and displays
+  them.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

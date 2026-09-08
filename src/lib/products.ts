@@ -200,3 +200,56 @@ export const OUTREACH_OUTCOME_LABELS: Record<OutreachOutcome, string> = {
   declining: "Declining / letting it lapse",
   unreachable: "Couldn't reach them yet",
 };
+
+// ─────────────────────────────────────────────────────────────
+// Outreach category "graduation" (added 9/8, later same day) — Karina, looking at the resolved
+// outcomes piling up: "is that going to filter out so eventually it's not a thousand different
+// things in there?" Each resolved outcome now has a rule for when it stops showing up on the
+// Outreach page, WITHOUT ever touching the underlying record — term_contacted_at and
+// outreach_outcome on the product stay exactly as recorded forever; this only governs what still
+// shows up in the Outreach categories today. Both functions are computed fresh from live data
+// every time the Outreach page renders (never written back to the database), specifically so this
+// stays correct no matter where or how a client's stage got changed elsewhere in the app — the
+// client's own profile, an admin reassigning a book, anywhere — with nothing to keep in sync.
+//
+// Her walkthrough, outcome by outcome:
+//  - "Couldn't reach them yet" — "that's fine, that's not good to stay as is." No change; the
+//    existing 3-day follow-up reminder is already what keeps this one moving.
+//  - "Shopping for new coverage" — "should stay there until the pipeline gets marked as applied,
+//    then it should go into renewing new policy." See effectiveOutreachOutcome below.
+//  - "Renewing — new policy" — "once it's in the issued state, it should move out of that
+//    category." See isGraduatedFromOutreach below.
+//  - "Keeping as-is" / "Declining" — "after maybe fourteen or thirty days, it moves out of that
+//    block... and just goes back into where it's supposed to be in the pipeline." Asked her for a
+//    number; she asked what I'd recommend, so this defaults to 14 days — long enough to still see
+//    it if you need to double-check what was recorded, short enough that the page doesn't stay
+//    cluttered with old resolved items. A single constant, easy to change if it feels wrong.
+export const OUTREACH_GRACE_DAYS = 14;
+
+// "Shopping for new coverage" advances to "Renewing — new policy" once the client's own pipeline
+// stage shows real progress on the new business (Applied, or further). Call this BEFORE
+// isGraduatedFromOutreach below, and use its result (not the raw stored outcome) for which
+// category card/section a product actually appears under.
+export function effectiveOutreachOutcome(outcome: OutreachOutcome, clientStage: string | null): OutreachOutcome {
+  if (outcome === "shopping" && (clientStage === "applied" || clientStage === "issued" || clientStage === "pending")) {
+    return "renewing";
+  }
+  return outcome;
+}
+
+// Whether a touched-base product should stop appearing in the Outreach categories entirely.
+// `outcome` here is the EFFECTIVE outcome (the result of effectiveOutreachOutcome above), not
+// necessarily what's stored in the database.
+export function isGraduatedFromOutreach(
+  outcome: OutreachOutcome,
+  contactedAt: string,
+  clientStage: string | null,
+  now: Date = new Date()
+): boolean {
+  if (outcome === "renewing") return clientStage === "issued";
+  if (outcome === "keeping" || outcome === "declining") {
+    const daysSince = (now.getTime() - new Date(contactedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince > OUTREACH_GRACE_DAYS;
+  }
+  return false;
+}

@@ -11,7 +11,7 @@ import {
   type ProductFields,
 } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
-import { getProductStatus, getTermUrgency } from "@/lib/products";
+import { getProductStatus, getTermUrgency, OUTREACH_OUTCOME_LABELS, type OutreachOutcome } from "@/lib/products";
 import { formatDateOnly } from "@/lib/dates";
 
 // Ongoing-contribution frequency values map to these plain-English labels wherever they're
@@ -613,6 +613,21 @@ export default function ProductRow({
           No-exam window declined by client on {formatDateOnly(product.no_exam_declined_at)}
           {product.final_conversion_deadline &&
             ` — exam required to convert until ${formatDateOnly(product.final_conversion_deadline)}`}
+        </p>
+      )}
+
+      {/* Karina, 9/8: "the profile should record that on this date they said they wanna keep
+          coverage as is" (and the same for declining) — this was already being recorded
+          (term_contacted_at + outreach_outcome, set together via markOutreachOutcome), just never
+          shown anywhere outside the Outreach page. This is that record, on the product itself. A
+          row can still be marked touched-base with no outcome (from before that feature existed),
+          hence the fallback line. */}
+      {product.term_contacted_at && (
+        <p className="text-xs text-[#707070]">
+          {product.outreach_outcome
+            ? `Outreach: ${OUTREACH_OUTCOME_LABELS[product.outreach_outcome as OutreachOutcome]} — `
+            : "Touched base "}
+          {new Date(product.term_contacted_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
         </p>
       )}
 

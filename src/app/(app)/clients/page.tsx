@@ -5,6 +5,8 @@ import {
   getNextOutreachMilestone,
   getTermUrgency,
   OUTREACH_OUTCOME_LABELS,
+  effectiveOutreachOutcome,
+  isGraduatedFromOutreach,
   type TermMilestone,
   type TermUrgency,
   type OutreachOutcome,
@@ -65,13 +67,15 @@ export default async function ClientsPage({
   const { data: termProductsRaw, error: termProductsError } = await supabase
     .from("client_products")
     .select(
-      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, outreach_outcome, client_id, clients!client_id(id, full_name)"
+      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, outreach_outcome, client_id, clients!client_id(id, full_name, stage)"
     )
     .is("converted_at", null);
 
+  const now = new Date();
+
   const termProducts = (termProductsRaw ?? [])
     .map((p) => {
-      const client = p.clients as unknown as { id: string; full_name: string } | null;
+      const client = p.clients as unknown as { id: string; full_name: string; stage: string | null } | null;
       const milestone: TermMilestone | null = getNextOutreachMilestone({
         conversion_deadline: p.conversion_deadline,
         final_conversion_deadline: p.final_conversion_deadline,
@@ -82,6 +86,17 @@ export default async function ClientsPage({
       });
       if (!milestone) return null;
       const urgency: TermUrgency | null = getTermUrgency(milestone.date);
+      const contacted = !!p.term_contacted_at;
+      // Reclassify "shopping" -> "renewing" once the client's pipeline stage shows real progress,
+      // and drop this row from the Outreach page entirely once it's graduated out (Karina, 9/8 —
+      // see the comment above effectiveOutreachOutcome/isGraduatedFromOutreach in lib/products.ts
+      // for the full rule set). Both are computed live from the client's CURRENT stage, never
+      // written back to the stored outreach_outcome column.
+      const rawOutcome = (p.outreach_outcome as OutreachOutcome | null) ?? null;
+      const outcome = rawOutcome ? effectiveOutreachOutcome(rawOutcome, client?.stage ?? null) : null;
+      if (contacted && outcome && p.term_contacted_at && isGraduatedFromOutreach(outcome, p.term_contacted_at, client?.stage ?? null, now)) {
+        return null;
+      }
       return {
         id: p.id,
         product_name: p.product_name,
@@ -89,8 +104,8 @@ export default async function ClientsPage({
         carrier: p.carrier,
         client_id: p.client_id,
         clientName: client?.full_name ?? "Unknown client",
-        contacted: !!p.term_contacted_at,
-        outcome: (p.outreach_outcome as OutreachOutcome | null) ?? null,
+        contacted,
+        outcome,
         milestone,
         urgency,
       };
