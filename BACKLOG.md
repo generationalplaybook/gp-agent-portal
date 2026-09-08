@@ -2646,6 +2646,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   alter table public.client_products add column if not exists outreach_reminder_id uuid references public.reminders(id) on delete set null;
   ```
 
+- **Meeting location wasn't clickable and could overhang its card — BUILT 9/8.** Karina sent a
+  screenshot of a client's Meetings & Calls card with a Cal.com video link
+  (`https://app.cal.com/video/...`) sitting there as plain text, running past the edge of the
+  card: "a link should be clickable and should not overhang." Turned out the global Meetings tab
+  already handled this correctly (built back on 9/3 — detects a URL and makes it a real clickable
+  link that truncates instead of overflowing), but the client profile's own Meetings & Calls card
+  is a separate, older component that never got the same fix. Brought it up to the same behavior:
+  a location starting with `http(s)://` is now a real link (opens in a new tab); anything else
+  (a plain address, "In-person meeting") still shows as plain text. Also added the `min-w-0`
+  Tailwind needs for truncation to actually work inside a flex row like this one — without it, a
+  long unbroken URL can still push past the card's edge even with `truncate` applied, so this was
+  a real (if narrow) gap in the 9/3 fix too, not just something missing from the client-profile
+  card. No visual change for a short location like a street address — only long links stop
+  overhanging and gain an underline.
+  **No SQL** — this is a display-only fix, same `location` column and data as before.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

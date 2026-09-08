@@ -66,7 +66,7 @@ export default function MeetingRow({
 
   return (
     <div className={`flex items-center justify-between gap-4 border-l-2 py-3 pl-3 ${past ? "border-[#D9CFBA]" : "border-[#1E6B3C]"}`}>
-      <div className={past ? "opacity-60" : ""}>
+      <div className={`min-w-0 ${past ? "opacity-60" : ""}`}>
         <div className="text-sm font-semibold text-[#1C1C1C]">
           <LocalDateTime iso={meeting.meeting_at} />
         </div>

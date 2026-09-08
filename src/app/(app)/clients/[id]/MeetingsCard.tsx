@@ -20,6 +20,16 @@ function isPast(iso: string): boolean {
   return new Date(iso).getTime() < Date.now();
 }
 
+// A synced Cal.com meeting's location is a video-call URL — pasted manual locations can be a URL
+// too (a Zoom/Meet link) or just a plain address. This card was showing it as plain, unclickable
+// text with nothing stopping a long link from overrunning the card (Karina, 9/8, screenshot of
+// exactly that: "a link is should be clickable and should not overhang"). The global Meetings
+// tab's own row (meetings/MeetingRow.tsx) already had this fix from 9/3 — this brings the
+// client-profile card's row up to the same behavior.
+function isUrl(s: string): boolean {
+  return /^https?:\/\//i.test(s);
+}
+
 function downloadInvite(meeting: Meeting, clientName: string) {
   const content = buildIcsContent({
     uid: `meeting-${meeting.id}@generationalplaybook.com`,
@@ -50,11 +60,26 @@ function MeetingRow({ meeting, clientId, clientName }: { meeting: Meeting; clien
 
   return (
     <div className={`flex items-center justify-between gap-4 border-l-2 py-3 pl-3 ${past ? "border-[#D9CFBA]" : "border-[#1E6B3C]"}`}>
-      <div className={past ? "opacity-60" : ""}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[#2E2E2E]">{meeting.location || "In-person meeting"}</span>
+      <div className={`min-w-0 ${past ? "opacity-60" : ""}`}>
+        <div className="flex min-w-0 items-center gap-2">
+          {meeting.location ? (
+            isUrl(meeting.location) ? (
+              <a
+                href={meeting.location}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 truncate text-sm text-[#1C1C1C] underline hover:text-[#2E2E2E]"
+              >
+                {meeting.location}
+              </a>
+            ) : (
+              <span className="min-w-0 truncate text-sm text-[#2E2E2E]">{meeting.location}</span>
+            )
+          ) : (
+            <span className="min-w-0 truncate text-sm text-[#2E2E2E]">In-person meeting</span>
+          )}
           {meeting.source === "cal.com" && (
-            <span className="rounded-full bg-[#EEF3FA] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1B4F8A]">
+            <span className="shrink-0 rounded-full bg-[#EEF3FA] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1B4F8A]">
               Via Cal.com
             </span>
           )}
