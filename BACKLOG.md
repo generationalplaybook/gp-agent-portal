@@ -2437,6 +2437,79 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   new here yet since it's not clear what outcome states you actually want tracked — asked you
   directly in chat rather than guessing and building the wrong thing.
 
+- **Outreach outcomes + auto follow-up reminders — BUILT 9/8, same day, after asking what she
+  wanted.** Answers: outcomes needed are Shopping for new coverage, Renewing/keeping as-is,
+  Declining/letting it lapse, and Couldn't reach them yet; picking one is now required (no more
+  plain one-click "Mark Touched Base"); resolved items split into their own section per outcome
+  rather than one flat "Already Touched Base" list; and "Couldn't reach them" / "Shopping for new
+  coverage" should each auto-create a follow-up reminder since both mean more work is still coming.
+  **What changed:** "Mark Touched Base" is now a dropdown — "What happened?" — with the four
+  outcomes as choices; picking one records it and moves the item straight into that outcome's own
+  section (Couldn't Reach Them Yet → Shopping for New Coverage → Renewing/Keeping As-Is →
+  Declining/Letting It Lapse, in that order — Couldn't Reach and Shopping first since those still
+  need more attention). Picking "Couldn't reach them yet" creates a reminder 3 days out ("Try
+  again — couldn't reach about {product}"); picking "Shopping for new coverage" creates one 14
+  days out ("Check in on new coverage shopping — {product}") — both show up on the Reminders tab
+  and the client's own profile like any other reminder. "Renewing"/"Declining" don't create a
+  reminder since both are settled either way. Undo still exists on a resolved item and clears the
+  outcome, moving it back to Needs Outreach if it's still time-sensitive.
+  **Left alone:** the separate "Mark Conversion Pending"/"Mark Converted" workflow on a term
+  product's own card — this doesn't feed into or trigger that, they're two different tracking
+  systems for two different things (this is "did I talk to them and what did they say," that one
+  is "are they actively getting a new policy issued"). If you want those connected later (e.g.
+  picking "Shopping for new coverage" also flips the product to Conversion Pending automatically),
+  say so and I'll wire it up.
+  **SQL to run** (Supabase SQL Editor, additive/non-destructive):
+  ```sql
+  alter table public.client_products add column if not exists outreach_outcome text;
+  ```
+
+- **"Shopping for new coverage" re-enters the sales pipeline — BUILT 9/8, same day.** Karina: "does
+  it move to lead section so the advisor can start working on it and then mark it quotes when a
+  quote is sent... so it doesn't get left and forgotten." Yes now — picking that outcome also sets
+  the client's pipeline stage to Lead (the same `stage` field the Client Pipeline card and the
+  Clients page's stage filters already use), so they reappear in the normal pipeline and get moved
+  forward by hand exactly like any other prospect (Quoted once a quote goes out, Applied, Issued).
+  Only "Shopping for new coverage" does this — the other three outcomes don't touch stage at all.
+  **One thing worth knowing:** `stage` is a single field per client, not per policy — for a client
+  who already has other coverage marked Issued, this overwrites that back to Lead too, since there's
+  no way to say "just this one policy is up for replacement, the rest of their file is fine" without
+  a bigger change. That's what you described, so that's what it does, but flagging it in case it
+  causes confusion once you're using it for real — a currently-Issued client whose old term policy
+  goes up for renewal will show back up as a Lead. If that turns out to be the wrong call for that
+  case, let me know and I can make it smarter (e.g. only reset stage if they're not already further
+  along, or track it separately from the main pipeline stage).
+  **No SQL beyond the migration in the previous entry.**
+
+- **"Forgot password?" on the login page — BUILT 9/8, same day, urgent.** Karina got locked out
+  on a different device: "I'm trying to log in from a different device, and I don't remember my
+  password, and there's no option for that. So I should get a reset email or a one time code to
+  log in ... or if I wanna reset my password." Two things:
+  1. **Immediate unblock (no deploy needed):** told Karina to use Supabase Dashboard →
+     Authentication → Users → find her row → the row's ⋯ menu → "Send password recovery" /
+     "Send magic link," so she isn't stuck waiting on a build+deploy cycle to get back in.
+  2. **The actual feature**, new `/forgot-password` page, linked from a new "Forgot password?"
+     line under the password field on `/login`. Leads with the same choice she asked for:
+     - **"Email me a one-time code"** — sends a 6-digit code (Supabase's email-OTP flow) that she
+       types into a form right here on the site (no link to click) and is signed straight in.
+       Deliberately code-entry rather than a magic link: no link means nothing for an email
+       provider's automatic link-prescanning to accidentally burn before she gets to click it —
+       the same failure mode the `/auth/confirm` page's comments describe for invite links.
+     - **"Reset my password"** — emails a link that lands on the existing `/set-password` page
+       (same redirect target the admin-invite flow already uses to invite new agents), where she
+       sets a new password. No new page needed there — it already handles a fresh recovery
+       session the same way it handles an invite.
+     Both options show a generic "check your email" message regardless of whether the address is
+     on file — matches how Supabase's own API behaves (never reveals whether an email is
+     registered) rather than leaking who has an account.
+     **No SQL needed.** One thing to know about Supabase project settings, not a to-do: this reuses
+     `/set-password` as the reset-link landing page, which is already an allowed redirect URL
+     (proven by the invite flow already using it), so no dashboard config change should be needed
+     for the reset-link option. The one-time-code option relies on Supabase's default "Magic Link"
+     email template including the numeric code — if her code emails ever show up without an actual
+     code in the text, that template needs the `{{ .Token }}` variable added in Supabase Dashboard
+     → Authentication → Email Templates, but this is expected to work out of the box.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

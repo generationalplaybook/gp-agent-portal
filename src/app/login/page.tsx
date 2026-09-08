@@ -37,6 +37,9 @@ export default async function LoginPage({
               className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
+          <Link href="/forgot-password" className="-mt-2 self-end text-xs font-medium text-[#1C1C1C] underline">
+            Forgot password?
+          </Link>
           <button
             type="submit"
             className="mt-2 rounded-md bg-[#1C1C1C] px-4 py-2 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"

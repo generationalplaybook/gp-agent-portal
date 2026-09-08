@@ -1312,3 +1312,15 @@ alter table public.profiles add column if not exists disabled_at timestamptz;
 -- in src/lib/products.ts.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists annuity_contract_end_date date;
+
+-- ─────────────────────────────────────────────────────────────
+-- 45. Outreach outcomes + auto follow-up (added 9/8) — Karina: marking something touched base
+-- needs to say what actually happened on the call, not just that it happened. outreach_outcome is
+-- a plain text column (no DB check constraint, same convention as annuity_contribution_frequency
+-- above) holding one of the OutreachOutcome values enforced in app code (clients/actions.ts):
+-- 'shopping' | 'renewing' | 'declining' | 'unreachable'. Null until term_contacted_at is set
+-- alongside it via markOutreachOutcome. Picking 'shopping' or 'unreachable' also auto-creates a
+-- follow-up Reminder (Karina's call, when asked) since both mean more work is still coming;
+-- 'renewing'/'declining' are settled outcomes either way, no reminder needed.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists outreach_outcome text;

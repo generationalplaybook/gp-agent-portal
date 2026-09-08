@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import type { ClientStage } from "@/lib/types";
 import { inverseRelationship } from "@/lib/family";
+import type { OutreachOutcome } from "@/lib/products";
+import { addReminder } from "../reminders/actions";
 
 async function requireUser() {
   const supabase = await createSupabaseClient();
@@ -736,26 +738,70 @@ export async function undoConverted(productId: string, clientId: string): Promis
   revalidatePath("/");
 }
 
-// Term outreach — a separate manual workflow from Conversion Pending/Converted above. Karina,
-// 9/4: wants a proactive queue of every term policy (convertible or not), soonest-expiring first,
-// so she can shop new coverage or just touch base before it ends — and a way to mark one as
-// "already reached out to" so it moves out of the active queue without deleting it or losing
-// track of who's been contacted. Lives on the new "Term" view on the Clients page.
-export async function markTermContacted(productId: string, clientId: string): Promise<void> {
+// Outreach — a separate manual workflow from Conversion Pending/Converted above. Karina, 9/4:
+// wants a proactive queue of every product with a relevant end date, soonest-expiring first, so
+// she can shop new coverage or just touch base before it ends. Lives on the "Outreach" view on
+// the Clients page.
+//
+// 9/8: originally just a plain "touched base, yes/no" flag — Karina wanted it to capture WHAT
+// actually happened on the call, not just that one happened, so marking touched base now requires
+// picking an outcome. "Couldn't reach them" and "shopping for new coverage" both mean more work is
+// still coming, so those two automatically create a follow-up reminder (her call, when asked) —
+// "renewing as-is" and "declining" are both settled outcomes, no reminder needed either way.
+// OutreachOutcome/OUTREACH_OUTCOME_LABELS live in lib/products.ts, not here — a "use server" file
+// can only export async functions, so a plain constant has to live elsewhere.
+export async function markOutreachOutcome(
+  productId: string,
+  clientId: string,
+  outcome: OutreachOutcome,
+  productName: string
+): Promise<void> {
   const { supabase } = await requireUser();
   const { error } = await supabase
     .from("client_products")
-    .update({ term_contacted_at: new Date().toISOString() })
+    .update({ term_contacted_at: new Date().toISOString(), outreach_outcome: outcome })
     .eq("id", productId);
   if (error) throw new Error(error.message);
+
+  if (outcome === "unreachable" || outcome === "shopping") {
+    const daysOut = outcome === "unreachable" ? 3 : 14;
+    const remindAt = new Date();
+    remindAt.setDate(remindAt.getDate() + daysOut);
+    const message =
+      outcome === "unreachable"
+        ? `Try again — couldn't reach about ${productName}`
+        : `Check in on new coverage shopping — ${productName}`;
+    // Reuses the Reminders feature's own action rather than inserting into `reminders` directly,
+    // so this stays in sync with whatever that table/validation looks like later.
+    await addReminder({ clientId }, remindAt.toISOString(), message);
+  }
+
+  // "Shopping for new coverage" re-enters the client into the sales pipeline (Karina, 9/8: "does
+  // it move to lead section so the advisor can start working on it and then mark it quotes when a
+  // quote is sent... so it doesn't get left and forgotten") — same CLIENT_STAGES pipeline every
+  // new prospect goes through, so it shows back up on the Client Pipeline card and the Lead filter
+  // on Clients, and the advisor moves it forward by hand (Quoted once a quote goes out, etc.) the
+  // same way as any other prospect. This OVERWRITES the client's current stage — for a client who
+  // already has other coverage Issued, this makes them show as "Lead" again, which is deliberate
+  // per her description but worth knowing: it doesn't distinguish "this client's whole
+  // relationship reset to a lead" from "this one policy is up for replacement, the rest of their
+  // book is unaffected." Only touches stage on this specific outcome — the other three don't.
+  if (outcome === "shopping") {
+    const { error: stageError } = await supabase.from("clients").update({ stage: "lead" }).eq("id", clientId);
+    if (stageError) throw new Error(stageError.message);
+  }
+
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
   revalidatePath("/");
 }
 
-export async function undoTermContacted(productId: string, clientId: string): Promise<void> {
+export async function undoOutreachOutcome(productId: string, clientId: string): Promise<void> {
   const { supabase } = await requireUser();
-  const { error } = await supabase.from("client_products").update({ term_contacted_at: null }).eq("id", productId);
+  const { error } = await supabase
+    .from("client_products")
+    .update({ term_contacted_at: null, outreach_outcome: null })
+    .eq("id", productId);
   if (error) throw new Error(error.message);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");

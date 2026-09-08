@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { markTermContacted, undoTermContacted } from "./actions";
-import type { TermMilestone, TermUrgency } from "@/lib/products";
-import { termUrgencyLabel } from "@/lib/products";
+import { markOutreachOutcome, undoOutreachOutcome } from "./actions";
+import type { TermMilestone, TermUrgency, OutreachOutcome } from "@/lib/products";
+import { termUrgencyLabel, OUTREACH_OUTCOME_LABELS } from "@/lib/products";
 import { formatDateOnly } from "@/lib/dates";
 
 // One row in the "Outreach" view on the Clients page (Karina, 9/4, broadened 9/7 beyond term
-// policies to any product with a relevant end date) — soonest-relevant-date first. "Mark Touched
-// Base" moves it into the Contacted group below without deleting it or losing track of when it
-// was reached out to.
+// policies to any product with a relevant end date) — soonest-relevant-date first.
+//
+// 9/8: "Mark Touched Base" is no longer a single click — Karina wanted marking something touched
+// base to require saying what actually happened, so this is now a "What happened?" dropdown;
+// picking an outcome both records it and moves the row into its outcome-specific section below in
+// one step. "Undo" (on an already-resolved row) clears the outcome and moves it back.
 
 const URGENCY_STYLES: Record<TermUrgency, { badge: string; border: string }> = {
   overdue: { badge: "bg-[#8B1A1A] text-white", border: "border-l-4 border-l-[#8B1A1A]" },
@@ -44,15 +47,23 @@ export default function TermOutreachRow({
   const [error, setError] = useState("");
   const styles = urgency ? URGENCY_STYLES[urgency] : URGENCY_STYLES.later;
 
-  async function handleToggle() {
+  async function handlePickOutcome(outcome: OutreachOutcome) {
     setBusy(true);
     setError("");
     try {
-      if (contacted) {
-        await undoTermContacted(productId, clientId);
-      } else {
-        await markTermContacted(productId, clientId);
-      }
+      await markOutreachOutcome(productId, clientId, outcome, productName);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not update.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUndo() {
+    setBusy(true);
+    setError("");
+    try {
+      await undoOutreachOutcome(productId, clientId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update.");
     } finally {
@@ -87,18 +98,35 @@ export default function TermOutreachRow({
         )}
         {error && <p className="mt-0.5 text-xs text-[#8B1A1A]">{error}</p>}
       </div>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={handleToggle}
-        className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold disabled:opacity-60 ${
-          contacted
-            ? "border-[#D9CFBA] text-[#707070] hover:bg-[#EDE8DF]"
-            : "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4] hover:bg-[#2E2E2E]"
-        }`}
-      >
-        {busy ? "…" : contacted ? "Undo" : "Mark Touched Base"}
-      </button>
+      {contacted ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleUndo}
+          className="shrink-0 rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#707070] hover:bg-[#EDE8DF] disabled:opacity-60"
+        >
+          {busy ? "…" : "Undo"}
+        </button>
+      ) : (
+        <select
+          disabled={busy}
+          value=""
+          onChange={(e) => {
+            const value = e.target.value as OutreachOutcome | "";
+            if (value) handlePickOutcome(value);
+          }}
+          className="shrink-0 rounded-md border border-[#1C1C1C] bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] disabled:opacity-60"
+        >
+          <option value="" disabled>
+            {busy ? "…" : "Mark Touched Base — what happened?"}
+          </option>
+          {(Object.keys(OUTREACH_OUTCOME_LABELS) as OutreachOutcome[]).map((outcome) => (
+            <option key={outcome} value={outcome} className="bg-white text-[#1C1C1C]">
+              {OUTREACH_OUTCOME_LABELS[outcome]}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

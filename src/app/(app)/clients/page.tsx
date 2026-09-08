@@ -1,10 +1,22 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
-import { getNextOutreachMilestone, getTermUrgency, type TermMilestone, type TermUrgency } from "@/lib/products";
+import {
+  getNextOutreachMilestone,
+  getTermUrgency,
+  OUTREACH_OUTCOME_LABELS,
+  type TermMilestone,
+  type TermUrgency,
+  type OutreachOutcome,
+} from "@/lib/products";
 import { parseDateOnly } from "@/lib/dates";
 import TermOutreachRow from "./TermOutreachRow";
 import ClientSearchList from "./ClientSearchList";
+
+// Order resolved outcomes appear in below — "unreachable" first since it's the one that still
+// needs a prompt retry, "shopping" next since it's still active/ongoing, then the two settled
+// outcomes. Karina, 9/8: split into separate sections by outcome rather than one flat list.
+const OUTCOME_ORDER: OutreachOutcome[] = ["unreachable", "shopping", "renewing", "declining"];
 
 export default async function ClientsPage({
   searchParams,
@@ -40,7 +52,7 @@ export default async function ClientsPage({
   const { data: termProductsRaw, error: termProductsError } = await supabase
     .from("client_products")
     .select(
-      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, client_id, clients!client_id(id, full_name)"
+      "id, product_name, product_type, carrier, conversion_deadline, final_conversion_deadline, term_end_date, expiration_date, annuity_surrender_end_date, annuity_contract_end_date, term_contacted_at, outreach_outcome, client_id, clients!client_id(id, full_name)"
     )
     .is("converted_at", null);
 
@@ -65,6 +77,7 @@ export default async function ClientsPage({
         client_id: p.client_id,
         clientName: client?.full_name ?? "Unknown client",
         contacted: !!p.term_contacted_at,
+        outcome: (p.outreach_outcome as OutreachOutcome | null) ?? null,
         milestone,
         urgency,
       };
@@ -85,7 +98,15 @@ export default async function ClientsPage({
   // A product that isn't urgent yet, and hasn't been contacted, simply doesn't appear in either
   // list below until it crosses into that window on its own.
   const needsOutreach = termProducts.filter((p) => !p.contacted && p.urgency !== "later").sort(sortByMilestone);
-  const contacted = termProducts.filter((p) => p.contacted).sort(sortByMilestone);
+  // Resolved items split into their own section per outcome (Karina, 9/8) rather than one flat
+  // "Already Touched Base" list. contactedLegacy catches the one case that can't have an outcome:
+  // a row marked touched base before this feature existed (plain markTermContacted, no outcome
+  // recorded) — shown as its own small section so it isn't silently dropped.
+  const contactedByOutcome = OUTCOME_ORDER.map((outcome) => ({
+    outcome,
+    items: termProducts.filter((p) => p.contacted && p.outcome === outcome).sort(sortByMilestone),
+  })).filter((g) => g.items.length > 0);
+  const contactedLegacy = termProducts.filter((p) => p.contacted && !p.outcome).sort(sortByMilestone);
 
   // A client can now have many reminders (see the Reminders card on their profile),
   // so "next follow up" here means the soonest pending one, not a single stored field.
@@ -208,13 +229,37 @@ export default async function ClientsPage({
             )}
           </div>
 
-          {contacted.length > 0 && (
-            <div className="flex flex-col gap-2">
+          {contactedByOutcome.map(({ outcome, items }) => (
+            <div key={outcome} className="flex flex-col gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#707070]">
-                Already Touched Base ({contacted.length})
+                {OUTREACH_OUTCOME_LABELS[outcome]} ({items.length})
               </p>
               <div className="flex flex-col gap-2">
-                {contacted.map((p) => (
+                {items.map((p) => (
+                  <TermOutreachRow
+                    key={p.id}
+                    productId={p.id}
+                    clientId={p.client_id}
+                    clientName={p.clientName}
+                    productName={p.product_name}
+                    productType={p.product_type}
+                    carrier={p.carrier}
+                    milestone={p.milestone}
+                    urgency={p.urgency}
+                    contacted={true}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {contactedLegacy.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#707070]">
+                Touched Base — No Outcome Recorded ({contactedLegacy.length})
+              </p>
+              <div className="flex flex-col gap-2">
+                {contactedLegacy.map((p) => (
                   <TermOutreachRow
                     key={p.id}
                     productId={p.id}

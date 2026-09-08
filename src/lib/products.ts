@@ -181,3 +181,16 @@ export function termUrgencyLabel(dateIso: string, urgency: TermUrgency): string 
   if (days === 0) return "today";
   return `${days}d`;
 }
+
+// What actually happened on an outreach call (added 9/8) — see markOutreachOutcome in
+// clients/actions.ts, which is where this is set. Lives here rather than in that "use server"
+// file since a plain exported constant (not an async function) isn't allowed there — Next.js
+// only allows a "use server" module to export async functions.
+export type OutreachOutcome = "shopping" | "renewing" | "declining" | "unreachable";
+
+export const OUTREACH_OUTCOME_LABELS: Record<OutreachOutcome, string> = {
+  shopping: "Shopping for new coverage",
+  renewing: "Renewing / keeping as-is",
+  declining: "Declining / letting it lapse",
+  unreachable: "Couldn't reach them yet",
+};

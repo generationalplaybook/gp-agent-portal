@@ -299,12 +299,17 @@ export interface ClientProduct {
   conversion_deadline: string | null;
   // The plain end-of-term date for a policy that does NOT have a conversion option — the
   // alternate path to conversion_deadline/final_conversion_deadline below, for a straight
-  // non-convertible term. See getNextTermMilestone in lib/products.ts.
+  // non-convertible term. See getNextOutreachMilestone in lib/products.ts.
   term_end_date: string | null;
-  // Manual, per-product "I've reached out to this client about their upcoming term" flag for the
-  // Term outreach view — a plain timestamp, not cron-managed. See markTermContacted in
-  // clients/actions.ts.
+  // Manual, per-product "I've reached out to this client" timestamp for the Outreach view — not
+  // cron-managed. Set together with outreach_outcome below (added 9/8) via markOutreachOutcome in
+  // clients/actions.ts — a null outreach_outcome with this set is only possible for a row
+  // contacted before 9/8, back when there was no outcome to record.
   term_contacted_at: string | null;
+  // What actually happened on that outreach call (added 9/8, Karina: marking touched base needs
+  // to say what happened, not just that it did) — one of OutreachOutcome in clients/actions.ts:
+  // "shopping" | "renewing" | "declining" | "unreachable". Null until term_contacted_at is set.
+  outreach_outcome: string | null;
   conversion_notes: string | null;
   // Set true once the 60-days-out auto-reminder has been created for this product's
   // conversion_deadline, so the daily cron doesn't create a duplicate every day it's still
