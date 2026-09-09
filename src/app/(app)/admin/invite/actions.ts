@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/site-url";
+import { sendEmail } from "@/lib/email";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -59,6 +60,93 @@ export async function inviteAgent(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not send invite." };
+  }
+}
+
+// Resend an invite — Karina, 9/9: "can we have a resend invite option on pending people because
+// they may have not gotten the email or accidentally deleted it or it has expired." Only makes
+// sense for someone who's still "Invite Pending" (see AgentRoleRow.tsx — !isDisabled &&
+// !inviteAccepted); their auth user + profile row already exist (created by handle_new_user() the
+// moment the first invite was sent), just unconfirmed.
+//
+// Two attempts, in order, because Supabase's own behavior here is genuinely inconsistent across
+// projects/versions for an email that's already invited-but-unconfirmed — some reports say calling
+// inviteUserByEmail again just resends cleanly, others say it errors "already registered":
+//   1. Call inviteUserByEmail again — if it works, it's the simplest path and uses Supabase's own
+//      invite email template, no dependency on Resend being configured.
+//   2. If that errors, generate a fresh token ourselves (generateLink) and send our own email via
+//      Resend (src/lib/email.ts) — needs RESEND_API_KEY / REMINDER_FROM_EMAIL set. Deliberately
+//      built from the link's `hashed_token`, not its `action_link` — action_link points straight
+//      at Supabase's own /auth/v1/verify, which a mail provider's automated link-prescan would hit
+//      and burn instantly (see the comment at the top of src/app/auth/confirm/page.tsx explaining
+//      why this project routes through a manual "click to confirm" page instead). This builds that
+//      same safe link by hand: /auth/confirm?token_hash=...&type=invite&next=...
+// If both fail, the error is real and surfaced — Remove Access + re-invite (Karina's own
+// fallback) is still there as the reliable path.
+export async function resendInvite(agentId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const admin = createAdminClient();
+
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("email, first_name, middle_name, last_name")
+      .eq("id", agentId)
+      .single();
+    if (profileError || !profile?.email) {
+      return { ok: false, error: profileError?.message ?? "Could not find this advisor's email." };
+    }
+
+    const siteUrl = await getSiteUrl();
+
+    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(profile.email, {
+      data: {
+        first_name: profile.first_name ?? "",
+        middle_name: profile.middle_name ?? "",
+        last_name: profile.last_name ?? "",
+      },
+      redirectTo: `${siteUrl}/set-password`,
+    });
+    if (!inviteError) {
+      revalidatePath("/admin/invite");
+      return { ok: true };
+    }
+
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "invite",
+      email: profile.email,
+      options: {
+        redirectTo: `${siteUrl}/set-password`,
+        data: {
+          first_name: profile.first_name ?? "",
+          middle_name: profile.middle_name ?? "",
+          last_name: profile.last_name ?? "",
+        },
+      },
+    });
+    const hashedToken = linkData?.properties?.hashed_token;
+    if (linkError || !hashedToken) {
+      return { ok: false, error: linkError?.message ?? inviteError.message };
+    }
+
+    const confirmUrl = `${siteUrl}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=invite&next=${encodeURIComponent("/set-password")}`;
+    const firstName = profile.first_name ? `, ${profile.first_name}` : "";
+    const { ok: sent, error: sendError } = await sendEmail({
+      to: profile.email,
+      subject: "Your invite to GP Advisor Portal",
+      html: `
+        <p>Hi${firstName},</p>
+        <p>Here&rsquo;s a fresh invitation to GP Advisor Portal.</p>
+        <p><a href="${confirmUrl}">Accept your invitation</a></p>
+        <p>If that link doesn&rsquo;t work, copy and paste this into your browser: ${confirmUrl}</p>
+      `,
+    });
+    if (!sent) return { ok: false, error: sendError ?? "Could not send the invite email." };
+
+    revalidatePath("/admin/invite");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not resend the invite." };
   }
 }
 

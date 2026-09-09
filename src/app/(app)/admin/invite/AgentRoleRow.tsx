@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateAgentRole, removeAgentAccess, restoreAgentAccess } from "./actions";
+import { updateAgentRole, removeAgentAccess, restoreAgentAccess, resendInvite } from "./actions";
 
 interface Agent {
   id: string;
@@ -30,9 +30,12 @@ export default function AgentRoleRow({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
   const isSelf = agent.id === currentUserId;
   const isDisabled = !!agent.disabled_at;
   const inviteAccepted = !!lastSignInAt;
+  const isPending = !isDisabled && !inviteAccepted;
 
   async function handleChange(newRole: "agent" | "admin") {
     const previous = role;
@@ -70,6 +73,20 @@ export default function AgentRoleRow({
     router.refresh();
   }
 
+  async function handleResend() {
+    setResending(true);
+    setError("");
+    setResent(false);
+    const result = await resendInvite(agent.id);
+    if (!result.ok) {
+      setError(result.error);
+    } else {
+      setResent(true);
+    }
+    setResending(false);
+    router.refresh();
+  }
+
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex items-center justify-between gap-3">
@@ -101,6 +118,16 @@ export default function AgentRoleRow({
           {error && <div className="mt-1 text-xs font-semibold text-[#8B1A1A]">{error}</div>}
         </div>
         <div className="flex items-center gap-2">
+          {isPending && (
+            <button
+              type="button"
+              disabled={resending}
+              onClick={handleResend}
+              className="rounded-md border border-[#D9CFBA] px-2 py-1 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF] disabled:opacity-60"
+            >
+              {resending ? "Resending…" : resent ? "Sent ✓" : "Resend Invite"}
+            </button>
+          )}
           {!isDisabled && (
             <select
               value={role}

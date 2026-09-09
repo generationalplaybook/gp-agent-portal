@@ -4,6 +4,23 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## ⚠ Needs Testing — built, but NOT yet verified by Karina
 
+- **"Resend Invite" for pending advisors — BUILT 9/9, genuinely unverified against a live
+  Supabase project, please test with a real pending invite the first chance you get.** Karina:
+  "can we have a resend invite option on pending people because they may have not gotten the
+  email or accidentally deleted it or it has expired... if that's not an option, then I guess
+  we'll have to delete and resend it that way." New "Resend Invite" button on any row still
+  showing "Invite Pending" on the Invite Advisor page. Two things make this one worth testing
+  before relying on it: (1) Supabase's own docs don't clearly say what happens when you invite
+  the same not-yet-confirmed email a second time — some reports online say it just resends
+  cleanly, others say it errors "already registered" — so this tries that first and, only if it
+  errors, falls back to generating a fresh token itself and emailing it through Resend
+  (`src/lib/email.ts`); (2) that fallback path only works once `RESEND_API_KEY` and
+  `REMINDER_FROM_EMAIL` are actually set in Vercel (see the 9/9 notification-prefs delivery — not
+  confirmed set up yet). If you click Resend Invite and it shows an error instead of "Sent ✓",
+  that's this surfacing honestly rather than silently doing nothing — Remove Access, then
+  re-invite from scratch, is still the reliable fallback exactly like you described. **No new
+  SQL.**
+
 - **"Restore access" un-ban — flagged 9/6, Karina knows and does not plan to test right away.**
   Part of the Advisor Remove Access + client reassignment feature (full writeup under
   "Requested" below). "Remove access" (ban an advisor's login) has no reason to be broken — it's
