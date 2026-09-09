@@ -2740,6 +2740,19 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   **No SQL** — this only changes which fields the form requires before it lets someone submit;
   same columns and submission path as before.
 
+- **Invite Agents page — shows whether each agent accepted their invite yet — BUILT 9/9.** Karina:
+  "the agents, is there a way to see if they accepted the invite or not." There wasn't — the
+  `profiles` row for an invited agent gets created the moment the invite is SENT (a DB trigger,
+  not tied to acceptance at all), so nothing on that table said whether they'd actually opened it.
+  Pulled the real signal from Supabase Auth instead: `last_sign_in_at` is null until an agent
+  clicks their invite link (that's what actually starts their session — happens right when
+  `/set-password` loads, even before they've typed a password). Each row in "Your Team" now shows
+  an amber "Invite Pending" badge next to their name until that happens, and once it has, "last
+  signed in [date]" under their email (updates every time they log back in, not just the first
+  time — a live read of whether they're actually using it, not just a one-time acceptance flag).
+  Removed agents are unaffected — they keep the existing red "Removed" badge instead.
+  **No SQL** — nothing new stored; this only reads data Supabase Auth already had.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

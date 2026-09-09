@@ -13,7 +13,18 @@ interface Agent {
   disabled_at: string | null;
 }
 
-export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; currentUserId: string }) {
+export default function AgentRoleRow({
+  agent,
+  currentUserId,
+  lastSignInAt,
+}: {
+  agent: Agent;
+  currentUserId: string;
+  // From Supabase Auth (see admin/invite/page.tsx) — null means they haven't opened their
+  // invite link yet, i.e. haven't accepted. Not tracked at all once access has been removed
+  // (isDisabled below), since "did they ever accept" stops being the interesting question then.
+  lastSignInAt: string | null;
+}) {
   const router = useRouter();
   const [role, setRole] = useState(agent.role);
   const [saving, setSaving] = useState(false);
@@ -21,6 +32,7 @@ export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; c
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const isSelf = agent.id === currentUserId;
   const isDisabled = !!agent.disabled_at;
+  const inviteAccepted = !!lastSignInAt;
 
   async function handleChange(newRole: "agent" | "admin") {
     const previous = role;
@@ -70,8 +82,22 @@ export default function AgentRoleRow({ agent, currentUserId }: { agent: Agent; c
                 {new Date(agent.disabled_at as string).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               </span>
             )}
+            {!isDisabled && !inviteAccepted && (
+              <span className="ml-2 rounded-full bg-[#FBF3E3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b6a00]">
+                Invite Pending
+              </span>
+            )}
           </div>
-          <div className="text-xs text-[#707070]">{agent.email}</div>
+          <div className="text-xs text-[#707070]">
+            {agent.email}
+            {!isDisabled && inviteAccepted && (
+              <>
+                {" "}
+                — last signed in{" "}
+                {new Date(lastSignInAt as string).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </>
+            )}
+          </div>
           {error && <div className="mt-1 text-xs font-semibold text-[#8B1A1A]">{error}</div>}
         </div>
         <div className="flex items-center gap-2">

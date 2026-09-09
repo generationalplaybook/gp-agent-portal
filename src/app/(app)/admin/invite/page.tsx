@@ -60,6 +60,23 @@ export default async function AdminInvitePage() {
     .is("owner_id", null)
     .order("created_at", { ascending: true });
 
+  // "Did they accept the invite?" (Karina, 9/9) — profiles has no invite-status column of its
+  // own (the row is created by handle_new_user() the moment the invite is SENT, not when it's
+  // accepted), so this reads it straight from Supabase Auth instead: last_sign_in_at is null
+  // until the agent actually opens their invite link and it establishes a session (which happens
+  // right when /set-password loads, before they've even typed a password — see that page's
+  // checkSession()). One admin.auth.admin.getUserById call per agent; fine at the size of a
+  // single agency's team, but would want batching (or auth.admin.listUsers()) if this list ever
+  // gets large.
+  const lastSignInById = new Map(
+    await Promise.all(
+      (agents ?? []).map(async (a): Promise<[string, string | null]> => {
+        const { data } = await admin.auth.admin.getUserById(a.id);
+        return [a.id, data.user?.last_sign_in_at ?? null];
+      })
+    )
+  );
+
   const activeAgents = (agents ?? []).filter((a) => !a.disabled_at);
 
   return (
@@ -81,7 +98,7 @@ export default async function AdminInvitePage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Team</h2>
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {(agents ?? []).map((a) => (
-            <AgentRoleRow key={a.id} agent={a} currentUserId={user.id} />
+            <AgentRoleRow key={a.id} agent={a} currentUserId={user.id} lastSignInAt={lastSignInById.get(a.id) ?? null} />
           ))}
         </div>
       </div>
