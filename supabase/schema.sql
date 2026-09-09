@@ -1379,19 +1379,19 @@ alter table public.profiles add column if not exists notify_new_intake_email boo
 alter table public.profiles add column if not exists notify_reminder_email boolean not null default true;
 
 -- ─────────────────────────────────────────────────────────────
--- 49. In-portal "Getting Started" walkthrough (added 9/9) — Karina wants a step-by-step guide
--- advisors can complete right when their account is created, or come back to any time as a
--- refresher: "restart it at any time that they need a refresher."
--- Three of the six steps (profile filled in, custom link set, Cal.com connected) are detected
--- live from real profile data every time the page loads — nothing to store for those. The other
--- three (the two-links explainer, reviewing notification settings, trying it with a first client)
--- have no natural DB signal, so they're just a manual "mark as done" checkbox — onboarding_steps
--- tracks which of those the advisor has checked off. "Restart Walkthrough" on that page clears
--- this back to '{}' — it only resets the manual checkmarks; it can't and doesn't touch real
--- profile data, so the auto-detected steps stay showing as done, correctly.
--- onboarding_dismissed_at hides the "finish setting up" banner on the Home page once an advisor
--- dismisses it (or finishes) — the /getting-started page itself stays reachable any time from the
--- account menu regardless.
+-- 49. In-portal "Getting Started" walkthrough (added 9/9, redesigned same day) — Karina wants a
+-- step-by-step guide advisors can complete right when their account is created, or come back to
+-- any time as a refresher.
+-- First draft (this section, originally) tracked per-step "done" checkmarks in onboarding_steps
+-- and let a "Restart" button clear them — Karina, right after trying it: "I don't think that
+-- getting started or restarting should delete what was already inputted." Redesigned same day
+-- into an in-context "click here" tour (TourEngine.tsx, tour-steps.ts) that spotlights the real
+-- field/button on the real page instead of a separate checklist — a tour has no per-step
+-- completion to store or reset, so onboarding_steps is no longer written or read by any code
+-- (left in place, unused, rather than dropped — this project's migrations are additive-only).
+-- onboarding_dismissed_at still does real work: it hides the "finish setting up" banner on Home
+-- once an advisor dismisses it (or finishes) — /getting-started itself stays reachable any time
+-- from the account menu regardless.
 -- ─────────────────────────────────────────────────────────────
 alter table public.profiles add column if not exists onboarding_steps jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists onboarding_dismissed_at timestamptz;

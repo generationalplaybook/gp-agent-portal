@@ -2921,6 +2921,45 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   alter table public.profiles add column if not exists onboarding_dismissed_at timestamptz;
   ```
 
+- **Getting Started redesigned into an in-context "click here" tour — BUILT 9/9, same day, no new
+  SQL.** Karina, right after trying the checklist-style first draft: "Me clicking the getting
+  started deleted all of my existing stuff. I don't think that the getting started or restarting
+  should delete what was already inputted... I want it so that it highlights where the person is
+  supposed to click and where they're supposed to input the info... you know when you get a new
+  platform and it says, oh, click this, it highlights, okay, click here, this is your profile...
+  and then you go next, and then it goes to the next step."
+  **On the reported deletion**: traced through every place the first draft touched the database —
+  the "Mark as done" checkboxes and "Restart Walkthrough" button only ever wrote to one new field,
+  `profiles.onboarding_steps`. Neither could touch a name, phone, link, Cal.com connection, or any
+  client — those live in entirely separate columns/tables that nothing in that feature ever wrote
+  to. What "Restart" actually did, by design, was clear the 3 manual checkmarks back to unchecked
+  — which reasonably reads as "my stuff got deleted" even though no real data was at risk. Rather
+  than just relabel that button, the redesign below removes the concept of a resettable checkmark
+  entirely, so there's structurally nothing left that a "restart" could ever appear to delete.
+  **New design**: "Getting Started" (still reachable any time from the account menu) is now a
+  short landing page with a "Start the Tour" button and a live, read-only status of the 3 things
+  that have real signals (profile filled in, custom link set, Cal.com connected) — not
+  checkboxes, just a reflection of what's actually true on the account right now. Clicking Start
+  launches an overlay that spotlights the real field or button on the real page — Complete Your
+  Profile and Set Your Custom Link and Know Your Two Links and Connect Your Calendar all on My
+  Profile, then Try It With a Client on the Clients page — with a tooltip bubble (title,
+  explanation, Back/Next/Skip) that follows you across those two pages. Built by hand (no new npm
+  dependency, matching how this project avoids adding libraries where a small amount of code does
+  the job — same reasoning as `src/lib/email.ts` using plain `fetch` instead of Resend's SDK): a
+  CSS box-shadow ring highlights the target element and dims everything else, sized/positioned
+  live off the real element's on-page location, while a tooltip card floats near it with the
+  step's copy and controls. New files: `TourEngine.tsx` (the overlay + a `useTour()` hook any
+  button can call to launch it, mounted once in `layout.tsx` so it survives navigating from
+  Profile to Clients mid-tour) and `tour-steps.ts` (the 6 stops, each naming a page and a
+  `data-tour="..."` selector — those attributes are now on the real Profile/Clients elements).
+  Stores no per-step progress anywhere — relaunching the tour just replays it against whatever's
+  real on the page that moment, so there's nothing to reset and nothing to lose.
+  Old files removed: `StepToggle.tsx`, `RestartButton.tsx`. `profiles.onboarding_steps` (added
+  earlier today) is no longer read or written by anything — left in place rather than dropped,
+  same additive-only convention as everywhere else in this schema; `onboarding_dismissed_at` is
+  still used, unchanged, for the "finish setting up" banner on Home (now says "Take the Tour").
+  **No new SQL** — nothing here needed a new column.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

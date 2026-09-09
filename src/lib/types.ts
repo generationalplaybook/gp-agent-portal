@@ -76,8 +76,8 @@ export interface Profile {
   // Email notification opt-ins (added 9/9) — both default true. See schema.sql section 48.
   notify_new_intake_email?: boolean;
   notify_reminder_email?: boolean;
-  // Getting Started walkthrough state (added 9/9). See schema.sql section 49.
-  onboarding_steps?: Record<string, boolean>;
+  // Hides the "finish setting up" banner on Home once dismissed or the account is fully set up
+  // (added 9/9). The walkthrough itself (TourEngine.tsx) stores no per-step progress anywhere.
   onboarding_dismissed_at?: string | null;
 }
 

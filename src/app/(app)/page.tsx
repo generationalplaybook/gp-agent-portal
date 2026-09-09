@@ -29,7 +29,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("first_name, last_name, phone, intake_slug, cal_api_key, onboarding_steps, onboarding_dismissed_at")
+      .select("first_name, last_name, phone, intake_slug, cal_api_key, onboarding_dismissed_at")
       .eq("id", user.id)
       .single(),
     supabase.from("clients").select("id, stage"),
@@ -123,18 +123,13 @@ export default async function HomePage() {
 
   const greetingName = profile?.first_name || "there";
 
-  // Getting Started progress — same six steps/detection as getting-started/page.tsx; kept as a
-  // simple inline count here rather than a shared import since it's just deciding whether to show
-  // one banner, not rendering the steps themselves.
-  const onboardingManualSteps = (profile?.onboarding_steps as Record<string, boolean>) ?? {};
-  const onboardingTotalSteps = 6;
+  // Getting Started progress — three real, live signals (never a stored flag, so there's nothing
+  // to reset/lose — see TourEngine.tsx and tour-steps.ts). Same detection as getting-started/page.tsx.
+  const onboardingTotalSteps = 3;
   const onboardingDoneCount = [
     !!(profile?.first_name && profile?.last_name && profile?.phone),
     !!profile?.intake_slug,
-    onboardingManualSteps.know_links === true,
     !!profile?.cal_api_key,
-    onboardingManualSteps.review_notifications === true,
-    onboardingManualSteps.first_client === true,
   ].filter(Boolean).length;
   const showOnboardingBanner = !profile?.onboarding_dismissed_at && onboardingDoneCount < onboardingTotalSteps;
 
