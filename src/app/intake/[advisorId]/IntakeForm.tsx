@@ -156,6 +156,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
     // need before fifty nine and a half"). Existing Coverage/Products and Total Debt stay
     // optional — she confirmed both explicitly.
     if (!inputs.tobacco) req.push("Tobacco Use");
+    if (!inputs.marijuana) req.push("Marijuana Use");
     if (!inputs.health) req.push("Health Conditions");
     if (!inputs.declined) req.push("Previously Declined or Rated?");
     if (!inputs.money) req.push("Money Type");
@@ -360,7 +361,19 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "none", label: "Never used" },
             { value: "former", label: "Former user (12+ months clean)" },
             { value: "current", label: "Current user" },
-            { value: "marijuana", label: "Marijuana use (no tobacco)" },
+          ]}
+        />
+      </Field>
+      {/* Split out from Tobacco Use, 9/9 (Karina: "someone could smoke tobacco and marijuana")
+          — its own required question rather than a 4th mutually-exclusive tobacco option, so
+          both can be true at once. */}
+      <Field label="Marijuana Use">
+        <OptionGroup
+          value={inputs.marijuana}
+          onChange={(v) => set("marijuana", v)}
+          options={[
+            { value: "no", label: "No marijuana use" },
+            { value: "yes", label: "Marijuana use" },
           ]}
         />
       </Field>

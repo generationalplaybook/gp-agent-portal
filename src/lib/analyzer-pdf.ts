@@ -70,7 +70,13 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
     M + 280,
     y + 38
   );
-  if (d.tobacco) doc.text("Tobacco: " + d.tobacco, M + 280, y + 52);
+  // Tobacco and marijuana are now two independent questions (Karina, 9/9), but still share one
+  // line here — the info box above has room for exactly 3 lines on this side and adding a 4th
+  // would overflow it.
+  const tobaccoLine = [d.tobacco ? "Tobacco: " + d.tobacco : "", d.marijuana === "yes" ? "Marijuana use" : ""]
+    .filter(Boolean)
+    .join("   ·   ");
+  if (tobaccoLine) doc.text(tobaccoLine, M + 280, y + 52);
   if (d.health) doc.text("Health: " + d.health, M + 280, y + 66);
   y += 95;
 

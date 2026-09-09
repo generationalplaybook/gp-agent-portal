@@ -66,7 +66,13 @@ export interface AnalyzerInputs {
   heightFt: string;
   heightIn: string;
   weight: string;
-  tobacco?: "none" | "former" | "current" | "marijuana" | "skip";
+  // Karina, 9/9: "should be able to select two options — someone could smoke tobacco and
+  // marijuana." Split from one 4-way choice (which forced picking either a tobacco status OR
+  // marijuana, never both) into two independent questions: tobacco status stays mutually
+  // exclusive (you can't be both a never-user and a current user), marijuana use is its own
+  // yes/no that can combine with any tobacco status.
+  tobacco?: "none" | "former" | "current" | "skip";
+  marijuana?: "yes" | "no" | "skip";
   health?: "none" | "managed" | "significant" | "skip";
   declined?: "no" | "rated" | "declined" | "skip";
   money?: "qualified" | "nonqualified" | "both" | "skip";
@@ -124,6 +130,7 @@ export interface AnalyzerResult {
   heightIn: string;
   weight: string;
   tobacco?: string;
+  marijuana?: string;
   health?: string;
   declined?: string;
   money?: string;
@@ -529,6 +536,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
     heightIn: inputs.heightIn,
     weight: inputs.weight,
     tobacco: inputs.tobacco !== "skip" ? inputs.tobacco : undefined,
+    marijuana: inputs.marijuana !== "skip" ? inputs.marijuana : undefined,
     health: inputs.health !== "skip" ? inputs.health : undefined,
     declined: inputs.declined !== "skip" ? inputs.declined : undefined,
     money,

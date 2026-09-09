@@ -337,7 +337,20 @@ export default function AnalyzerClient({
               { value: "none", label: "Never used" },
               { value: "former", label: "Former user (12+ months clean)" },
               { value: "current", label: "Current user" },
-              { value: "marijuana", label: "Marijuana use (no tobacco)" },
+              { value: "skip", label: "Skip" },
+            ]}
+          />
+        </Field>
+        {/* Split out from Tobacco Use, 9/9 (Karina: "someone could smoke tobacco and
+            marijuana") — its own independent question rather than a 4th mutually-exclusive
+            tobacco option, so both can be true at once. */}
+        <Field label="Marijuana Use">
+          <OptionGroup
+            value={inputs.marijuana}
+            onChange={(v) => set("marijuana", v)}
+            options={[
+              { value: "no", label: "No marijuana use" },
+              { value: "yes", label: "Marijuana use" },
               { value: "skip", label: "Skip" },
             ]}
           />

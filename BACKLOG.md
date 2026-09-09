@@ -3081,6 +3081,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   new SQL.** One-word fix on the public Get Started/Intake page's subhead, off a screenshot:
   "before your meeting not first meeting" (`src/app/intake/[advisorId]/page.tsx`).
 
+- **Tobacco Use / Marijuana Use split into two questions — BUILT 9/9, no new SQL.** Screenshot
+  of the "Tobacco Use" buttons: "shoul[d] be able to select two options[,] someone could smoke
+  tobacco and marijuana." The old control was one 4-way choice — Never used / Former user /
+  Current user / Marijuana use (no tobacco) — which forced picking exactly one, so a current
+  tobacco smoker who also used marijuana had no correct answer. Split into two independent
+  questions instead: Tobacco Use stays a 3-way choice (still mutually exclusive — nobody is both
+  a never-user and a current user), and Marijuana Use is now its own separate Yes/No question
+  that can be answered either way regardless of the tobacco answer. Changed in three places that
+  all share this same data shape: the public Intake form (both required, matching how the rest of
+  that form's Health section already works), the internal Client Analyzer tool (both stay
+  optional/skippable, matching that tool's Health section), and the PDF export, which now prints
+  tobacco and marijuana together on one line (e.g. "Tobacco: current · Marijuana use") since the
+  info box only had room budgeted for three lines on that side.
+  **No new SQL** — Client Analyzer results are stored as a single `inputs`/`result` jsonb blob
+  (`client_analyses` table), not individual columns, so this is purely a shape change to what
+  goes into that jsonb — nothing to migrate. Any past analysis saved with the old
+  `tobacco: "marijuana"` value just keeps showing that on its own saved PDF/record; only new
+  analyses use the split fields.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
