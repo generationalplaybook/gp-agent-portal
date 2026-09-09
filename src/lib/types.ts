@@ -76,6 +76,9 @@ export interface Profile {
   // Email notification opt-ins (added 9/9) — both default true. See schema.sql section 48.
   notify_new_intake_email?: boolean;
   notify_reminder_email?: boolean;
+  // Getting Started walkthrough state (added 9/9). See schema.sql section 49.
+  onboarding_steps?: Record<string, boolean>;
+  onboarding_dismissed_at?: string | null;
 }
 
 // Carrier Logins + State Licenses (added 9/3) — a private, per-advisor replacement for the messy

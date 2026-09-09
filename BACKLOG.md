@@ -2893,6 +2893,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   alter table public.profiles add column if not exists notify_reminder_email boolean not null default true;
   ```
 
+- **In-portal "Getting Started" walkthrough — BUILT 9/9, SQL REQUIRED.** Karina: "can we build a
+  getting started step so completing your profile? Like, setting up your links, linking your
+  calendars and step by step of what they need to do... they can either do that right away as
+  soon as they make the account, or they can return to it later, and they can restart it at any
+  time that they need a refresher."
+  New page, `/getting-started`, reachable any time from the account menu (both desktop and
+  mobile) — six steps: Complete Your Profile, Set Your Custom Link, Know Your Two Links, Connect
+  Your Calendar, Review Your Notification Settings, Try It With a Client. Each has a plain-language
+  explanation and a button straight to where you actually do it.
+  Three steps auto-detect as done from real profile data (filled-in profile, custom link set,
+  Cal.com connected) — no separate flag, so they can't drift out of sync with reality. The other
+  three (no natural DB signal — they're explanations/actions, not fields) are a manual "Mark as
+  done" checkbox. "Restart Walkthrough" clears just those manual checkmarks so someone can walk
+  through it again as a refresher — it can't touch the auto-detected ones, since those just
+  reflect whatever's actually true about the account.
+  Also added a dismissible "Finish setting up your account" banner at the top of Home, shown until
+  either all six steps are done or an advisor dismisses it — that's the "right away" path; the
+  account-menu link is the "come back later" path, and it stays available either way.
+  **Not literal screenshots, on purpose**: each step has a small custom line-icon in the same
+  style already used on the Home dashboard cards, instead of real screenshots of the app — a
+  screenshot goes stale the moment a page's layout changes, an icon doesn't. Happy to swap in real
+  screenshots later if you'd rather, once you've seen this live.
+  **SQL required:**
+  ```sql
+  alter table public.profiles add column if not exists onboarding_steps jsonb not null default '{}'::jsonb;
+  alter table public.profiles add column if not exists onboarding_dismissed_at timestamptz;
+  ```
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

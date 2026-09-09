@@ -5,6 +5,7 @@ import { CLIENT_STAGES } from "@/lib/types";
 import { getNextOutreachMilestone, getTermUrgency } from "@/lib/products";
 import { formatDateOnly, parseDateOnly } from "@/lib/dates";
 import LocalDateTime from "./LocalDateTime";
+import OnboardingBanner from "./OnboardingBanner";
 
 // The landing page after login (built 9/3, replacing the old straight-to-/clients redirect —
 // Karina: "I want the first home screen to be cards... it can be overwhelming" seeing the full
@@ -26,7 +27,11 @@ export default async function HomePage() {
     { data: reminders },
     { data: termProductsRaw, error: termProductsError },
   ] = await Promise.all([
-    supabase.from("profiles").select("first_name").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("first_name, last_name, phone, intake_slug, cal_api_key, onboarding_steps, onboarding_dismissed_at")
+      .eq("id", user.id)
+      .single(),
     supabase.from("clients").select("id, stage"),
     supabase
       .from("client_meetings")
@@ -118,12 +123,29 @@ export default async function HomePage() {
 
   const greetingName = profile?.first_name || "there";
 
+  // Getting Started progress — same six steps/detection as getting-started/page.tsx; kept as a
+  // simple inline count here rather than a shared import since it's just deciding whether to show
+  // one banner, not rendering the steps themselves.
+  const onboardingManualSteps = (profile?.onboarding_steps as Record<string, boolean>) ?? {};
+  const onboardingTotalSteps = 6;
+  const onboardingDoneCount = [
+    !!(profile?.first_name && profile?.last_name && profile?.phone),
+    !!profile?.intake_slug,
+    onboardingManualSteps.know_links === true,
+    !!profile?.cal_api_key,
+    onboardingManualSteps.review_notifications === true,
+    onboardingManualSteps.first_client === true,
+  ].filter(Boolean).length;
+  const showOnboardingBanner = !profile?.onboarding_dismissed_at && onboardingDoneCount < onboardingTotalSteps;
+
   return (
     <div>
       <div className="mb-6">
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Welcome back, {greetingName}</h1>
         <p className="mt-1 text-sm text-[#555]">Here&rsquo;s where things stand today.</p>
       </div>
+
+      {showOnboardingBanner && <OnboardingBanner doneCount={onboardingDoneCount} totalCount={onboardingTotalSteps} />}
 
       {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
           the adviser needs to immediately get to... so it doesn't get missed." A banner rather

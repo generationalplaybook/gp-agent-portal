@@ -1377,3 +1377,21 @@ create unique index if not exists clients_financial_analysis_token_idx on public
 -- ─────────────────────────────────────────────────────────────
 alter table public.profiles add column if not exists notify_new_intake_email boolean not null default true;
 alter table public.profiles add column if not exists notify_reminder_email boolean not null default true;
+
+-- ─────────────────────────────────────────────────────────────
+-- 49. In-portal "Getting Started" walkthrough (added 9/9) — Karina wants a step-by-step guide
+-- advisors can complete right when their account is created, or come back to any time as a
+-- refresher: "restart it at any time that they need a refresher."
+-- Three of the six steps (profile filled in, custom link set, Cal.com connected) are detected
+-- live from real profile data every time the page loads — nothing to store for those. The other
+-- three (the two-links explainer, reviewing notification settings, trying it with a first client)
+-- have no natural DB signal, so they're just a manual "mark as done" checkbox — onboarding_steps
+-- tracks which of those the advisor has checked off. "Restart Walkthrough" on that page clears
+-- this back to '{}' — it only resets the manual checkmarks; it can't and doesn't touch real
+-- profile data, so the auto-detected steps stay showing as done, correctly.
+-- onboarding_dismissed_at hides the "finish setting up" banner on the Home page once an advisor
+-- dismisses it (or finishes) — the /getting-started page itself stays reachable any time from the
+-- account menu regardless.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists onboarding_steps jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists onboarding_dismissed_at timestamptz;
