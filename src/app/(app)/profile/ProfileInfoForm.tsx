@@ -27,6 +27,19 @@ export default function ProfileInfoForm({ profile }: { profile: Profile | null }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Last-line-of-defense guard (added 9/9, after a real profile got wiped) — Save has always
+    // overwritten every field unconditionally, with nothing stopping an accidental all-blank
+    // submit from clobbering real saved data. This won't catch a single field being cleared on
+    // purpose (that's fine, expected), only the specific catastrophic case: name and phone both
+    // gone at once, which is never something to do by accident.
+    if (!firstName.trim() && !lastName.trim() && !phone.trim()) {
+      const ok = confirm(
+        "Your name and phone are both blank right now. Saving will clear them if they were set before. Continue?"
+      );
+      if (!ok) return;
+    }
+
     setStatus("saving");
     const formData = new FormData();
     formData.set("first_name", firstName);

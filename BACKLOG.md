@@ -2960,6 +2960,41 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   still used, unchanged, for the "finish setting up" banner on Home (now says "Take the Tour").
   **No new SQL** — nothing here needed a new column.
 
+- **Real bug found and fixed: My Profile's Save could silently wipe real saved data — BUILT 9/9,
+  no new SQL.** Karina confirmed her name/phone on My Profile actually got cleared — not the
+  onboarding checkmarks from earlier today, her real profile fields. This is a pre-existing bug in
+  `updateMyProfile`/`ProfileInfoForm.tsx` (both written well before today, never touched by any of
+  today's onboarding work) — most likely trigger: the read that loads My Profile
+  (`supabase.from("profiles").select(...).single()`) had its `error` silently thrown away —
+  `const { data: profile } = await ...` — so if that read ever failed (even briefly), the page
+  rendered a completely blank, fully-editable, fully-saveable form instead of any kind of error.
+  Save has always unconditionally overwritten every field with whatever the form currently held,
+  with nothing stopping an all-blank submit from clobbering real data — so a save from that blank
+  state would wipe first/middle/last name, phone, NPN, and scheduling link in one shot.
+  **Two-part fix:**
+  1. That read's `error` is no longer ignored — if it fails, My Profile now shows a plain red
+     "Couldn't load your saved info right now" message instead of a blank form, and doesn't render
+     the (Save-able) form at all in that state, so there's nothing there to accidentally overwrite
+     good data with.
+  2. Independent of the above, added a last-line-of-defense guard on Save itself: if name AND
+     phone are BOTH blank at submit time, a confirmation ("Saving will clear them if they were set
+     before — continue?") has to be accepted before it goes through. Doesn't get in the way of
+     clearing one field on purpose (e.g. removing just a scheduling link) — only catches the
+     specific catastrophic case of wiping identity fields at once, which should never happen by
+     accident.
+  **Also fixed while in there**: the Email Notifications toggle switches — the white circle had no
+  explicit anchor position (`left-0.5` was missing from `NotificationPreferencesCard.tsx`), so the
+  "off" position relied on the browser's implicit fallback instead of an explicit value, which is
+  exactly the kind of thing that renders inconsistently. Now explicitly anchored left with a clean
+  transform to the right when on — matches how every other toggle in the app already behaves.
+  **What I can't do from here**: recover what was actually cleared — that's real data loss with no
+  undo button on my end. Re-entering name/phone/NPN/scheduling link on My Profile is the only way
+  forward unless Supabase point-in-time recovery is enabled on your project (Settings → Database →
+  Backups) and you'd rather restore from a snapshot than retype three fields — probably not worth
+  the effort for this specific case, but flagging that the option exists.
+  **No new SQL** — this fix changes what the page does when a read fails and what Save allows, not
+  the schema.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

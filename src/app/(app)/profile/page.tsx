@@ -15,19 +15,25 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [siteUrl, { data: profile }, { data: carrierLogins }, { data: stateLicenses }] = await Promise.all([
-    getSiteUrl(),
-    supabase
-      .from("profiles")
-      .select(
-        "first_name, middle_name, last_name, email, phone, npn, role, scheduling_link, cal_api_key, intake_slug, notify_new_intake_email, notify_reminder_email"
-      )
-      .eq("id", user.id)
-      .single(),
-    supabase.from("carrier_logins").select("*").eq("agent_id", user.id).order("company", { ascending: true }),
-    supabase.from("state_licenses").select("*").eq("agent_id", user.id).order("state", { ascending: true }),
-  ]);
+  const [siteUrl, { data: profile, error: profileError }, { data: carrierLogins }, { data: stateLicenses }] =
+    await Promise.all([
+      getSiteUrl(),
+      supabase
+        .from("profiles")
+        .select(
+          "first_name, middle_name, last_name, email, phone, npn, role, scheduling_link, cal_api_key, intake_slug, notify_new_intake_email, notify_reminder_email"
+        )
+        .eq("id", user.id)
+        .single(),
+      supabase.from("carrier_logins").select("*").eq("agent_id", user.id).order("company", { ascending: true }),
+      supabase.from("state_licenses").select("*").eq("agent_id", user.id).order("state", { ascending: true }),
+    ]);
 
+  // Karina, 9/9: real saved profile data (name/phone) got wiped, and the read on this exact query
+  // failing silently — this destructured `error` away entirely before today — is the most
+  // plausible cause: a failed read fell back to an all-blank form with Save still fully enabled,
+  // so saving from that blank state overwrote whatever was really on file. Now a failed read
+  // shows an explicit error instead of a blank, saveable form, below.
   const calConnected = !!profile?.cal_api_key;
   // cal_api_key never gets passed to a Client Component below — everything passed to one gets
   // serialized down to the browser, so this strips it and keeps only the boolean derived above.
@@ -39,7 +45,14 @@ export default async function ProfilePage() {
 
       <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6" data-tour="profile-fields">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Info</h2>
-        <ProfileInfoForm profile={profileForForm} />
+        {profileError ? (
+          <p className="rounded-md border border-[#E4BCAF] bg-[#F5E6E1] px-3 py-2 text-sm text-[#8B1A1A]">
+            Couldn&rsquo;t load your saved info right now ({profileError.message}). Nothing shown here is safe to
+            save over — refresh the page and try again rather than filling this back in from scratch.
+          </p>
+        ) : (
+          <ProfileInfoForm profile={profileForForm} />
+        )}
       </div>
 
       <div data-tour="notifications">
