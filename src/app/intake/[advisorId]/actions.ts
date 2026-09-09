@@ -3,6 +3,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runAnalyzer, type AnalyzerInputs } from "@/lib/analyzer";
 import { findMatchingClientId } from "@/lib/client-matching";
+import { sendEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
 
 // Everything an advisor's public intake link submits, beyond the standard analyzer questions:
 // a lightweight household snapshot (check-all-that-apply, no per-person questionnaire) so the
@@ -55,7 +57,11 @@ export async function submitIntake(
   const middleName = contact.middleName.trim() || null;
   if (!firstName || !lastName) return { ok: false, error: "First and last name are required." };
 
-  const { data: advisor } = await admin.from("profiles").select("id").eq("id", advisorId).maybeSingle();
+  const { data: advisor } = await admin
+    .from("profiles")
+    .select("id, email, full_name, notify_new_intake_email")
+    .eq("id", advisorId)
+    .maybeSingle();
   if (!advisor) return { ok: false, error: "This intake link is no longer valid. Please contact your advisor." };
 
   const householdSummary = buildHouseholdSummary(family);
@@ -146,6 +152,25 @@ export async function submitIntake(
   });
 
   if (analysisError) return { ok: false, error: analysisError.message };
+
+  // New-intake email alert (Karina, 9/9) — gated behind the advisor's own opt-in, default true.
+  // Never blocks the submission itself: a failed/skipped send is swallowed, the client's already
+  // saved by this point either way.
+  if (advisor.email && advisor.notify_new_intake_email !== false) {
+    const siteUrl = await getSiteUrl();
+    const clientName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+    await sendEmail({
+      to: advisor.email,
+      subject: `New intake form submitted — ${clientName}`,
+      html: `
+        <p>Hi ${advisor.full_name ?? "there"},</p>
+        <p><strong>${clientName}</strong> just completed the full Intake form.</p>
+        <p><a href="${siteUrl}/clients/${clientId}">View their profile</a></p>
+        <p style="color:#888;font-size:12px;">You're getting this because new-intake alerts are turned on in
+        My Profile. You can turn them off there any time.</p>
+      `,
+    });
+  }
 
   return { ok: true };
 }

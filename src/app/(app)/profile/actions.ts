@@ -32,6 +32,25 @@ export async function updateMyProfile(formData: FormData) {
   revalidatePath("/profile");
 }
 
+// Per-advisor email notification toggles (added 9/9) — Karina: "we also need to give control to
+// the adviser that, like, do they want email notifications, or are they just gonna be in the
+// habit of checking their portal?" Two independent switches — see schema.sql section 48 for why
+// they're separate columns rather than one on/off flag.
+export async function updateNotificationPreferences(prefs: {
+  notify_new_intake_email: boolean;
+  notify_reminder_email: boolean;
+}) {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("profiles")
+    .update({
+      notify_new_intake_email: prefs.notify_new_intake_email,
+      notify_reminder_email: prefs.notify_reminder_email,
+    })
+    .eq("id", user.id);
+  revalidatePath("/profile");
+}
+
 // ─────────────────────────────────────────────────────────────
 // Self-service email change (added 9/3) — Karina: "i think they should have freedom to do it
 // themselves," after noticing Email was locked on My Profile. Calls Supabase Auth's own

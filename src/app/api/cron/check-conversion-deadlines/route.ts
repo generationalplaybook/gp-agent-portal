@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyAdvisorOfReminder } from "@/lib/reminder-notify";
 
 // Runs once a day (see vercel.json) — a heads-up before a product's "convertible to permanent
 // coverage with no medical exam" window closes, so an advisor doesn't have to remember to check
-// dates themselves. Karina, 9/3: wants a reminder 60 days out; asked "30 or 60?" and she went
-// with 60 — a no-exam conversion usually means carrier paperwork and back-and-forth, so 60 days
-// gives real runway instead of a scramble.
+// dates themselves. Originally 60 days (Karina, 9/3); widened to 90 days (Karina, 9/9: "it is 90
+// days not 60 days") — a no-exam conversion usually means carrier paperwork and back-and-forth,
+// so 90 days gives real runway instead of a scramble.
 //
 // Same shape as check-birthdays: a plain date-window query, a one-time "already sent" flag
 // (conversion_reminder_sent) so this doesn't create a fresh reminder every day the deadline is
@@ -28,13 +29,14 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const siteUrl = request.nextUrl.origin;
 
   const windowEnd = new Date(today);
-  windowEnd.setDate(windowEnd.getDate() + 60);
+  windowEnd.setDate(windowEnd.getDate() + 90);
   const todayStr = today.toISOString().slice(0, 10);
   const windowEndStr = windowEnd.toISOString().slice(0, 10);
 
-  // Candidates: any product with a conversion deadline in [today, today + 60 days] that hasn't
+  // Candidates: any product with a conversion deadline in [today, today + 90 days] that hasn't
   // already had its reminder created. A deadline that's already passed is left alone here — see
   // getProductStatus (src/lib/products.ts), which already flags an expired no-exam window on
   // the product card itself ("Convertible — exam now required").
@@ -78,12 +80,15 @@ export async function GET(request: NextRequest) {
       dateStyle: "medium",
     });
 
+    const message = `${product.product_name} (${client.full_name}) can only convert to permanent coverage without a medical exam until ${deadlineLabel} — 90 days out.`;
+
     await supabase.from("reminders").insert({
       client_id: product.client_id,
       agent_id: client.owner_id,
       remind_at: today.toISOString(),
-      message: `${product.product_name} (${client.full_name}) can only convert to permanent coverage without a medical exam until ${deadlineLabel} — 60 days out.`,
+      message,
     });
+    await notifyAdvisorOfReminder(supabase, client.owner_id, message, siteUrl);
 
     await supabase.from("client_products").update({ conversion_reminder_sent: true }).eq("id", product.id);
 
@@ -99,12 +104,15 @@ export async function GET(request: NextRequest) {
       dateStyle: "medium",
     });
 
+    const finalMessage = `${product.product_name} (${client.full_name}) reaches its final conversion deadline (exam required) on ${deadlineLabel} — 90 days out.`;
+
     await supabase.from("reminders").insert({
       client_id: product.client_id,
       agent_id: client.owner_id,
       remind_at: today.toISOString(),
-      message: `${product.product_name} (${client.full_name}) reaches its final conversion deadline (exam required) on ${deadlineLabel} — 60 days out.`,
+      message: finalMessage,
     });
+    await notifyAdvisorOfReminder(supabase, client.owner_id, finalMessage, siteUrl);
 
     await supabase.from("client_products").update({ final_conversion_reminder_sent: true }).eq("id", product.id);
 

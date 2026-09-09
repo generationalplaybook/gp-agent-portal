@@ -6,6 +6,7 @@ import IntakeLinkCard from "./IntakeLinkCard";
 import PreIntakeLinkCard from "./PreIntakeLinkCard";
 import CalSyncCard from "./CalSyncCard";
 import CarrierAndLicensingCard from "./CarrierAndLicensingCard";
+import NotificationPreferencesCard from "./NotificationPreferencesCard";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -18,7 +19,9 @@ export default async function ProfilePage() {
     getSiteUrl(),
     supabase
       .from("profiles")
-      .select("first_name, middle_name, last_name, email, phone, npn, role, scheduling_link, cal_api_key, intake_slug")
+      .select(
+        "first_name, middle_name, last_name, email, phone, npn, role, scheduling_link, cal_api_key, intake_slug, notify_new_intake_email, notify_reminder_email"
+      )
       .eq("id", user.id)
       .single(),
     supabase.from("carrier_logins").select("*").eq("agent_id", user.id).order("company", { ascending: true }),
@@ -38,6 +41,11 @@ export default async function ProfilePage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Info</h2>
         <ProfileInfoForm profile={profileForForm} />
       </div>
+
+      <NotificationPreferencesCard
+        initialNewIntake={profile?.notify_new_intake_email ?? true}
+        initialReminder={profile?.notify_reminder_email ?? true}
+      />
 
       <CalSyncCard connected={calConnected} />
 

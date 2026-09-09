@@ -2,6 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findMatchingClientId } from "@/lib/client-matching";
+import { sendEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
 
 export type PreIntakeTimeline = "asap" | "soon" | "exploring";
 
@@ -56,7 +58,11 @@ export async function submitPreIntake(
   if (!email) return { ok: false, error: "Email is required." };
   if (!goals) return { ok: false, error: "Please tell us a bit about what you're looking for." };
 
-  const { data: advisor } = await admin.from("profiles").select("id").eq("id", advisorId).maybeSingle();
+  const { data: advisor } = await admin
+    .from("profiles")
+    .select("id, email, full_name, notify_new_intake_email")
+    .eq("id", advisorId)
+    .maybeSingle();
   if (!advisor) return { ok: false, error: "This link is no longer valid. Please contact your advisor." };
 
   // Match back to an existing client — the advisor already added them manually after a call, or
@@ -118,6 +124,25 @@ export async function submitPreIntake(
     body: bodyLines.join("\n"),
   });
   if (noteError) return { ok: false, error: noteError.message };
+
+  // New-intake email alert (Karina, 9/9) — gated behind the advisor's own opt-in, default true.
+  // Never blocks the submission itself: a failed/skipped send is swallowed, the client's already
+  // saved by this point either way.
+  if (advisor.email && advisor.notify_new_intake_email !== false) {
+    const emailSiteUrl = await getSiteUrl();
+    const clientName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+    await sendEmail({
+      to: advisor.email,
+      subject: `New pre-intake submitted — ${clientName}`,
+      html: `
+        <p>Hi ${advisor.full_name ?? "there"},</p>
+        <p><strong>${clientName}</strong> just completed the Pre-Intake form.</p>
+        <p><a href="${emailSiteUrl}/clients/${clientId}">View their profile</a></p>
+        <p style="color:#888;font-size:12px;">You're getting this because new-intake alerts are turned on in
+        My Profile. You can turn them off there any time.</p>
+      `,
+    });
+  }
 
   return { ok: true };
 }

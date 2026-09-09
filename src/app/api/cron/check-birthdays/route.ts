@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateAge, daysUntilNextBirthday, isHalfBirthdayToday } from "@/lib/family";
+import { notifyAdvisorOfReminder } from "@/lib/reminder-notify";
 
 // Runs once a day (see vercel.json) and handles two birth-date-driven milestones:
 //
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
   const today = new Date();
+  const siteUrl = request.nextUrl.origin;
 
   // Candidates: anyone with a birth date on file who hasn't already been processed. Filtered
   // down to "turns 18 today" in JS below, reusing the same age math the Family card displays.
@@ -92,6 +94,7 @@ export async function GET(request: NextRequest) {
       remind_at: today.toISOString(),
       message,
     });
+    await notifyAdvisorOfReminder(supabase, client.owner_id, message, siteUrl);
 
     await supabase.from("clients").update({ turned_18_notice_sent: true }).eq("id", client.id);
 
@@ -127,12 +130,15 @@ export async function GET(request: NextRequest) {
       for (const client of turning59HalfToday) {
         if (!annuityClientIds.has(client.id)) continue;
 
+        const halfMessage = `${client.full_name} turns 59 1/2 today — the IRS's 10% early-withdrawal penalty no longer applies to their annuity.`;
+
         await supabase.from("reminders").insert({
           client_id: client.id,
           agent_id: client.owner_id,
           remind_at: today.toISOString(),
-          message: `${client.full_name} turns 59 1/2 today — the IRS's 10% early-withdrawal penalty no longer applies to their annuity.`,
+          message: halfMessage,
         });
+        await notifyAdvisorOfReminder(supabase, client.owner_id, halfMessage, siteUrl);
 
         await supabase.from("clients").update({ turned_59_half_notice_sent: true }).eq("id", client.id);
 

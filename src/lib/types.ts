@@ -73,6 +73,9 @@ export interface Profile {
   // Zoom, Google Meet) is configured on that event type inside Cal.com itself — this is just
   // the link the portal opens/sends. Null until the advisor sets it in My Profile.
   scheduling_link?: string | null;
+  // Email notification opt-ins (added 9/9) — both default true. See schema.sql section 48.
+  notify_new_intake_email?: boolean;
+  notify_reminder_email?: boolean;
 }
 
 // Carrier Logins + State Licenses (added 9/3) — a private, per-advisor replacement for the messy

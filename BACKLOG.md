@@ -2840,6 +2840,59 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   possible, so worth knowing about rather than assuming it can't happen.
   **No SQL** — matching logic only, same columns as before.
 
+- **Per-advisor email notification toggles + new-intake/reminder alert emails + 90-day conversion
+  window fix — BUILT 9/9.** Karina, after agreeing "Email only, for now" for the new-intake alert:
+  "Before you build that, we also need to give control to the adviser that, like, do they want
+  email notifications, or are they just gonna be in the habit of checking their portal? Because
+  agents might get overwhelmed with multiple emails. So let's have that option built in as well
+  right away, and then give the adviser the option to also get email alerts for those time
+  sensitive reminders that are coming up automatically." Then, clarifying scope: "just the auto
+  ones" (not manually-added reminders) and "it is 90 days not 60 days" (the conversion-deadline
+  window). "Both default ON" for the two toggles.
+  Two new toggles on My Profile, under a new "Email Notifications" card — **New intake submitted**
+  and **Time-sensitive reminders** — each independently on/off, saved instantly, both default ON
+  for every advisor (new `profiles.notify_new_intake_email` / `notify_reminder_email` columns).
+  New shared email helper (`src/lib/email.ts`) sends through Resend's API (no new npm dependency —
+  plain `fetch`, same as everything else in this codebase) — it needs `RESEND_API_KEY` and
+  `REMINDER_FROM_EMAIL` set in Vercel's environment variables to actually send anything (see
+  `.env.local.example`, "Phase 3"); until then it silently skips sending rather than erroring, so
+  nothing breaks in the meantime. **This is still the one piece you need to set up**: sign up at
+  resend.com (free tier is plenty), grab an API key, add `RESEND_API_KEY` and `REMINDER_FROM_EMAIL`
+  to the project's environment variables in Vercel, redeploy — once that's done both alert types
+  below start actually sending, no other change needed.
+  — **New-intake alert**: wired into both `intake/[advisorId]/actions.ts` and
+  `pre-intake/[advisorId]/actions.ts` — right after a Pre-Intake or full Intake form is submitted,
+  if the owning advisor has that toggle on, they get an email with the client's name and a link
+  straight to their profile.
+  — **Reminder alert**: new shared helper `src/lib/reminder-notify.ts`, called from both daily
+  crons (`check-birthdays`, `check-conversion-deadlines`) right after each one creates its
+  automatic reminder — if the owning advisor has that toggle on, they get an email with the same
+  message that landed in their Reminders list. Deliberately scoped to just the three automatic
+  reminder types (18th birthday, 59½ annuity milestone, conversion deadline) per her "just the auto
+  ones" — a manually-added reminder never emails anyone. No separate "how far in advance" setting
+  needed: the conversion-deadline cron already creates its reminder 90 days ahead of the deadline,
+  and the birthday cron creates its reminder the day the milestone happens — the reminder being
+  created already IS the heads-up, so the email just rides along at that same moment.
+  — **90 vs 60 days**: while in there, fixed the conversion-deadline cron's window from 60 days to
+  90 days, per her correction — both the no-exam and final (exam-required) conversion reminders now
+  fire 90 days out instead of 60, in both the query window and the reminder message text.
+  **Not built this round — asked, not yet decided**: real calendar sync (a meeting created in the
+  portal automatically showing up on an advisor's own Google/Outlook/Apple calendar). Confirmed
+  what exists today: Cal.com sync is one-way and inbound only (a booking made through an advisor's
+  own Cal.com link creates a meeting in the portal — nothing flows the other direction), and the
+  only way a portal-created meeting gets onto a personal calendar today is the manual, per-meeting
+  "Add to Calendar" (.ics download) button. True two-way sync would mean building Google Calendar's
+  OAuth flow from scratch (already anticipated as unbuilt "Phase 4" in `.env.local.example`) — a
+  much bigger, separate project requiring her to set up a Google Cloud project. A smaller middle
+  ground exists now that this delivery adds real email-sending: emailing a calendar-invite (.ics
+  attachment) whenever a meeting is created/edited, which most calendar apps auto-offer to add —
+  not built, waiting on her steer on which direction (or neither, for now) she wants.
+  **SQL required:**
+  ```sql
+  alter table public.profiles add column if not exists notify_new_intake_email boolean not null default true;
+  alter table public.profiles add column if not exists notify_reminder_email boolean not null default true;
+  ```
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

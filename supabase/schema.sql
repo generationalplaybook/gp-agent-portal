@@ -1357,3 +1357,23 @@ alter table public.clients alter column financial_analysis_token set default gen
 alter table public.clients alter column financial_analysis_token set not null;
 
 create unique index if not exists clients_financial_analysis_token_idx on public.clients(financial_analysis_token);
+
+-- ─────────────────────────────────────────────────────────────
+-- 48. Per-advisor email notification preferences (added 9/9) — Karina: "we also need to give
+-- control to the adviser that, like, do they want email notifications, or are they just gonna be
+-- in the habit of checking their portal? ... let's have that option built in as well right away."
+-- Two independent toggles, both default TRUE (her call, 9/9: "Both default ON") since these are
+-- new opt-out-style alerts, not something advisors had to ask for:
+--   notify_new_intake_email  — email when a Pre-Intake or full Intake form is submitted for one
+--                               of their clients (see intake/[advisorId]/actions.ts and
+--                               pre-intake/[advisorId]/actions.ts)
+--   notify_reminder_email    — email when the daily birthday/59½/conversion-deadline crons create
+--                               an automatic reminder for one of their clients (see
+--                               src/lib/reminder-notify.ts, used by both cron routes). Scoped to
+--                               just those automatic reminders, not manually-added ones — Karina,
+--                               9/9: "just the auto ones."
+-- Both require RESEND_API_KEY + REMINDER_FROM_EMAIL to be set (src/lib/email.ts) — until then,
+-- sendEmail() no-ops safely rather than erroring, so nothing breaks in the meantime.
+-- ─────────────────────────────────────────────────────────────
+alter table public.profiles add column if not exists notify_new_intake_email boolean not null default true;
+alter table public.profiles add column if not exists notify_reminder_email boolean not null default true;
