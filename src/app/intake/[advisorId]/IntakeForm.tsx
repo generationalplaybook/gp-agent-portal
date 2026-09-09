@@ -142,11 +142,30 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
     if (!inputs.dob) req.push("Date of Birth");
     if (!inputs.phone.trim()) req.push("Phone Number");
     if (!inputs.email.trim()) req.push("Email");
+    if (!inputs.gender) req.push("Gender");
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
     if (family.spouse && !family.spouseAge.trim()) req.push("Spouse's Age");
     if (family.children && !family.childrenAges.trim()) req.push("Ages of Children");
     if (family.dependents && !family.dependentsAges.trim()) req.push("Age(s) of Aging Parent(s) / Other Dependents");
+    // Health, Money Type / Other Retirement / Funding, Annual Income, and Goals / Time Horizon /
+    // Risk Tolerance / Early Access are no longer skippable on this form (Karina, 9/9: "gender...
+    // should not be optional... health should not be optional... money type, we need to know...
+    // that financial section should not say financial optional... goals optional, that's not
+    // optional. We need to know their primary goals or time horizon, risk tolerance, and their
+    // need before fifty nine and a half"). Existing Coverage/Products and Total Debt stay
+    // optional — she confirmed both explicitly.
+    if (!inputs.tobacco) req.push("Tobacco Use");
+    if (!inputs.health) req.push("Health Conditions");
+    if (!inputs.declined) req.push("Previously Declined or Rated?");
+    if (!inputs.money) req.push("Money Type");
+    if (!inputs.otherRetirement) req.push("Other Retirement Accounts?");
+    if (!inputs.funding) req.push("Funding Method");
+    if (!inputs.income?.trim()) req.push("Annual Income");
+    if (!inputs.goals || inputs.goals.length === 0) req.push("Primary Goal(s)");
+    if (!inputs.horizon) req.push("Time Horizon");
+    if (!inputs.risk) req.push("Risk Tolerance");
+    if (!inputs.earlyAccess) req.push("Needs Access Before 59½?");
 
     if (req.length) {
       setMissing(req);
@@ -229,7 +248,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         />
       </Field>
 
-      <Field label="Gender" optional>
+      <Field label="Gender">
         <select value={inputs.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inputClass}>
           <option value="">Select…</option>
           {GENDER_OPTIONS.map((g) => (
@@ -330,7 +349,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       )}
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Health (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Health</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Tobacco Use">
@@ -342,7 +361,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "former", label: "Former user (12+ months clean)" },
             { value: "current", label: "Current user" },
             { value: "marijuana", label: "Marijuana use (no tobacco)" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -354,7 +372,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "none", label: "None / good health" },
             { value: "managed", label: "Managed condition (controlled with medication)" },
             { value: "significant", label: "Significant condition" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -366,12 +383,11 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "no", label: "No" },
             { value: "rated", label: "Rated (approved but at higher cost)" },
             { value: "declined", label: "Declined before" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Financial (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Financial</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Existing Coverage / Products" optional>
@@ -392,7 +408,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "qualified", label: "Qualified (401k / IRA / pension)" },
             { value: "nonqualified", label: "Non-qualified (personal savings / cash)" },
             { value: "both", label: "Mix of both" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -403,7 +418,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           options={[
             { value: "yes", label: "Yes" },
             { value: "no", label: "No" },
-            { value: "skip", label: "Unsure" },
           ]}
         />
       </Field>
@@ -426,7 +440,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "lumpsum", label: "One-time lump sum" },
             { value: "both", label: "Both" },
             { value: "periodic", label: "Periodic (a few times a year, e.g. tax-driven)" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -470,7 +483,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Annual Income" optional>
+        <Field label="Annual Income">
           <CurrencyInput
             value={inputs.income ?? ""}
             onChange={(v) => set("income", v)}
@@ -488,7 +501,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         </Field>
       </div>
 
-      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Goals (optional)</div>
+      <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Goals</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
 
       <Field label="Primary Goal(s)">
@@ -504,7 +517,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "mid", label: "5–15 years" },
             { value: "long", label: "15+ years / retirement" },
             { value: "never", label: "Never — leaving to heirs" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -516,7 +528,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "guaranteed", label: "Fully guaranteed — no market exposure" },
             { value: "protected", label: "Market-linked but protected — 0% floor" },
             { value: "growth", label: "Growth focused — some risk okay" },
-            { value: "skip", label: "Skip" },
           ]}
         />
       </Field>
@@ -528,7 +539,6 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "yes", label: "Yes" },
             { value: "no", label: "No" },
             { value: "both", label: "Mix of both" },
-            { value: "skip", label: "Unsure" },
           ]}
         />
       </Field>

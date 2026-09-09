@@ -2713,6 +2713,33 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   create unique index if not exists clients_financial_analysis_token_idx on public.clients(financial_analysis_token);
   ```
 
+- **Intake Link — several fields switched from optional to required — BUILT 9/9.** Karina, about
+  the per-advisor Client Intake Link (`/intake/[advisorId]`, `IntakeForm.tsx`): "the link that goes
+  out... unique to every agent... it says gender optional, that should not be optional. We need to
+  know their gender. Household optional, that's fine. Health should not be optional. We need to
+  know those things. Financial coverage products optional is fine... money type, we need to know...
+  that financial section should not say financial optional. It should say existing coverage such
+  products is optional, but money type, other retirement accounts, funding method, annual income
+  should not be optional. Total debt can be optional. Goals optional, that's not optional. We need
+  to know their primary goals or time horizon, risk tolerance, and their need before fifty nine and
+  a half."
+  Changed, on the public Intake form only (the advisor's own internal Client Analyzer tool,
+  `client-analyzer/AnalyzerClient.tsx`, is a separate component and untouched — it still lets an
+  advisor skip anything mid-call):
+  — **Now required** (the "optional" badge/label removed, a real answer enforced before submit,
+  and the "Skip"/"Unsure" choice removed from each so it can't be picked instead of answering):
+  Gender, Tobacco Use, Health Conditions, Previously Declined or Rated?, Money Type, Other
+  Retirement Accounts?, Funding Method, Annual Income, Primary Goal(s), Time Horizon, Risk
+  Tolerance, Needs Access Before 59½?. The "Health", "Financial", and "Goals" section headers no
+  longer say "(optional)" either.
+  — **Left optional, unchanged** (Karina confirmed both by name): Existing Coverage / Products,
+  Total Debt. "Family (optional)" / Household also unchanged — she said that one's fine as-is.
+  — **Not touched** (not named, so left as they were): Approximate Other Retirement Amount, Monthly
+  Budget, Lump Sum Amount, Periodic Contribution Amount, and "How Often" (periodic frequency) — all
+  four only ever show up conditionally under an already-required parent field anyway.
+  **No SQL** — this only changes which fields the form requires before it lets someone submit;
+  same columns and submission path as before.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
