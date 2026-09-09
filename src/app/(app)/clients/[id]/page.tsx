@@ -333,19 +333,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <SourceField clientId={client.id} source={client.source} />
         </div>
 
-        <ScheduleCallCard
-          schedulingLink={schedulingLink}
-          clientName={client.full_name}
-          clientEmail={client.email}
-        />
-
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Medical Report Link</h2>
-          <MedicalReportLinkCard siteUrl={siteUrl} token={client.medical_report_token} />
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
+          <RemindersCard owner={{ clientId: client.id }} reminders={reminders ?? []} />
         </div>
 
+        {/* Meetings & Calls — combined with Schedule a Call into one card (Karina, 9/8: "should
+            schedule a call be combined with meetings and calls? ... Okay. Yeah."). ScheduleCallCard
+            renders bare (no outer border/heading of its own) so it sits inside this card's border,
+            separated from the meeting list below by a divider. */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Meetings &amp; Calls</h2>
+          <ScheduleCallCard
+            schedulingLink={schedulingLink}
+            clientName={client.full_name}
+            clientEmail={client.email}
+          />
+          <div className="my-4 border-t border-[#EDE8DF]" />
           <MeetingsCard clientId={client.id} clientName={client.full_name} meetings={meetings ?? []} />
         </div>
 
@@ -387,8 +391,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
-          <RemindersCard owner={{ clientId: client.id }} reminders={reminders ?? []} />
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Medical Report Link</h2>
+          <MedicalReportLinkCard siteUrl={siteUrl} token={client.medical_report_token} />
         </div>
       </div>
     </div>

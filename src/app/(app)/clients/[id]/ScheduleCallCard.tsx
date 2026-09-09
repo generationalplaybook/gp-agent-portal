@@ -14,19 +14,21 @@ export default function ScheduleCallCard({
   const [showWidget, setShowWidget] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Note: this card renders WITHOUT its own outer border/heading — it's meant to be embedded
+  // inside a parent card (the client profile's combined "Meetings & Calls" card, or the
+  // Schedule-a-Call modal on the global Meetings tab), each of which supplies its own wrapper
+  // and heading. (Karina, 9/8: "should schedule a call be combined with meetings and calls? ...
+  // Okay. Yeah.")
   if (!schedulingLink) {
     return (
-      <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
-        <p className="text-xs text-[#707070]">
-          Add your scheduling link in{" "}
-          <a href="/profile" className="text-[#1C1C1C] underline underline-offset-2">
-            My Profile
-          </a>{" "}
-          to enable booking calls (with a video link) straight from client profiles. Works with
-          Cal.com, Calendly, Zoom Scheduler, or any tool with a public booking page.
-        </p>
-      </div>
+      <p className="text-xs text-[#707070]">
+        Add your scheduling link in{" "}
+        <a href="/profile" className="text-[#1C1C1C] underline underline-offset-2">
+          My Profile
+        </a>{" "}
+        to enable booking calls (with a video link) straight from client profiles. Works with
+        Cal.com, Calendly, Zoom Scheduler, or any tool with a public booking page.
+      </p>
     );
   }
 
@@ -49,8 +51,7 @@ export default function ScheduleCallCard({
   }
 
   return (
-    <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Schedule a Call</h2>
+    <>
       <div className="flex flex-wrap gap-2">
         <a
           href={personalizedLink}
@@ -86,6 +87,6 @@ export default function ScheduleCallCard({
           title="Schedule a call"
         />
       )}
-    </div>
+    </>
   );
 }

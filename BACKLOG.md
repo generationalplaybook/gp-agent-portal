@@ -2662,6 +2662,21 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   overhanging and gain an underline.
   **No SQL** — this is a display-only fix, same `location` column and data as before.
 
+- **Client page sidebar reordered, Schedule a Call combined into Meetings & Calls — BUILT 9/8.**
+  Karina: "On the client page, it should be pipeline reminders, schedule a call, meetings and
+  calls. Client analysis, full analysis, and then medical report link. That's the order I want it
+  in. Um, should schedule a call be combined with meetings and calls? So it's one. What do you
+  think? Okay. Yeah." Sidebar order on a client's profile page is now: Pipeline Stage → Reminders
+  → Meetings & Calls → Client Analyses → Full Financial Analysis → Medical Report Link. "Schedule
+  a Call" is no longer its own separate card — its buttons (Open Scheduling Page / Copy Link to
+  Send / Book Here) now live inside the "Meetings & Calls" card, above the meeting list, separated
+  by a thin divider. `ScheduleCallCard` no longer draws its own border/heading (it did before, and
+  used to be a standalone card); it's built to be embedded now, so it also updated its other use —
+  the "+ Schedule a Call" popup on the global Meetings tab — which now supplies its own divider
+  where the card's border used to be, so that popup keeps its same look. Functionality unchanged,
+  this is purely layout/order.
+  **No SQL** — no schema or data involved.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

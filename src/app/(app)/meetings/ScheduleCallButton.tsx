@@ -57,7 +57,7 @@ export default function ScheduleCallButton({ schedulingLink }: { schedulingLink:
             </label>
 
             {client && (
-              <div className="mt-4">
+              <div className="mt-4 border-t border-[#EDE8DF] pt-4">
                 <ScheduleCallCard schedulingLink={schedulingLink} clientName={client.full_name} clientEmail={client.email} />
               </div>
             )}
