@@ -81,7 +81,7 @@ export default async function AdminInvitePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Invite Agents</h1>
+      <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">Invite Advisor</h1>
 
       <div className="mb-6 rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Send an invite</h2>

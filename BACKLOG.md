@@ -2753,6 +2753,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Removed agents are unaffected — they keep the existing red "Removed" badge instead.
   **No SQL** — nothing new stored; this only reads data Supabase Auth already had.
 
+- **Small wording fixes — "Invite Agents" → "Invite Advisor", Intake page intro trimmed — BUILT
+  9/9.** Karina: "Can the invite agents tab be called invite adviser? And even that page should be
+  called invite adviser." Renamed both nav entries (mobile drawer and the desktop user menu) and
+  the page's own heading from "Invite Agents" to "Invite Advisor" — same page/route, wording only.
+  Separately, on the public Intake link: "It says 'a few quick questions for... and then it's the
+  adviser's name to review before your first meeting.' I think it should end there, not have that
+  other part of the sentence." That page's intro used to continue past "before your first
+  meeting" with "— so we can come prepared with real options instead of starting from scratch."
+  That trailing clause is gone now; the sentence ends at "before your first meeting."
+  Also discussed, no changes made: a live premium calculator by age/height/weight (she raised it
+  then talked herself out of it — "every carrier is different," wasn't sure it's even possible —
+  so nothing built; happy to dig into feasibility whenever you want to actually pursue it). Hiding
+  the Downloads tab — she reversed herself on this one too, leaving it as-is. Team page — she said
+  it's fine as it is.
+  **No SQL** — wording only.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

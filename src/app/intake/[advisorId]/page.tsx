@@ -29,8 +29,7 @@ export default async function IntakePage({ params }: { params: Promise<{ advisor
         <div className="mb-6 text-center">
           <h1 className="font-serif text-2xl text-[#1C1C1C]">Get Started</h1>
           <p className="mt-1 text-sm text-[#666]">
-            A few quick questions for {advisor.full_name ?? "your advisor"} to review before your first
-            meeting — so we can come prepared with real options instead of starting from scratch.
+            A few quick questions for {advisor.full_name ?? "your advisor"} to review before your first meeting.
           </p>
         </div>
         <IntakeForm advisorId={advisor.id} advisorName={advisor.full_name ?? "your advisor"} />

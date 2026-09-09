@@ -68,7 +68,7 @@ export default function MobileNav({ isAdmin = false }: { isAdmin?: boolean }) {
               </Link>
               {isAdmin && (
                 <Link href="/admin/invite" onClick={() => setOpen(false)} className="px-3 py-3 text-base text-[#2E2E2E]">
-                  Invite Agents
+                  Invite Advisor
                 </Link>
               )}
               <form action={signOut}>
