@@ -2677,6 +2677,42 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   this is purely layout/order.
   **No SQL** — no schema or data involved.
 
+- **Client link for the Financial Needs Analysis — BUILT 9/9, SQL REQUIRED.** Karina: "can we
+  generate a link to end out for the financial needs analysis" (send out). Confirmed she meant the
+  whole Full Financial Analysis (goals, cash flow, net worth, debt, and protection/insurance
+  needs) as a client self-fill link — same idea as the existing Medical Report Link, not just the
+  Protection section and not a read-only report link.
+  New `clients.financial_analysis_token` (random uuid, unique, defaulted — same pattern as
+  `medical_report_token`) and a new public route `/financial-analysis/[token]`, resolved with the
+  admin client exactly like the Medical Report link resolves its token. A new
+  `FinancialAnalysisLinkCard.tsx` under the "Full Financial Analysis" sidebar card shows/copies
+  it. The public page uses its own component (`PublicFAClient.tsx`) rather than reusing the
+  advisor's `FAClient.tsx` directly — it needed a few real differences: no editable "Advisor on
+  this case" panel (shown read-only instead), no placeholder tabs like Liquidity/Retirement/
+  Client Report that only make sense internally, client-facing copy ("Your info" instead of
+  advisor-facing labels), and — the main one — a Save button that's reachable from every tab, not
+  just the first one (the advisor tool's Save only lives on its Dashboard tab, which is fine for
+  an advisor who built the muscle memory, but a client filling this out over several sittings
+  needs to be able to save from wherever they left off). Both write to the exact same
+  `client_financial_plans` row/shape, so answers a client saves show up immediately in the
+  advisor's own Full Financial Analysis tool and vice versa — one shared plan, two doors in, same
+  approach as the Medical Condition Report.
+  **Also found and fixed a real bug while building this**: `/medical-report` links were never
+  added to the login-wall's public-paths list (`src/proxy.ts`) back when that feature was built —
+  meaning a client who was actually logged out (the normal case) and opened their Medical Report
+  link would have been redirected to the login screen instead of the form. Added both
+  `/medical-report` and `/financial-analysis` to that list now, so this is fixed for both going
+  forward — worth mentioning in case any client reported a Medical Report link "not working" and
+  it got shrugged off, since this was the reason.
+  **SQL required:**
+  ```sql
+  alter table public.clients add column if not exists financial_analysis_token uuid default gen_random_uuid();
+  update public.clients set financial_analysis_token = gen_random_uuid() where financial_analysis_token is null;
+  alter table public.clients alter column financial_analysis_token set default gen_random_uuid();
+  alter table public.clients alter column financial_analysis_token set not null;
+  create unique index if not exists clients_financial_analysis_token_idx on public.clients(financial_analysis_token);
+  ```
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

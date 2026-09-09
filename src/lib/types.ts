@@ -148,6 +148,10 @@ export interface Client {
   // the client's own id, since health information is more sensitive than the general Intake
   // form (which does use the advisor's own id/slug). See MedicalCondition below.
   medical_report_token: string;
+  // Same pattern as medical_report_token — an unguessable per-client token for the public
+  // Financial Needs Analysis link (see clients/[id]/FinancialAnalysisLinkCard.tsx and
+  // src/app/financial-analysis/[token]).
+  financial_analysis_token: string;
   // City/state are reference context (also just useful to have on file); timezone is the
   // explicit IANA zone id an advisor picks — see US_TIMEZONE_OPTIONS above and
   // src/lib/timezone.ts for how it's turned into "N hours ahead/behind you."

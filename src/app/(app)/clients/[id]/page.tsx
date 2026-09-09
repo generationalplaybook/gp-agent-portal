@@ -17,6 +17,7 @@ import SourceField from "./SourceField";
 import MarkReviewedButton from "./MarkReviewedButton";
 import MedicalConditionsSection from "./MedicalConditionsSection";
 import MedicalReportLinkCard from "./MedicalReportLinkCard";
+import FinancialAnalysisLinkCard from "./FinancialAnalysisLinkCard";
 import ClientLocationLine from "./ClientLocationLine";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
@@ -388,6 +389,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           >
             {plan?.data ? "Open Analysis" : "Start Full Financial Analysis"}
           </a>
+          <FinancialAnalysisLinkCard siteUrl={siteUrl} token={client.financial_analysis_token} />
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">

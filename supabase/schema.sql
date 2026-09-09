@@ -1342,3 +1342,18 @@ alter table public.client_products add column if not exists outreach_outcome tex
 -- once the same product's been marked/undone more than once).
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists outreach_reminder_id uuid references public.reminders(id) on delete set null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 47. Public per-client link for the client-facing Financial Needs Analysis (added 9/9) —
+-- Karina: "can we generate a link to send out for the financial needs analysis." Same pattern as
+-- section 29's medical_report_token: a random, unguessable per-client token so a client can fill
+-- out the whole Full Financial Analysis themselves (goals, cash flow, net worth, debt, protection/
+-- insurance needs) via a public link, without a login, and it lands on client_financial_plans —
+-- the exact same table/shape the advisor's own tool already saves to.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists financial_analysis_token uuid default gen_random_uuid();
+update public.clients set financial_analysis_token = gen_random_uuid() where financial_analysis_token is null;
+alter table public.clients alter column financial_analysis_token set default gen_random_uuid();
+alter table public.clients alter column financial_analysis_token set not null;
+
+create unique index if not exists clients_financial_analysis_token_idx on public.clients(financial_analysis_token);
