@@ -2769,6 +2769,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   it's fine as it is.
   **No SQL** — wording only.
 
+- **App icon replaced — BUILT 9/9.** Karina: "how do we change this icon?" (screenshot of the
+  browser tab showing the old black-circle/triangle mark next to "GP Advisor Portal"). That icon
+  wasn't part of any page's markup — it's the site's favicon/app icon, generated from a handful of
+  image files. She uploaded the new layered-chevron mark (512×512, on the same cream background
+  the rest of the portal uses); regenerated all four files from it: `src/app/favicon.ico`
+  (16/32/48/64px, browser tab icon), `public/icon-192.png` and `public/icon-512.png` (Android/PWA,
+  referenced from `manifest.json`), and `public/apple-touch-icon.png` (180px, iOS "Add to Home
+  Screen"). Nothing else needed changing — the "GP Advisor Portal" text next to it in the nav bar
+  is a separate, plain text link, untouched.
+  **No SQL** — static asset files only.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
