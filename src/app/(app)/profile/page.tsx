@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import ProfileInfoForm from "./ProfileInfoForm";
 import IntakeLinkCard from "./IntakeLinkCard";
+import PreIntakeLinkCard from "./PreIntakeLinkCard";
 import CalSyncCard from "./CalSyncCard";
 import CarrierAndLicensingCard from "./CarrierAndLicensingCard";
 
@@ -39,6 +40,8 @@ export default async function ProfilePage() {
       </div>
 
       <CalSyncCard connected={calConnected} />
+
+      <PreIntakeLinkCard siteUrl={siteUrl} advisorId={user.id} slug={profile?.intake_slug ?? null} />
 
       <div className="mb-5">
         <IntakeLinkCard siteUrl={siteUrl} advisorId={user.id} initialSlug={profile?.intake_slug ?? null} />

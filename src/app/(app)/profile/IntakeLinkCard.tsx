@@ -52,10 +52,13 @@ export default function IntakeLinkCard({ siteUrl, advisorId, initialSlug }: Prop
 
   return (
     <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Intake Link</h2>
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Full Intake Link</h2>
       <p className="mb-3 text-xs text-[#707070]">
-        Send this to a client before your first meeting to gather their info ahead of time — they never see any
-        recommendation, just a short form. Submissions land in your Clients list flagged for review.
+        Send this once the client already knows this is about life insurance/annuity products — after your first
+        meeting, or if they came to you already aware. Asks health and financial specifics so you can come
+        prepared with real options; they never see any recommendation, just the form. If they&rsquo;re not there
+        yet, use the Pre-Intake Link above instead. Either way, submissions land in your Clients list flagged for
+        review.
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input

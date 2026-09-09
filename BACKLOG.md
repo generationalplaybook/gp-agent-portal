@@ -2780,6 +2780,40 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   is a separate, plain text link, untouched.
   **No SQL** — static asset files only.
 
+- **New Pre-Intake link — a lighter first-touch form for prospects who don't yet know it's life
+  insurance/annuities — BUILT 9/9.** Grew out of the "before your first meeting" wording
+  discussion: Karina, once we talked through it — "Yes. There should be a pre intake form...
+  This would be for somebody that is booking a meeting based on us saying, oh, you know, we do
+  financial and legacy planning, but we haven't exactly told them that it's life insurance and
+  annuities... if you talk to somebody and they're like, oh yeah, I wanna book a meeting, I wanna
+  learn more about this, and you haven't told them that it's through life products, then you
+  would send them the pre intake, and we need to highlight that in the description above the
+  link."
+  New public route `/pre-intake/[advisorId]` (reuses the SAME custom link handle as the existing
+  Intake link — `profiles.intake_slug` — nothing new to configure), a new `PreIntakeForm.tsx`
+  with a deliberately short question set: name, phone, email, "What's on your mind? What would
+  you like to accomplish?" (required), and two optional ones — approximate amount they're
+  thinking of investing, and timeline (Right away / In the next few months / Just exploring).
+  Nothing about health, money type, or funding — anything that would tip off it's an insurance
+  conversation before that conversation has happened. On submit it creates a real client (source
+  "Pre-Intake Form", flagged for review, same as the regular Intake link) and drops everything
+  they answered into one note on Notes & Interaction History — no recommendation is run (there
+  isn't nearly enough here — no DOB, no health, no financials — for that to produce anything
+  trustworthy).
+  On the Profile page, a new "Your Pre-Intake Link" card sits directly above the existing intake
+  card (now relabeled "Your Full Intake Link"), each with the description she asked for right
+  above its link explaining exactly when to send which one.
+  **Also discussed, no changes made:**
+  — Whether the forms should ask what day/time the client wants to meet. My take, for what it's
+  worth: I'd leave that out of both forms and keep using the existing Schedule a Call / Cal.com
+  flow for booking — baking a date picker into these forms would mean re-solving availability and
+  conflicts that Cal.com already handles, for no real gain. Open to adding a simple "preferred
+  time" free-text field to either form instead if you'd rather ask than route people to Cal.com.
+  — The full Intake form can still be filled out live together with a client (open it yourself on
+  a call) or sent for them to fill out on their own — that's existing behavior on that link,
+  unchanged; the new Pre-Intake link works the same either way too.
+  **No SQL** — reuses the existing `clients`, `client_notes`, and `profiles.intake_slug`.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
