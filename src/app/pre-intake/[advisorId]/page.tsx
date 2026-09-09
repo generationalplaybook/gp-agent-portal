@@ -29,7 +29,7 @@ export default async function PreIntakePage({ params }: { params: Promise<{ advi
         <div className="mb-6 text-center">
           <h1 className="font-serif text-2xl text-[#1C1C1C]">A Little About You</h1>
           <p className="mt-1 text-sm text-[#666]">
-            A couple quick questions for {advisor.full_name ?? "your advisor"} so they can make the most of your
+            A couple quick questions for {advisor.full_name ?? "your advisor"} so we can make the most of your
             upcoming meeting.
           </p>
         </div>
