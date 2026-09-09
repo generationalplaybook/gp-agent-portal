@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runAnalyzer, type AnalyzerInputs } from "@/lib/analyzer";
+import { findMatchingClientId } from "@/lib/client-matching";
 
 // Everything an advisor's public intake link submits, beyond the standard analyzer questions:
 // a lightweight household snapshot (check-all-that-apply, no per-person questionnaire) so the
@@ -67,31 +68,65 @@ export async function submitIntake(
     return Number.isFinite(n) ? n : null;
   };
 
-  // full_name is derived by a DB trigger from first/middle/last — never set it directly here.
-  const { data: client, error: clientError } = await admin
-    .from("clients")
-    .insert({
-      owner_id: advisorId,
-      first_name: firstName,
-      middle_name: middleName,
-      last_name: lastName,
-      phone: inputs.phone.trim() || null,
-      email: inputs.email.trim() || null,
-      birth_date: inputs.dob || null,
-      gender: inputs.gender?.trim() || null,
-      stage: "lead",
-      source: "Client Intake Form",
-      intake_pending_review: true,
-      household_summary: householdSummary,
-      height_ft: parseIntOrNull(inputs.heightFt),
-      height_in: parseIntOrNull(inputs.heightIn),
-      weight: parseIntOrNull(inputs.weight),
-    })
-    .select("id")
-    .single();
+  const phone = inputs.phone.trim() || null;
+  const email = inputs.email.trim() || null;
 
-  if (clientError || !client) {
-    return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+  // Match back to an existing client — e.g. this same person already went through the shorter
+  // Pre-Intake link first, or the advisor already added them manually after a call — instead of
+  // creating a duplicate. See findMatchingClientId for why this is keyed on phone/email, never
+  // name.
+  const existingClientId = await findMatchingClientId(admin, advisorId, inputs.phone, inputs.email);
+
+  let clientId: string;
+  if (existingClientId) {
+    // Deliberately does NOT touch owner_id, stage, or source — a matched client keeps whatever
+    // pipeline stage and lead-source attribution the advisor already has on file; this only fills
+    // in what the deeper form asked for that the earlier one couldn't have.
+    const { error: updateError } = await admin
+      .from("clients")
+      .update({
+        phone,
+        email,
+        birth_date: inputs.dob || null,
+        gender: inputs.gender?.trim() || null,
+        intake_pending_review: true,
+        household_summary: householdSummary,
+        height_ft: parseIntOrNull(inputs.heightFt),
+        height_in: parseIntOrNull(inputs.heightIn),
+        weight: parseIntOrNull(inputs.weight),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingClientId);
+    if (updateError) return { ok: false, error: updateError.message };
+    clientId = existingClientId;
+  } else {
+    // full_name is derived by a DB trigger from first/middle/last — never set it directly here.
+    const { data: client, error: clientError } = await admin
+      .from("clients")
+      .insert({
+        owner_id: advisorId,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        phone,
+        email,
+        birth_date: inputs.dob || null,
+        gender: inputs.gender?.trim() || null,
+        stage: "lead",
+        source: "Client Intake Form",
+        intake_pending_review: true,
+        household_summary: householdSummary,
+        height_ft: parseIntOrNull(inputs.heightFt),
+        height_in: parseIntOrNull(inputs.heightIn),
+        weight: parseIntOrNull(inputs.weight),
+      })
+      .select("id")
+      .single();
+
+    if (clientError || !client) {
+      return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+    }
+    clientId = client.id;
   }
 
   // Run the same recommendation engine the advisor's own Client Analyzer uses, so the advisor
@@ -104,7 +139,7 @@ export async function submitIntake(
   const result = runAnalyzer(fullInputs);
 
   const { error: analysisError } = await admin.from("client_analyses").insert({
-    client_id: client.id,
+    client_id: clientId,
     inputs: fullInputs,
     result,
     from_intake: true,

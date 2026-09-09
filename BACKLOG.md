@@ -2814,6 +2814,32 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   unchanged; the new Pre-Intake link works the same either way too.
   **No SQL** — reuses the existing `clients`, `client_notes`, and `profiles.intake_slug`.
 
+- **Pre-Intake → Intake no longer creates a duplicate profile — BUILT 9/9.** Karina asked directly:
+  "if they do the pre intake, it creates their profile, and then they do the intake form after —
+  is it going to match to their current profile, or is it going to create a whole new profile for
+  them? We wanna make sure it doesn't create a new profile, and also we want to make sure that two
+  people with the same name don't get mixed up. And I think the way to track that is by making the
+  phone number and email mandatory." Good catch — until now, both public forms just always
+  inserted a new client, so submitting Pre-Intake and then the full Intake (in either order, or
+  either one twice) would have created two separate profiles for the same person.
+  New shared helper (`src/lib/client-matching.ts`, used by both `intake/[advisorId]/actions.ts`
+  and `pre-intake/[advisorId]/actions.ts`): before creating a client, look for an existing one
+  owned by that SAME advisor with a matching phone OR email — deliberately never matched by name,
+  exactly per her ask, since two different people can share a name but not both a phone and an
+  email. A match updates that existing client (fills in whatever the deeper form asked that the
+  earlier one couldn't have, flags it for review again) instead of inserting a new row; no match
+  still creates a new client exactly as before. A matched client's pipeline stage and lead source
+  are left untouched either way — filling in more info about someone shouldn't reset where they
+  already are.
+  Both forms already required phone AND email before this (confirmed, no field changes needed) —
+  that's exactly what makes the matching reliable.
+  **One known edge case, flagged rather than silently ignored**: if a submitted phone matches one
+  existing client and the submitted email matches a completely different existing client, it picks
+  whichever of those two was created first. That needs two different existing clients to each
+  separately share one piece of contact info with the new submission — rare, but technically
+  possible, so worth knowing about rather than assuming it can't happen.
+  **No SQL** — matching logic only, same columns as before.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

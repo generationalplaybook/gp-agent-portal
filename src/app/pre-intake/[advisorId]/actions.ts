@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { findMatchingClientId } from "@/lib/client-matching";
 
 export type PreIntakeTimeline = "asap" | "soon" | "exploring";
 
@@ -58,26 +59,44 @@ export async function submitPreIntake(
   const { data: advisor } = await admin.from("profiles").select("id").eq("id", advisorId).maybeSingle();
   if (!advisor) return { ok: false, error: "This link is no longer valid. Please contact your advisor." };
 
-  // full_name is derived by a DB trigger from first/middle/last — never set it directly here
-  // (same as submitIntake).
-  const { data: client, error: clientError } = await admin
-    .from("clients")
-    .insert({
-      owner_id: advisorId,
-      first_name: firstName,
-      middle_name: middleName,
-      last_name: lastName,
-      phone,
-      email,
-      stage: "lead",
-      source: "Pre-Intake Form",
-      intake_pending_review: true,
-    })
-    .select("id")
-    .single();
+  // Match back to an existing client — the advisor already added them manually after a call, or
+  // they already submitted this or the other intake link once before — instead of creating a
+  // duplicate. See findMatchingClientId for why this is keyed on phone/email, never name.
+  const existingClientId = await findMatchingClientId(admin, advisorId, phone, email);
 
-  if (clientError || !client) {
-    return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+  let clientId: string;
+  if (existingClientId) {
+    // Deliberately does NOT touch owner_id, stage, or source — a matched client keeps whatever
+    // pipeline stage and lead-source attribution the advisor already has on file.
+    const { error: updateError } = await admin
+      .from("clients")
+      .update({ phone, email, intake_pending_review: true, updated_at: new Date().toISOString() })
+      .eq("id", existingClientId);
+    if (updateError) return { ok: false, error: updateError.message };
+    clientId = existingClientId;
+  } else {
+    // full_name is derived by a DB trigger from first/middle/last — never set it directly here
+    // (same as submitIntake).
+    const { data: client, error: clientError } = await admin
+      .from("clients")
+      .insert({
+        owner_id: advisorId,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        phone,
+        email,
+        stage: "lead",
+        source: "Pre-Intake Form",
+        intake_pending_review: true,
+      })
+      .select("id")
+      .single();
+
+    if (clientError || !client) {
+      return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+    }
+    clientId = client.id;
   }
 
   // Everything the (necessarily short) form actually asked lands as one note, right where an
@@ -94,7 +113,7 @@ export async function submitPreIntake(
   if (timelineLabel) bodyLines.push(`Timeline: ${timelineLabel}`);
 
   const { error: noteError } = await admin.from("client_notes").insert({
-    client_id: client.id,
+    client_id: clientId,
     author_id: advisorId,
     body: bodyLines.join("\n"),
   });
