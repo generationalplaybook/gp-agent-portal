@@ -3058,7 +3058,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   **No new SQL** — reuses columns already read elsewhere (first/last/phone, intake_slug,
   cal_api_key), no schema change.
 
-## Blocked on Karina
+- **Invite Advisor page — Removed date shows the year, Team/Removed tabs, alphabetical, search
+  bar added ahead of need — BUILT 9/9, no new SQL.** Four small requests off one look at the
+  page:
+  1. "Removed September eighth. I think it should show the year too." The badge on a removed
+     advisor's row now reads e.g. "Removed Sep 8, 2026" (`AgentRoleRow.tsx`).
+  2. "I think they should move to another tab... especially for me as admins, because then
+     they're mixed in." New `TeamList.tsx` splits the roster into two tabs — Team and Removed —
+     instead of one list with a badge buried partway down it.
+  3. "This list should be alphabetical order." Changed the query behind it from sort-by-signup-
+     date to sort-by-name (`page.tsx`); both tabs inherit that order.
+  4. "Undecided on if we need a search bar... but if we think we should have it in the future,
+     let's just add it now." Added a name/email search box above the tabs — filters whichever tab
+     is open.
+  Also answering the "your team" naming question along the way: I'd leave it as "Your Team" —
+  this page is admin-only to begin with (the role check at the top blocks anyone else from
+  opening it), so "your" already means "the team you, as an admin, are responsible for," which
+  matches what you said settled it for yourself. Say the word if you'd rather it read differently.
+  **No new SQL** — same columns, just re-ordered and re-rendered.
+
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
   Ameritas Annuities, Nationwide Life, Nationwide Annuities, MOO Life, MOO Annuities)

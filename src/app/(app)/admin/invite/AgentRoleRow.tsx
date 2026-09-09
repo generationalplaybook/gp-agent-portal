@@ -96,7 +96,11 @@ export default function AgentRoleRow({
             {isDisabled && (
               <span className="ml-2 rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8B1A1A]">
                 Removed{" "}
-                {new Date(agent.disabled_at as string).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                {new Date(agent.disabled_at as string).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </span>
             )}
             {!isDisabled && !inviteAccepted && (

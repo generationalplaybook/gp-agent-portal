@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import InviteForm from "./InviteForm";
-import AgentRoleRow from "./AgentRoleRow";
+import TeamList from "./TeamList";
 import UnassignedClientsSection from "./UnassignedClientsSection";
 
 export default async function AdminInvitePage() {
@@ -35,10 +35,11 @@ export default async function AdminInvitePage() {
     );
   }
 
+  // Alphabetical (Karina, 9/9: "this list should be alphabetical order") — was created_at before.
   const { data: agents, error: agentsError } = await supabase
     .from("profiles")
     .select("id, full_name, email, role, created_at, disabled_at")
-    .order("created_at", { ascending: true });
+    .order("full_name", { ascending: true });
 
   if (agentsError) {
     return (
@@ -96,11 +97,11 @@ export default async function AdminInvitePage() {
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Team</h2>
-        <div className="flex flex-col divide-y divide-[#EDE8DF]">
-          {(agents ?? []).map((a) => (
-            <AgentRoleRow key={a.id} agent={a} currentUserId={user.id} lastSignInAt={lastSignInById.get(a.id) ?? null} />
-          ))}
-        </div>
+        <TeamList
+          agents={agents ?? []}
+          currentUserId={user.id}
+          lastSignInById={Object.fromEntries(lastSignInById)}
+        />
       </div>
 
       <UnassignedClientsSection clients={unassignedClients ?? []} agents={activeAgents} />
