@@ -9,11 +9,18 @@ import { TOUR_STEPS } from "../tour-steps";
 // is your profile... and then you go next, and then it goes to the next step."
 //
 // This page is just the landing spot for that — the actual walkthrough (TourEngine.tsx) runs as
-// an overlay on top of the real pages (My Profile, then Clients), spotlighting the real field or
-// button at each stop. Reachable any time from the account menu, top right — "Start the Tour"
-// relaunches it from scratch and can't lose anything, because nothing about a person's actual
-// setup is stored by the tour itself; the three status lines below just reflect whatever's
-// already true on the account, live, every time this loads.
+// an overlay on top of My Profile, spotlighting the real field or card at each stop. Reachable
+// any time from the account menu, top right — "Start the Tour" relaunches it from scratch and
+// can't lose anything, because nothing about a person's actual setup is stored by the tour
+// itself; the three status lines below just reflect whatever's already true on the account,
+// live, every time this loads.
+//
+// Scope, narrowed 9/9: this used to end by sending someone to Clients to add one, which Karina
+// flagged as broken both mechanically (the tour overlay blocked the real "+ New Client" button
+// until Finish was clicked) and conceptually — a client can start from Pre-Intake, full Intake,
+// or a manual add, and meetings/reminders/illustrations are a whole layer beyond that. Her call:
+// "That profile needs to be set correctly for everything else to flow." So this walkthrough is
+// profile setup only; the rest of the platform is covered in live team training or a short video.
 export default async function GettingStartedPage() {
   const supabase = await createClient();
   const {
@@ -37,8 +44,8 @@ export default async function GettingStartedPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="font-serif text-2xl text-[#1C1C1C]">Getting Started</h1>
       <p className="mt-1 text-sm text-[#555]">
-        A guided walkthrough of the portal — it highlights exactly what to click and where to type, right on the
-        real pages. Come back here any time, from your account menu, for a refresher.
+        A guided walkthrough of your profile setup — it highlights exactly what to click and where to type, right on
+        the real page. Come back here any time, from your account menu, for a refresher.
       </p>
 
       <div className="mt-6 rounded-lg border border-[#D9CFBA] bg-white p-6">
@@ -58,6 +65,11 @@ export default async function GettingStartedPage() {
             </li>
           ))}
         </ol>
+
+        <p className="mt-4 border-t border-[#EDE8DF] pt-4 text-xs text-[#707070]">
+          This covers your profile — the part everything else depends on. Adding clients, booking meetings, sending
+          Pre-Intake/Intake links, and building illustrations are covered in team training instead.
+        </p>
       </div>
 
       <div className="mt-5 rounded-lg border border-[#D9CFBA] bg-white p-6">

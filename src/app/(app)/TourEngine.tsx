@@ -67,6 +67,12 @@ function TourOverlay({
   // Locate this step's real element on the page. If we've just navigated and the new page hasn't
   // rendered yet (or the element loads in async), retry for up to ~3s before giving up quietly —
   // better to skip a spotlight than to block someone on a page that's just still loading.
+  //
+  // Motion, reduced 9/9 after Karina: "this bouncing when it goes from... there's too much
+  // motion." Two changes from the first cut: the scroll-into-view is instant instead of smooth
+  // (one less animation layered on top of the spotlight's own move), and the rect is measured on
+  // the next paint (rAF) instead of after an arbitrary 320ms timer, so the spotlight doesn't sit
+  // in the wrong place for a beat and then visibly jump.
   useEffect(() => {
     // Not on this step's page yet (navigation still in flight) — leave whatever's currently
     // showing alone rather than clearing it synchronously here; the moment `pathname` catches up
@@ -82,10 +88,14 @@ function TourOverlay({
       const el = document.querySelector(step.selector);
       if (el) {
         targetRef.current = el;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          if (!cancelled && targetRef.current) setRect(targetRef.current.getBoundingClientRect());
-        }, 320);
+        el.scrollIntoView({ behavior: "auto", block: "center" });
+        // Wait one extra frame past the scroll so layout has settled before we measure —
+        // avoids measuring mid-scroll and then jumping again right after.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled && targetRef.current) setRect(targetRef.current.getBoundingClientRect());
+          });
+        });
       } else if (attempts < 30) {
         attempts += 1;
         setTimeout(tryFind, 100);
@@ -100,14 +110,28 @@ function TourOverlay({
   }, [pathname, step.page, step.selector]);
 
   // Keep the spotlight aligned with the real element while it's showing (window resize, page
-  // scroll elsewhere on the page, content above it changing height, etc).
+  // scroll elsewhere on the page, content above it changing height, etc). Only actually update
+  // state when the position moved a visible amount — the first cut called setRect on every 400ms
+  // tick regardless, which meant the CSS position transition below quietly retriggered itself on
+  // sub-pixel layout noise even while nothing was really moving, reading as a faint continuous
+  // "breathing" bounce. Comparing first avoids that.
   useEffect(() => {
+    function ratesDiffer(a: DOMRect, b: DOMRect) {
+      return (
+        Math.abs(a.top - b.top) > 0.5 ||
+        Math.abs(a.left - b.left) > 0.5 ||
+        Math.abs(a.width - b.width) > 0.5 ||
+        Math.abs(a.height - b.height) > 0.5
+      );
+    }
     function update() {
-      if (targetRef.current) setRect(targetRef.current.getBoundingClientRect());
+      if (!targetRef.current) return;
+      const next = targetRef.current.getBoundingClientRect();
+      setRect((prev) => (prev && !ratesDiffer(prev, next) ? prev : next));
     }
     window.addEventListener("scroll", update, true);
     window.addEventListener("resize", update);
-    const interval = setInterval(update, 400); // cheap catch-all for layout shifts scroll/resize miss
+    const interval = setInterval(update, 500); // cheap catch-all for layout shifts scroll/resize miss
     return () => {
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);

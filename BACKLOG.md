@@ -2995,6 +2995,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   **No new SQL** — this fix changes what the page does when a read fails and what Save allows, not
   the schema.
 
+- **Getting Started tour — narrowed to profile setup, motion reduced, 7th step added — BUILT
+  9/9, no new SQL.** Karina tried the redesigned tour end to end and gave three pieces of
+  feedback:
+  1. "It should go down and show them carrier and licensing." Added a 7th (now final) stop —
+     `data-tour="carrier-licensing"` on the Carrier & Licensing card in `profile/page.tsx`, new
+     entry in `tour-steps.ts`.
+  2. "This bouncing when it goes from... there's too much motion." Two real sources, both fixed
+     in `TourEngine.tsx`: the scroll-to-target was `behavior: "smooth"` layered on top of the
+     spotlight's own CSS position transition (two animations at once), now instant; and the
+     polling loop that keeps the spotlight aligned called `setRect` on every 400ms tick
+     regardless of whether anything actually moved, so sub-pixel layout noise quietly retriggered
+     the position transition and read as a faint continuous "breathing." Now it only updates when
+     the position actually changed by more than half a pixel.
+  3. "When it goes to try with a client... it literally just freezes, and then I have to click
+     finish." This was the tour's last step leaving My Profile to spotlight "+ New Client" on
+     Clients — the overlay stayed up and blocked the real button until Finish was clicked, which
+     defeated the point of that step. Rather than patch the freeze, removed the step: Karina's own
+     read on it — "that profile needs to be set correctly for everything else to flow... I'm
+     leaning towards that getting started thing just being the profile setup" — is the right call.
+     A client can start from Pre-Intake, full Intake, or a manual add, and meetings, reminders,
+     and illustrations are a whole layer beyond that; trying to fold all of that into one
+     interactive tour was going to keep growing. That part is better as live team training or a
+     short video instead. The tour is now 6 stops, all on My Profile, ending at Carrier &
+     Licensing — Getting Started's copy and the account-menu description updated to match.
+  **No new SQL** — no schema change, just `tour-steps.ts`, `TourEngine.tsx`,
+  `profile/page.tsx`, `getting-started/page.tsx`, and removing the now-unused
+  `data-tour="new-client"` from `clients/page.tsx`.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

@@ -176,7 +176,6 @@ export default async function ClientsPage({
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Clients</h1>
         <Link
           href="/clients/new"
-          data-tour="new-client"
           className="rounded-md bg-[#1C1C1C] px-4 py-2 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
         >
           + New Client

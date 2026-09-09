@@ -74,7 +74,9 @@ export default async function ProfilePage() {
         <IntakeLinkCard siteUrl={siteUrl} advisorId={user.id} initialSlug={profile?.intake_slug ?? null} />
       </div>
 
-      <CarrierAndLicensingCard carrierLogins={carrierLogins ?? []} stateLicenses={stateLicenses ?? []} />
+      <div data-tour="carrier-licensing">
+        <CarrierAndLicensingCard carrierLogins={carrierLogins ?? []} stateLicenses={stateLicenses ?? []} />
+      </div>
     </div>
   );
 }
