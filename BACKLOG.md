@@ -3077,6 +3077,11 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   matches what you said settled it for yourself. Say the word if you'd rather it read differently.
   **No new SQL** — same columns, just re-ordered and re-rendered.
 
+- **Intake page copy — "before your meeting," not "before your first meeting" — BUILT 9/9, no
+  new SQL.** One-word fix on the public Get Started/Intake page's subhead, off a screenshot:
+  "before your meeting not first meeting" (`src/app/intake/[advisorId]/page.tsx`).
+
+## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
   Ameritas Annuities, Nationwide Life, Nationwide Annuities, MOO Life, MOO Annuities)
