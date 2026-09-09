@@ -38,13 +38,9 @@ export default function UserMenu({ displayName, isAdmin = false }: { displayName
         >
           My Profile
         </Link>
-        <Link
-          href="/getting-started"
-          onClick={() => setOpen(false)}
-          className="block rounded px-3 py-2 text-sm text-[#2E2E2E] hover:bg-[#F5F0E8]"
-        >
-          Getting Started
-        </Link>
+        {/* Getting Started lives elsewhere now (Karina, 9/9: "not in this dropdown") — a
+            prominent header link before the name while onboarding isn't done (layout.tsx), then
+            a quiet link at the bottom of My Profile once it is. */}
         {isAdmin && (
           <Link
             href="/admin/invite"

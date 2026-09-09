@@ -3023,6 +3023,24 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `profile/page.tsx`, `getting-started/page.tsx`, and removing the now-unused
   `data-tour="new-client"` from `clients/page.tsx`.
 
+- **Getting Started moved out of the account dropdown — BUILT 9/9, no new SQL.** Karina, off two
+  screenshots of the "Karina Bath ▾" menu: "get started should show up before the person's name
+  and once completed it should maybe hide at the bottom of the profile page, not in this
+  dropdown." Removed the "Getting Started" row from both the desktop dropdown
+  (`UserMenu.tsx`) and the mobile drawer (`MobileNav.tsx`) entirely, and replaced it with two
+  spots that hand off to each other based on the same 3-signal "done" check already used for the
+  Home banner and the getting-started page itself (profile filled in, custom link set, Cal.com
+  connected):
+  1. **While it's not done**: a green "Getting Started" pill in the top nav, positioned first in
+     the right-hand group — before the name/dropdown on desktop, before the hamburger on mobile —
+     so it's the first thing a new advisor notices (`layout.tsx`).
+  2. **Once it's done**: that pill stops showing anywhere in the header, and a quiet "Need a
+     refresher? Restart the Getting Started tour" text link appears at the very bottom of My
+     Profile instead (`profile/page.tsx`, new `RestartTourLink.tsx`) — still one click away
+     whenever it's wanted, just out of the way once it's no longer needed.
+  **No new SQL** — reuses columns already read elsewhere (first/last/phone, intake_slug,
+  cal_api_key), no schema change.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

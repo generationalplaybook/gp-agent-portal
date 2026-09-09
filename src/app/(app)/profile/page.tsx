@@ -7,6 +7,7 @@ import PreIntakeLinkCard from "./PreIntakeLinkCard";
 import CalSyncCard from "./CalSyncCard";
 import CarrierAndLicensingCard from "./CarrierAndLicensingCard";
 import NotificationPreferencesCard from "./NotificationPreferencesCard";
+import RestartTourLink from "./RestartTourLink";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -38,6 +39,17 @@ export default async function ProfilePage() {
   // cal_api_key never gets passed to a Client Component below — everything passed to one gets
   // serialized down to the browser, so this strips it and keeps only the boolean derived above.
   const profileForForm = profile ? { ...profile, cal_api_key: null } : null;
+
+  // Same 3-signal "done" check as layout.tsx/Home/getting-started — once all three are true, the
+  // header's prominent Getting Started link stops showing and this page's quiet link (below)
+  // becomes the only way back into the tour.
+  const onboardingComplete = !!(
+    profile?.first_name &&
+    profile?.last_name &&
+    profile?.phone &&
+    profile?.intake_slug &&
+    calConnected
+  );
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -77,6 +89,8 @@ export default async function ProfilePage() {
       <div data-tour="carrier-licensing">
         <CarrierAndLicensingCard carrierLogins={carrierLogins ?? []} stateLicenses={stateLicenses ?? []} />
       </div>
+
+      {onboardingComplete && <RestartTourLink />}
     </div>
   );
 }

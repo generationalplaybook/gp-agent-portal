@@ -66,9 +66,9 @@ export default function MobileNav({ isAdmin = false }: { isAdmin?: boolean }) {
               <Link href="/profile" onClick={() => setOpen(false)} className="px-3 py-3 text-base text-[#2E2E2E]">
                 My Profile
               </Link>
-              <Link href="/getting-started" onClick={() => setOpen(false)} className="px-3 py-3 text-base text-[#2E2E2E]">
-                Getting Started
-              </Link>
+              {/* Getting Started lives elsewhere now (Karina, 9/9: "not in this dropdown") — the
+                  prominent header link in layout.tsx (shown before onboarding is done) covers
+                  mobile too, since it sits outside this drawer. */}
               {isAdmin && (
                 <Link href="/admin/invite" onClick={() => setOpen(false)} className="px-3 py-3 text-base text-[#2E2E2E]">
                   Invite Advisor
