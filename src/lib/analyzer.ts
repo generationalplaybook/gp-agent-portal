@@ -70,9 +70,20 @@ export interface AnalyzerInputs {
   // marijuana." Split from one 4-way choice (which forced picking either a tobacco status OR
   // marijuana, never both) into two independent questions: tobacco status stays mutually
   // exclusive (you can't be both a never-user and a current user), marijuana use is its own
-  // yes/no that can combine with any tobacco status.
+  // question that can combine with any tobacco status.
+  //
+  // 9/10: reworded from a "No marijuana use"/"Marijuana use" toggle to match Tobacco Use's own
+  // three-way shape (never/former/current) instead of a flat yes/no, plus a "stopped" cutoff —
+  // Karina asked specifically to look into how long someone has to have stopped for it not to
+  // count. Unlike tobacco, there's no single industry-standard lookback for marijuana — most
+  // carriers actually underwrite current use by frequency (e.g. occasional use often still gets
+  // non-tobacco rates) rather than a hard clean-time cutoff the way they do for nicotine. 12
+  // months is the figure that comes up most often (it's also what several carriers use for
+  // reconsidering a rate after someone quits), so that's what this reuses — same as Tobacco Use's
+  // own "12+ months clean" — but treat it as a reasonable default to ask about, not a rule that
+  // holds the same way across every carrier the way tobacco's does.
   tobacco?: "none" | "former" | "current" | "skip";
-  marijuana?: "yes" | "no" | "skip";
+  marijuana?: "no" | "former" | "yes" | "skip";
   health?: "none" | "managed" | "significant" | "skip";
   declined?: "no" | "rated" | "declined" | "skip";
   money?: "qualified" | "nonqualified" | "both" | "skip";

@@ -3100,6 +3100,29 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `tobacco: "marijuana"` value just keeps showing that on its own saved PDF/record; only new
   analyses use the split fields.
 
+- **Marijuana Use — reworded off "Marijuana use" as a toggle label, now a 3-way question with a
+  stopped-using cutoff — BUILT 9/10, no new SQL.** Karina, on the split from yesterday: "i dont
+  like how it say marijuana use on the selection maybe word it as do you use marijuana... and it
+  be yes or no and stopped[,] also look into how long someone has to have stopped for it to not
+  count and add that in maybe." Two changes:
+  1. The field is now phrased as a question — "Do You Use Marijuana?" — with three answers (No /
+     Stopped (12+ months) / Yes) instead of the old two-option "No marijuana use"/"Marijuana use"
+     toggle. Same shape as Tobacco Use right above it (never/former/current), just simpler
+     wording, per what she asked for.
+  2. On the lookback: I looked into what carriers actually use here, and it's worth knowing
+     before treating this the same as tobacco. Tobacco has a fairly standard ~12-month
+     smoke-free window most carriers use for non-tobacco rates. Marijuana doesn't have an
+     equivalent industry standard — most carriers today classify CURRENT use by frequency (e.g.
+     "occasional," roughly up to 1-2x/month, often still gets non-tobacco rates even though it's
+     current use), not by a clean-time cutoff the way tobacco works. The one recurring number
+     that does show up is ~12 months, most commonly as how long insurers ask someone to have
+     stopped before requesting their policy be re-rated after the fact — so that's what I used
+     for "Stopped (12+ months)," matching Tobacco Use's own wording, but it's a reasonable
+     default to ask about here, not an industry rule the way it is for tobacco. Worth keeping in
+     mind if this ever needs to hold up against a specific carrier's actual guidelines.
+  **No new SQL** — same jsonb blob as the split above, just its value shape changed again
+  (`"no"`/`"former"`/`"yes"`/`"skip"` instead of `"no"`/`"yes"`/`"skip"`).
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

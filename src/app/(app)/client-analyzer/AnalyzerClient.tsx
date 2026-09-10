@@ -343,14 +343,19 @@ export default function AnalyzerClient({
         </Field>
         {/* Split out from Tobacco Use, 9/9 (Karina: "someone could smoke tobacco and
             marijuana") — its own independent question rather than a 4th mutually-exclusive
-            tobacco option, so both can be true at once. */}
-        <Field label="Marijuana Use">
+            tobacco option, so both can be true at once. Reworded 9/10 ("i dont like how it say
+            marijuana use on the selection") to a plain question with the same never/former/
+            current shape as Tobacco Use, including a cutoff for "stopped" — see the long comment
+            on AnalyzerInputs.marijuana in src/lib/analyzer.ts for why 12 months was picked and
+            why it's a softer default here than it is for tobacco. */}
+        <Field label="Do You Use Marijuana?">
           <OptionGroup
             value={inputs.marijuana}
             onChange={(v) => set("marijuana", v)}
             options={[
-              { value: "no", label: "No marijuana use" },
-              { value: "yes", label: "Marijuana use" },
+              { value: "no", label: "No" },
+              { value: "former", label: "Stopped (12+ months)" },
+              { value: "yes", label: "Yes" },
               { value: "skip", label: "Skip" },
             ]}
           />
