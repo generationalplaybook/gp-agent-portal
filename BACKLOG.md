@@ -3123,6 +3123,17 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   **No new SQL** — same jsonb blob as the split above, just its value shape changed again
   (`"no"`/`"former"`/`"yes"`/`"skip"` instead of `"no"`/`"yes"`/`"skip"`).
 
+- **Marijuana Use — added "Occasional" — BUILT 9/10, no new SQL.** Karina: "maybe it should say
+  occasional as an option." Follows directly from the research in the entry above it — occasional
+  use (roughly up to 1-2x/month) is the actual line most carriers use to still qualify someone
+  for non-tobacco rates even though it's current use, so the form now asks that directly instead
+  of lumping every current user together. Now four answers instead of three: No / Stopped (12+
+  months) / Occasional (1-2x/month) / Regular use — relabeled the old plain "Yes" to "Regular
+  use" so it reads clearly against "Occasional" now that both exist. Same two places as before
+  (Intake form, Client Analyzer); PDF export needed no change since it already just prints
+  whatever value is on the record.
+  **No new SQL** — same jsonb blob, one more possible value in it.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

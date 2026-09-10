@@ -82,8 +82,13 @@ export interface AnalyzerInputs {
   // reconsidering a rate after someone quits), so that's what this reuses — same as Tobacco Use's
   // own "12+ months clean" — but treat it as a reasonable default to ask about, not a rule that
   // holds the same way across every carrier the way tobacco's does.
+  //
+  // 9/10, same day: added a 4th "occasional" answer, splitting current use into occasional vs.
+  // regular — this is exactly the frequency distinction carriers actually underwrite on (see the
+  // note above: roughly up to 1-2x/month is the threshold that shows up most often for still
+  // qualifying for non-tobacco rates), so the form now asks the same thing a carrier would.
   tobacco?: "none" | "former" | "current" | "skip";
-  marijuana?: "no" | "former" | "yes" | "skip";
+  marijuana?: "no" | "former" | "occasional" | "yes" | "skip";
   health?: "none" | "managed" | "significant" | "skip";
   declined?: "no" | "rated" | "declined" | "skip";
   money?: "qualified" | "nonqualified" | "both" | "skip";

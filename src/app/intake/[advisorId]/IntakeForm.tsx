@@ -369,7 +369,9 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           both can be true at once. Reworded 9/10 to a plain question with the same
           never/former/current shape as Tobacco Use, including a cutoff for "stopped" — see the
           long comment on AnalyzerInputs.marijuana in src/lib/analyzer.ts for why 12 months was
-          picked and why it's a softer default here than it is for tobacco. */}
+          picked and why it's a softer default here than it is for tobacco. "Occasional" added
+          the same day — this is the actual frequency line most carriers underwrite on for
+          non-tobacco rates, per that same comment. */}
       <Field label="Do You Use Marijuana?">
         <OptionGroup
           value={inputs.marijuana}
@@ -377,7 +379,8 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           options={[
             { value: "no", label: "No" },
             { value: "former", label: "Stopped (12+ months)" },
-            { value: "yes", label: "Yes" },
+            { value: "occasional", label: "Occasional (1-2x/month)" },
+            { value: "yes", label: "Regular use" },
           ]}
         />
       </Field>
