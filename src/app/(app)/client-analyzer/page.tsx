@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AnalyzerClient from "./AnalyzerClient";
-import type { AnalyzerInputs, Goal } from "@/lib/analyzer";
+import type { AnalyzerInputs } from "@/lib/analyzer";
 import { computeFA, EMPTY_FA_STATE, type FAState } from "@/lib/fa";
 import { formatMoney } from "@/lib/illustration";
 
@@ -51,15 +51,24 @@ export default async function ClientAnalyzerPage({
   }
 
   // 9/11 — Karina: "once the financial need analysis is done, can it also mesh in with the
-  // recommendations for the products? Can there be a fresh version of the recommendations?"
-  // Rather than a one-time copy, this reads the client's CURRENT saved Financial Needs Analysis
+  // recommendations for the products?" Reads the client's CURRENT saved Financial Needs Analysis
   // every time the Analyzer is opened from their profile (see the "Get Product Recommendations"
-  // link on the FA Report tab and the profile page) — so it's a fresh read against whatever the
-  // FNA says right now, not a stale snapshot. Only pre-fills income/budget/goals; the client can
-  // still edit everything before running the analysis, same as every other pre-filled field here.
+  // link on the FA Report tab and the profile page) — a fresh read against whatever the FNA says
+  // right now, not a stale snapshot. Only pre-fills income and a starting monthly budget.
+  //
+  // 9/11, follow-up — this used to ALSO guess a primary goal (protection/accumulation/college/
+  // legacy) from whichever pillar showed the biggest gap. Pulled that back out: for a real client
+  // it picked "protection" when Karina knew the client actually wanted guaranteed income, and
+  // because Goal drives which follow-up questions the form even shows (time horizon, risk
+  // tolerance, access-before-59½), the wrong guess made those fields disappear entirely instead of
+  // just being wrong — which in turn meant the funding-source question never got asked, and that's
+  // how a $1,000 lump sum slipped past the too-small-for-an-annuity guard below. A gap in the FNA
+  // doesn't reliably say what PRODUCT GOAL the client actually wants — that's exactly the judgment
+  // call this tool leaves to the advisor. Income and budget are safe to pre-fill because they're
+  // just numbers Client Analyzer would ask for anyway, not a decision that changes what the form
+  // asks or what gets recommended.
   let income: string | undefined;
   let monthlyBudget: string | undefined;
-  let goals: Goal[] | undefined;
   if (matchedClient) {
     const { data: plan } = await supabase
       .from("client_financial_plans")
@@ -71,16 +80,10 @@ export default async function ClientAnalyzerPage({
       const computed = computeFA(faState);
       if (computed.cashflow.totalIncome > 0) income = formatMoney(String(computed.cashflow.totalIncome));
       if (computed.cashflow.discretionaryIncome > 0) monthlyBudget = formatMoney(String(computed.cashflow.discretionaryIncome));
-      const inferredGoals: Goal[] = [];
-      if (computed.protection.gap > 0) inferredGoals.push("protection");
-      if (computed.retirement.shortfall > 0) inferredGoals.push("accumulation");
-      if (computed.education.gap > 0) inferredGoals.push("college");
-      if (computed.estate.exposure > 0) inferredGoals.push("legacy");
-      if (inferredGoals.length > 0) goals = inferredGoals;
     }
   }
 
-  const prefillClient = matchedClient ? { ...matchedClient, existingCoverage, income, monthlyBudget, goals } : null;
+  const prefillClient = matchedClient ? { ...matchedClient, existingCoverage, income, monthlyBudget } : null;
 
   // "Re-run with these answers" — scoped to both the analysis id AND this client id so a
   // stray/tampered reanalysis param can't pull in another client's snapshot. A full snapshot

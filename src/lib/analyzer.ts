@@ -426,7 +426,11 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
         "All three living benefits included at no extra cost",
         "Convertible to any North American IUL later with no new medical exam",
       ];
-      secondary = "Ethos Term With Living Benefits (Ameritas) — if conversion to North American is not a priority";
+      // 9/11 — Karina: "I don't think we need to say if conversion to North American is not a
+      // priority because the Ethos can also be converted to an IUL at Ameritas." Both carriers'
+      // term products convert to their own IUL, so conversion-to-North-American isn't actually a
+      // real differentiator between the two — dropped that qualifier.
+      secondary = "Ethos Term With Living Benefits (Ameritas) — also convertible to an Ameritas IUL later";
       avoid = "IUL for pure protection";
       avoidReasons = ["IUL cost of insurance is higher than term — for pure protection, term is more efficient"];
     } else if (goal === "legacy") {
@@ -585,9 +589,14 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
   // insurable !== "no": an uninsurable client is routed to an annuity specifically because it
   // requires no underwriting, and this fix must not undo that by redirecting them into an
   // underwritten IUL they may not be able to pass.
-  const lumpSumInvolved = funding === "lumpsum" || funding === "both";
+  // 9/11 — Karina: "you're still recommending an annuity for somebody that only has a thousand
+  // dollar lump sum." This guard used to also require the "funding" question to be explicitly set
+  // to lump-sum/both — but if a dollar amount is sitting in Lump Sum Amount at all, that alone
+  // means a too-small lump sum is in play, whether or not the separate funding-source selector was
+  // ever touched (e.g. it was pre-filled or a conditional field never got reached). Checking the
+  // dollar amount directly instead of gating on that selector closes that hole.
   const lumpSumNum = parseCurrencyValue(inputs.lumpSumAmount ?? "");
-  const lumpSumTooSmallForAnnuity = insurable !== "no" && lumpSumInvolved && lumpSumNum > 0 && lumpSumNum < ANNUITY_MINIMUM_LUMP_SUM;
+  const lumpSumTooSmallForAnnuity = insurable !== "no" && lumpSumNum > 0 && lumpSumNum < ANNUITY_MINIMUM_LUMP_SUM;
   const recommendations: GoalRecommendation[] = goalsToUse.map((g) => {
     const base = computeRecommendation(g, ctx);
     const rec = lumpSumTooSmallForAnnuity && isAnnuityProduct(base.primary) ? buildSmallLumpSumOverride(inputs.lumpSumAmount ?? "") : base;

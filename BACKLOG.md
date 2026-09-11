@@ -3375,6 +3375,86 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      auto-running a new analysis the moment the FNA is marked done, with no click) — that's a
      bigger change and I didn't want to guess my way into it.
 
+- **9/11, Client Analyzer + dashboard follow-up — BUILT, no new SQL.** Karina's quote (partially
+  voice-transcribed, verbatim): "When I went to this client analyzer for the recommendation, I do
+  see now that it changed the primary goal to pure protection at lowest cost when she wanted
+  guaranteed income, and then it deleted the time horizon, the risk tolerance, and the need access
+  before fifty nine and a half... I don't think we need to say 'if conversion to North American is
+  not a priority' because the Ethos can also be converted to an IUL at Ameritas... you're still
+  recommending an annuity for somebody that only has a thousand dollar lump sum... this analysis
+  saved the Jeanine [Virgin] profile — why is this not automatic? We wouldn't be creating a new
+  client to save this because we open this from the client's profile... I would love for
+  everything to be auto save because we do have some older advisers who might forget... client
+  report — these graphs don't do anything for me, I don't understand them, I wanted a circle
+  graph, a pie chart with their financial need... the pipeline one is pending, is there an
+  automatic reminder? Why do I not see one? ... couldn't reach them yet — is there an automatic
+  reminder, and if so how many days out?"
+  1. **Found and undid the actual cause of the wrong recommendation.** My own change from
+     yesterday's delivery — auto-filling a goal (protection/accumulation/college/legacy) guessed
+     from FNA pillar gaps — was the bug, not a one-off glitch. Goal isn't just a label here: it
+     controls which follow-up questions the form even shows (time horizon, risk tolerance,
+     access-before-59½), so guessing "protection" for a client who actually wanted guaranteed
+     income made those fields disappear rather than just be wrong — and losing the funding-source
+     question is exactly how a $1,000 lump sum slipped past the too-small-for-an-annuity check
+     below. Pulled the goal-guessing back out entirely; income and a starting monthly budget still
+     pre-fill (those are just numbers, they don't change what the form asks), but Goal is back to
+     being the advisor's call, same as it always was.
+  2. **Hardened the too-small-for-an-annuity guard anyway**, independent of #1 — it used to also
+     require a separate "funding source" selector to be explicitly set to lump-sum, which is
+     exactly the field #1 could knock out. Now it triggers off the dollar amount actually entered
+     in Lump Sum Amount, full stop.
+  3. **"Ethos Term With Living Benefits (Ameritas) — if conversion to North American is not a
+     priority" → dropped the qualifier.** You're right that it's not a real differentiator — Ethos
+     converts to an Ameritas IUL the same way.
+  4. **Client Analyzer now auto-saves when opened from a client's profile.** Run "Get
+     Recommendations" and it saves itself to that client immediately — no separate click, and the
+     "create a new client" / "pick a client" options are hidden in that case since (as you said)
+     there's nothing to pick, that client is already known. Those options are still there when
+     Client Analyzer is opened cold (not from a specific client).
+  5. **Client Report PDF now has two pie charts** — "What the Coverage Need Is Made Of" (income
+     replacement / debt payoff / final expenses / education funding, as a pie) and "Coverage Need
+     vs. What's Covered" (currently covered vs. the gap), right under the score at the top of the
+     downloaded PDF, each with a legend spelling out the dollar amount and percentage per slice
+     since a strictly grayscale pie can't be told apart by color alone. Left the on-screen bar
+     charts on the Report tab as-is for now since the ask was specifically about the PDF — say the
+     word if those should change too.
+  6. **Dashboard "Time-Sensitive" card now also shows outcome counts** — Couldn't reach them yet,
+     Shopping for new coverage, Renewing, Keeping current coverage, Declining — right under the
+     headline number, so a "0 not yet touched base" doesn't read as "nothing to do" when there's
+     still a pile of already-contacted, unresolved clients sitting in one of those buckets. These
+     already had their own sections on the Outreach page (/clients?view=outreach); this just
+     surfaces the same counts on the dashboard itself instead of requiring a click through.
+
+  **Three questions I looked into and am answering here rather than guessing:**
+  - **Pending reminder — why don't you see one?** The cron is real and running (3 days after a
+    client's stage is set to Pending), but it only knows about a client the moment their stage
+    actually CHANGES to Pending after this feature went live. A client already sitting in Pending
+    from before I built this earlier in the session has no starting timestamp to count from, so
+    the cron has nothing to check against for them — it isn't that it failed, it never had
+    anything to go on. Two ways to fix an existing pending client: move them out of Pending and
+    back into Pending (that sets the timestamp fresh), or run this one-time SQL in Supabase's SQL
+    Editor to backfill everyone currently sitting in Pending:
+    `update clients set stage_entered_pending_at = now() where stage = 'pending' and stage_entered_pending_at is null;`
+    Any client moved to Pending going forward (like the one you're moving now) will get the
+    reminder automatically 3 days out, no backfill needed. Also worth double-checking: this
+    depends on the SQL from that same delivery (schema.sql section 50,
+    `stage_entered_pending_at`/`pending_checkin_reminder_sent`) actually having been run in
+    Supabase — if it wasn't, the whole feature has nothing to write to.
+  - **"Couldn't reach them yet" — is there an automatic reminder?** Yes, already built — but it's
+    created the moment YOU log that outcome (mark a product "Couldn't reach them yet" on the
+    Outreach page), not a background scan. It's set for 3 days out, message "Try again — couldn't
+    reach about [product]." If a client never went through that logging step, no reminder exists
+    for them yet — that's most likely what happened here, not a bug. The new dashboard counts
+    (#6 above) should make it easier to spot these going forward.
+  - **"I would love for everything to be auto save."** Agreed as a direction, and I don't want to
+    sweep across the whole app in one uncontrolled pass and risk breaking a form that intentionally
+    wants a deliberate save/confirm step. Already autosave today: the Financial Needs Analysis
+    wizard, client Contact Info, and now Client Analyzer (when opened from a client). Still manual
+    Save buttons: Illustrations, Scenarios, Profile settings, Medical Conditions, and a handful of
+    smaller forms (Source, Notes, Recruit fields — some of those may already save on blur, I
+    didn't audit each one for this pass). Tell me which of those you run into most as an advisor
+    forgetting-to-save risk and I'll convert those next, rather than guessing at all of them.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

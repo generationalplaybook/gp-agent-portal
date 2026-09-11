@@ -2,7 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STAGES } from "@/lib/types";
-import { getNextOutreachMilestone, getTermUrgency } from "@/lib/products";
+import {
+  getNextOutreachMilestone,
+  getTermUrgency,
+  effectiveOutreachOutcome,
+  isGraduatedFromOutreach,
+  OUTREACH_OUTCOME_LABELS,
+  type OutreachOutcome,
+} from "@/lib/products";
 import { formatDateOnly, parseDateOnly } from "@/lib/dates";
 import LocalDateTime from "./LocalDateTime";
 import OnboardingBanner from "./OnboardingBanner";
@@ -26,6 +33,7 @@ export default async function HomePage() {
     { data: meetings },
     { data: reminders },
     { data: termProductsRaw, error: termProductsError },
+    { data: contactedProductsRaw },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -53,6 +61,19 @@ export default async function HomePage() {
       )
       .is("converted_at", null)
       .is("term_contacted_at", null),
+    // 9/11 — Karina, looking at the Time-Sensitive card: "zero within 90 days, not yet touch
+    // base... there has to be somewhere there's a count of how many haven't been able to be
+    // reached... it should also show couldn't reach, shopping for new coverage, renewing, keeping
+    // current, and declining." The card above only ever covered NOT-yet-contacted products — once
+    // an advisor logs outreach, that product moves into one of these outcome buckets and used to
+    // disappear from the dashboard entirely, only visible by clicking into the Outreach page. This
+    // second query is exactly the "already contacted" half of that same universe, same shape as
+    // the Outreach page on /clients so the two counts always agree.
+    supabase
+      .from("client_products")
+      .select("id, term_contacted_at, outreach_outcome, client_id, clients!client_id(stage)")
+      .is("converted_at", null)
+      .not("term_contacted_at", "is", null),
   ]);
 
   const now = new Date();
@@ -121,6 +142,20 @@ export default async function HomePage() {
     .sort((a, b) => parseDateOnly(a.milestone.date).getTime() - parseDateOnly(b.milestone.date).getTime());
   const previewUrgentTerm = urgentTermProducts.slice(0, 3);
 
+  // Outreach outcome counts — same OUTCOME_ORDER/labels and the same graduation rule as the
+  // Outreach page on /clients (effectiveOutreachOutcome + isGraduatedFromOutreach), so a number
+  // shown here always matches what clicking through to that outcome's section shows.
+  const OUTCOME_ORDER: OutreachOutcome[] = ["unreachable", "shopping", "renewing", "keeping", "declining"];
+  const outcomeCounts: Record<OutreachOutcome, number> = { unreachable: 0, shopping: 0, renewing: 0, keeping: 0, declining: 0 };
+  (contactedProductsRaw ?? []).forEach((p) => {
+    const client = p.clients as unknown as { stage: string | null } | null;
+    const rawOutcome = (p.outreach_outcome as OutreachOutcome | null) ?? null;
+    if (!rawOutcome || !p.term_contacted_at) return;
+    const outcome = effectiveOutreachOutcome(rawOutcome, client?.stage ?? null);
+    if (isGraduatedFromOutreach(outcome, p.term_contacted_at, client?.stage ?? null, now)) return;
+    outcomeCounts[outcome] += 1;
+  });
+
   const greetingName = profile?.first_name || "there";
 
   // Getting Started progress — three real, live signals (never a stored flag, so there's nothing
@@ -168,6 +203,24 @@ export default async function HomePage() {
         <div className="mt-2 flex items-baseline gap-2">
           <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{urgentTermProducts.length}</span>
           <span className="text-sm text-[#555]">within 90 days, not yet touched base</span>
+        </div>
+        {/* 9/11 — Karina: "there has to be somewhere there's a count of how many haven't been
+            able to be reached... it should also show couldn't reach, shopping for new coverage,
+            renewing, keeping current, and declining." These already had their own sections on the
+            Outreach page — this surfaces the same counts right here so a 0 above doesn't read as
+            "nothing to do" when there's still a pile of already-contacted-but-unresolved clients
+            (especially "Couldn't reach them yet") worth a follow-up. */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {OUTCOME_ORDER.map((outcome) => (
+            <span
+              key={outcome}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                outcomeCounts[outcome] > 0 ? "border-[#8B1A1A]/30 bg-white text-[#8B1A1A]" : "border-[#D9CFBA] bg-white text-[#707070]"
+              }`}
+            >
+              {OUTREACH_OUTCOME_LABELS[outcome]}: {outcomeCounts[outcome]}
+            </span>
+          ))}
         </div>
         {previewUrgentTerm.length > 0 && (
           <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">
