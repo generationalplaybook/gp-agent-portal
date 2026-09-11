@@ -328,7 +328,7 @@ export default function PublicFAClient({
                   className="w-32 rounded-md border border-[#D9CFBA] px-2 py-1 text-right text-sm outline-none focus:border-[#1C1C1C]"
                 />
               </div>
-              <TextField label="Location" value={state.profile.location} onChange={(v) => updateProfile("location", v)} placeholder="City, State" />
+              <TextField label="State" value={state.profile.location} onChange={(v) => updateProfile("location", v)} placeholder="State" />
             </Panel>
             {(advisorName || advisorEmail || advisorPhone) && (
               <Panel label="Advisor" title="Your advisor on this analysis">
@@ -349,14 +349,14 @@ export default function PublicFAClient({
         <div>
           <SectionHeader
             title="Goals & Dreams"
-            subtitle="Every number in this analysis exists to serve a goal. Tell us what you're working toward — one goal per line."
+            subtitle="Every number in this analysis exists to serve a goal. Tell us what you're working toward."
           />
           <div className="grid gap-5 md:grid-cols-3">
             <Panel label="1–3 Years" title="Short Term">
               <textarea
                 value={state.goals.goalsShort}
                 onChange={(e) => updateGoals("goalsShort", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What are you working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -366,7 +366,7 @@ export default function PublicFAClient({
               <textarea
                 value={state.goals.goalsMedium}
                 onChange={(e) => updateGoals("goalsMedium", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What are you working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -375,7 +375,7 @@ export default function PublicFAClient({
               <textarea
                 value={state.goals.goalsLong}
                 onChange={(e) => updateGoals("goalsLong", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What are you working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -440,6 +440,7 @@ export default function PublicFAClient({
               <NumberField label="Vehicles" value={state.networth.vehicles} onChange={(v) => updateNetworth("vehicles", v)} />
               <NumberField label="Investments (non-retirement)" value={state.networth.investments} onChange={(v) => updateNetworth("investments", v)} />
               <NumberField label="Business interests" value={state.networth.business} onChange={(v) => updateNetworth("business", v)} />
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">The value of your ownership stake in a business you own or co-own — equity, not revenue.</div>
               <NumberField label="Other assets" value={state.networth.other} onChange={(v) => updateNetworth("other", v)} />
               <TotalRow label="Total assets" value={fmt(computed.networth.totalAssets)} />
             </Panel>
@@ -506,8 +507,8 @@ export default function PublicFAClient({
           />
           <div className="grid gap-5 md:grid-cols-2">
             <Panel label="In Force" title="Current coverage">
-              <NumberField label="Your life insurance (face amount)" value={state.protection.covClient} onChange={(v) => updateProtection("covClient", v)} />
-              <NumberField label="Spouse life insurance (face amount)" value={state.protection.covSpouse} onChange={(v) => updateProtection("covSpouse", v)} />
+              <NumberField label="Your face amount" value={state.protection.covClient} onChange={(v) => updateProtection("covClient", v)} />
+              <NumberField label="Spouse's face amount" value={state.protection.covSpouse} onChange={(v) => updateProtection("covSpouse", v)} />
               <NumberField label="Employer / group coverage" value={state.protection.covGroup} onChange={(v) => updateProtection("covGroup", v)} />
               <TotalRow label="Total current coverage" value={fmt(computed.protection.totalCoverage)} />
 

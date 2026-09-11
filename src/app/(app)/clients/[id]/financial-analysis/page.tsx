@@ -3,8 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import FAClient from "./FAClient";
 import type { FAState } from "@/lib/fa";
 
-export default async function FinancialAnalysisPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FinancialAnalysisPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: client, error }, { data: plan }] = await Promise.all([
@@ -52,6 +59,7 @@ export default async function FinancialAnalysisPage({ params }: { params: Promis
         advisorName={advisorName}
         advisorEmail={advisorEmail}
         advisorPhone={advisorPhone}
+        initialTab={tab}
       />
     </div>
   );

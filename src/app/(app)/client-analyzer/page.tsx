@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import AnalyzerClient from "./AnalyzerClient";
-import type { AnalyzerInputs } from "@/lib/analyzer";
+import type { AnalyzerInputs, Goal } from "@/lib/analyzer";
+import { computeFA, EMPTY_FA_STATE, type FAState } from "@/lib/fa";
+import { formatMoney } from "@/lib/illustration";
 
 export default async function ClientAnalyzerPage({
   searchParams,
@@ -48,7 +50,37 @@ export default async function ClientAnalyzerPage({
     }
   }
 
-  const prefillClient = matchedClient ? { ...matchedClient, existingCoverage } : null;
+  // 9/11 — Karina: "once the financial need analysis is done, can it also mesh in with the
+  // recommendations for the products? Can there be a fresh version of the recommendations?"
+  // Rather than a one-time copy, this reads the client's CURRENT saved Financial Needs Analysis
+  // every time the Analyzer is opened from their profile (see the "Get Product Recommendations"
+  // link on the FA Report tab and the profile page) — so it's a fresh read against whatever the
+  // FNA says right now, not a stale snapshot. Only pre-fills income/budget/goals; the client can
+  // still edit everything before running the analysis, same as every other pre-filled field here.
+  let income: string | undefined;
+  let monthlyBudget: string | undefined;
+  let goals: Goal[] | undefined;
+  if (matchedClient) {
+    const { data: plan } = await supabase
+      .from("client_financial_plans")
+      .select("data")
+      .eq("client_id", matchedClient.id)
+      .maybeSingle();
+    if (plan?.data) {
+      const faState = { ...EMPTY_FA_STATE, ...(plan.data as FAState) };
+      const computed = computeFA(faState);
+      if (computed.cashflow.totalIncome > 0) income = formatMoney(String(computed.cashflow.totalIncome));
+      if (computed.cashflow.discretionaryIncome > 0) monthlyBudget = formatMoney(String(computed.cashflow.discretionaryIncome));
+      const inferredGoals: Goal[] = [];
+      if (computed.protection.gap > 0) inferredGoals.push("protection");
+      if (computed.retirement.shortfall > 0) inferredGoals.push("accumulation");
+      if (computed.education.gap > 0) inferredGoals.push("college");
+      if (computed.estate.exposure > 0) inferredGoals.push("legacy");
+      if (inferredGoals.length > 0) goals = inferredGoals;
+    }
+  }
+
+  const prefillClient = matchedClient ? { ...matchedClient, existingCoverage, income, monthlyBudget, goals } : null;
 
   // "Re-run with these answers" — scoped to both the analysis id AND this client id so a
   // stray/tampered reanalysis param can't pull in another client's snapshot. A full snapshot

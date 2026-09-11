@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   computeFA,
   fmt,
@@ -214,6 +214,71 @@ function TotalRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+// 9/11 — Karina: the Client Report was a bare "name + score + download PDF" screen with no way to
+// actually look at the analysis without downloading it, and no graphs. "Can there be some graphs
+// on this maybe? To show, like, the shortfall and just really bring this up to speed and make it
+// a bit more visual." Two small, dependency-free bar components (plain divs, no charting library)
+// used to build the on-screen report below: ScoreBar for a single 0-100 pillar score, CompareBar
+// for a two-value "need vs. have" comparison (coverage gap, funding gap, shortfall, etc.).
+function ScoreBar({ label, score }: { label: string; score: number }) {
+  const pct = Math.max(0, Math.min(100, score));
+  const color = pct >= 70 ? "#1E6B3C" : pct >= 40 ? "#1C1C1C" : "#8B1A1A";
+  return (
+    <div className="py-1.5">
+      <div className="mb-1 flex items-center justify-between text-xs text-[#555]">
+        <span>{label}</span>
+        <span className="font-semibold text-[#1C1C1C]">{score} / 100</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-[#EDE8DF]">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+}
+
+function CompareBar({
+  label,
+  haveLabel,
+  have,
+  needLabel,
+  need,
+}: {
+  label: string;
+  haveLabel: string;
+  have: number;
+  needLabel: string;
+  need: number;
+}) {
+  const max = Math.max(have, need, 1);
+  const havePct = Math.max(0, Math.min(100, (have / max) * 100));
+  const needPct = Math.max(0, Math.min(100, (need / max) * 100));
+  const short = have < need;
+  return (
+    <div className="py-2.5">
+      <div className="mb-1.5 text-xs font-semibold text-[#1C1C1C]">{label}</div>
+      <div className="mb-1 flex items-center justify-between text-[11px] text-[#707070]">
+        <span>
+          {haveLabel}: <span className="font-semibold text-[#1C1C1C]">{fmt(have)}</span>
+        </span>
+      </div>
+      <div className="mb-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#EDE8DF]">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${havePct}%`, backgroundColor: short ? "#8B1A1A" : "#1E6B3C" }}
+        />
+      </div>
+      <div className="mb-1 flex items-center justify-between text-[11px] text-[#707070]">
+        <span>
+          {needLabel}: <span className="font-semibold text-[#1C1C1C]">{fmt(need)}</span>
+        </span>
+      </div>
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#EDE8DF]">
+        <div className="h-full rounded-full bg-[#B9AF98] transition-all" style={{ width: `${needPct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function Panel({ label, title, children }: { label: string; title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-[#D9CFBA] bg-white p-5">
@@ -249,6 +314,8 @@ function SectionHeader({
   );
 }
 
+const ALL_TAB_VALUES: Tab[] = [...PRIMARY_TABS, ...SECONDARY_TABS].map((t) => t.value);
+
 export default function FAClient({
   clientId,
   clientName,
@@ -257,6 +324,7 @@ export default function FAClient({
   advisorName,
   advisorEmail,
   advisorPhone,
+  initialTab,
 }: {
   clientId: string;
   clientName: string;
@@ -265,8 +333,15 @@ export default function FAClient({
   advisorName?: string;
   advisorEmail?: string;
   advisorPhone?: string;
+  // 9/11 — Karina wanted a "view version" of the Client Report reachable directly from the client
+  // profile page, not just a PDF download from inside the wizard. Rather than duplicate the report
+  // rendering in two places, the profile page deep-links here with ?tab=report and this opens
+  // straight to that tab. Any other/invalid value falls back to the normal Dashboard start.
+  initialTab?: string;
 }) {
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<Tab>(() =>
+    initialTab && (ALL_TAB_VALUES as string[]).includes(initialTab) ? (initialTab as Tab) : "dashboard"
+  );
   const [state, setState] = useState<FAState>(() => {
     if (savedState) {
       // 9/11: a plan saved before the Liquidity/Retirement/Education/Estate pillars existed won't
@@ -294,6 +369,41 @@ export default function FAClient({
   });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const isFirstRender = useRef(true);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 9/11, third pass — Karina: "Why is there a save client button here? Wouldn't it just
+  // automatically save?" Matches the autosave pattern already used elsewhere in the app (see
+  // ContactInfoForm.tsx's onBlur-per-field save). This wizard's data is one large nested object
+  // updated through the update*() helpers below rather than one useState per field, so instead of
+  // wiring onBlur to every single input across every tab, a single debounced effect watches the
+  // whole state tree and saves ~1.2s after the last change — same result (nothing to remember to
+  // click, nothing lost) without touching every input. The manual "Save client" button is gone;
+  // a small "Saving…" / "Saved ✓" indicator up top (next to the header, visible from any tab)
+  // shows the status.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    setSaveMsg("");
+    saveTimeout.current = setTimeout(() => {
+      setSaving(true);
+      saveFinancialPlan(clientId, state)
+        .then(() => {
+          setSaveMsg("Saved ✓");
+          setTimeout(() => setSaveMsg(""), 3000);
+        })
+        .catch((e) => {
+          setSaveMsg(e instanceof Error ? e.message : "Could not save.");
+        })
+        .finally(() => setSaving(false));
+    }, 1200);
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [state, clientId]);
 
   const computed = useMemo(() => computeFA(state), [state]);
 
@@ -330,30 +440,19 @@ export default function FAClient({
     setState((s) => ({ ...s, estate: { ...s.estate, [key]: value } }));
   }
 
-  async function handleSave() {
-    setSaving(true);
-    setSaveMsg("");
-    try {
-      await saveFinancialPlan(clientId, state);
-      setSaveMsg("Saved ✓ " + (state.profile.clientName || "Unnamed client"));
-      setTimeout(() => setSaveMsg(""), 3000);
-    } catch (e) {
-      setSaveMsg(e instanceof Error ? e.message : "Could not save.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl text-[#1C1C1C]">Full Financial Analysis</h1>
+          <h1 className="font-serif text-2xl text-[#1C1C1C]">Financial Needs Analysis</h1>
           <a href={`/clients/${clientId}`} className="text-xs text-[#666] underline hover:text-[#1C1C1C]">
             ← Back to {clientName}&rsquo;s profile
           </a>
+          <div className="mt-1 h-3 text-[11px] font-semibold text-[#1E6B3C]">
+            {saving ? <span className="text-[#707070]">Saving…</span> : saveMsg}
+          </div>
         </div>
         <div className="text-right">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-[#707070]">Financial Wellness</div>
@@ -401,8 +500,8 @@ export default function FAClient({
       {tab === "dashboard" && (
         <div>
           <SectionHeader
-            title="New Client Analysis"
-            subtitle="Enter client information below, then work through the six pillars using the tabs above."
+            title="Financial Needs Analysis"
+            subtitle="Enter client information below, then work through the six pillars using the tabs above. Changes save automatically."
           />
           <div className="grid gap-5 md:grid-cols-2">
             <Panel label="Profile" title="Client information">
@@ -411,7 +510,7 @@ export default function FAClient({
               <TextField label="Client date of birth" type="date" value={state.profile.clientDob} onChange={(v) => updateProfile("clientDob", v)} />
               <TextField label="Spouse date of birth" type="date" value={state.profile.spouseDob} onChange={(v) => updateProfile("spouseDob", v)} />
               <NumberField label="Dependents" variant="count" value={state.profile.dependents} onChange={(v) => updateProfile("dependents", v)} />
-              <TextField label="Location" value={state.profile.location} onChange={(v) => updateProfile("location", v)} placeholder="City, State" />
+              <TextField label="State" value={state.profile.location} onChange={(v) => updateProfile("location", v)} placeholder="State" />
               <TextField label="Analysis date" type="date" value={state.profile.analysisDate} onChange={(v) => updateProfile("analysisDate", v)} />
             </Panel>
             <Panel label="Profile" title="Advisor on this case">
@@ -420,17 +519,6 @@ export default function FAClient({
               <ReadOnlyField label="Phone" value={state.advisor.advisorPhone} />
             </Panel>
           </div>
-          <div className="mt-5 flex items-center gap-3">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleSave}
-              className="rounded-md bg-[#1C1C1C] px-5 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save client"}
-            </button>
-            {saveMsg && <span className="text-xs font-semibold text-[#1E6B3C]">{saveMsg}</span>}
-          </div>
         </div>
       )}
 
@@ -438,14 +526,14 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Goals & Dreams"
-            subtitle="Every number in this analysis exists to serve a goal. Capture what the household is working toward — one goal per line."
+            subtitle="Every number in this analysis exists to serve a goal. Capture what the household is working toward."
           />
           <div className="grid gap-5 md:grid-cols-3">
             <Panel label="1–3 Years" title="Short Term">
               <textarea
                 value={state.goals.goalsShort}
                 onChange={(e) => updateGoals("goalsShort", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What's the household working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -455,7 +543,7 @@ export default function FAClient({
               <textarea
                 value={state.goals.goalsMedium}
                 onChange={(e) => updateGoals("goalsMedium", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What's the household working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -464,7 +552,7 @@ export default function FAClient({
               <textarea
                 value={state.goals.goalsLong}
                 onChange={(e) => updateGoals("goalsLong", e.target.value)}
-                placeholder="One goal per line..."
+                placeholder="What's the household working toward?"
                 rows={6}
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
@@ -534,16 +622,21 @@ export default function FAClient({
               <NumberField label="Vehicles" value={state.networth.vehicles} onChange={(v) => updateNetworth("vehicles", v)} />
               <div className="flex items-center justify-between py-1.5 text-xs text-[#555]">
                 <span>Retirement accounts</span>
-                <span className="font-semibold text-[#1C1C1C]">$0</span>
+                <span className="font-semibold text-[#1C1C1C]">{fmt(state.retirement.currentRetirementAssets)}</span>
               </div>
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">from Retirement pillar (not yet built)</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">
+                Pulled from the Retirement tab — read-only here so a balance is never entered twice. Update it on the Retirement pillar.
+              </div>
               <div className="flex items-center justify-between py-1.5 text-xs text-[#555]">
                 <span>Cash & liquid reserves</span>
-                <span className="font-semibold text-[#1C1C1C]">$0</span>
+                <span className="font-semibold text-[#1C1C1C]">{fmt(state.liquidity.currentLiquidSavings)}</span>
               </div>
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">from Liquidity pillar (not yet built)</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">
+                Pulled from the Liquidity tab — read-only here so a balance is never entered twice. Update it on the Liquidity pillar.
+              </div>
               <NumberField label="Investments (non-retirement)" value={state.networth.investments} onChange={(v) => updateNetworth("investments", v)} />
               <NumberField label="Business interests" value={state.networth.business} onChange={(v) => updateNetworth("business", v)} />
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">Value of the client&rsquo;s ownership stake in a business they own or co-own — equity, not revenue.</div>
               <NumberField label="Other assets" value={state.networth.other} onChange={(v) => updateNetworth("other", v)} />
               <TotalRow label="Total assets" value={fmt(computed.networth.totalAssets)} />
             </Panel>
@@ -570,7 +663,7 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Debt Management Analysis"
-            subtitle="Not all debt is equal. Mortgage and student loans build equity or earning power at low cost; credit cards and personal loans cost more and carry no upside — those get paid off first."
+            subtitle="Not all debt is equal. Mortgage and student loans build equity or earning power at low cost; credit cards and personal loans cost more and carry no upside."
             pillarScore={computed.debt.pillarScore}
           />
           <div className="grid gap-5 md:grid-cols-2">
@@ -639,8 +732,8 @@ export default function FAClient({
           />
           <div className="grid gap-5 md:grid-cols-2">
             <Panel label="In Force" title="Current coverage">
-              <NumberField label="Client life insurance (face amount)" value={state.protection.covClient} onChange={(v) => updateProtection("covClient", v)} />
-              <NumberField label="Spouse life insurance (face amount)" value={state.protection.covSpouse} onChange={(v) => updateProtection("covSpouse", v)} />
+              <NumberField label="Client's face amount" value={state.protection.covClient} onChange={(v) => updateProtection("covClient", v)} />
+              <NumberField label="Spouse's face amount" value={state.protection.covSpouse} onChange={(v) => updateProtection("covSpouse", v)} />
               <NumberField label="Employer / group coverage" value={state.protection.covGroup} onChange={(v) => updateProtection("covGroup", v)} />
               <TotalRow label="Total current coverage" value={fmt(computed.protection.totalCoverage)} />
 
@@ -669,13 +762,6 @@ export default function FAClient({
                     <option value="unsure">Unsure</option>
                   </select>
                 </label>
-              </div>
-              <div className="mt-3 flex flex-col gap-2">
-                {computed.protection.warnings.map((w) => (
-                  <span key={w} className="w-fit rounded-full bg-[#FBEFEF] px-3 py-1 text-xs font-semibold text-[#8B1A1A]">
-                    {w}
-                  </span>
-                ))}
               </div>
             </Panel>
             <Panel label="Needed" title="Coverage need & gap">
@@ -815,6 +901,12 @@ export default function FAClient({
                 <ResultRow label="Annual income gap after Social Security" value={fmt(computed.retirement.incomeGapAnnual)} />
               </div>
               <TotalRow label="Capital needed (4% rule / 25x)" value={fmt(computed.retirement.capitalNeeded)} />
+              <p className="mt-1 text-[11px] text-[#707070]">
+                The 4% rule is a common retirement-planning guideline: a portfolio can typically support
+                withdrawing about 4% of its value per year without running out. Working backwards, that means
+                the portfolio needed is about 25× (1 ÷ 4%) the annual income gap above — the amount Social
+                Security doesn&rsquo;t cover of the desired retirement income.
+              </p>
               <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
                 <span>Shortfall (needed − projected)</span>
                 <span style={{ color: computed.retirement.shortfall > 0 ? "#8B1A1A" : "#1E6B3C" }}>
@@ -886,6 +978,12 @@ export default function FAClient({
               />
             </Panel>
             <Panel label="Exposure" title="Federal exemption check">
+              <p className="mb-3 text-[11px] text-[#707070]">
+                The federal government only taxes an estate on the amount ABOVE a set threshold (the
+                &ldquo;exemption&rdquo;) — most households never come close to it. This checks the household&rsquo;s net
+                worth against that threshold so you know whether federal estate tax is even a real
+                consideration here.
+              </p>
               <ResultRow label="Marital status (from Profile tab)" value={computed.estate.married ? "Married" : "Single"} />
               <ResultRow label="Net worth (from Net Worth tab)" value={fmt(computed.estate.taxableEstate)} />
               <ResultRow
@@ -937,20 +1035,102 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Client Report"
-            subtitle="A client-ready PDF summarizing every pillar of this analysis, in the same light, minimal style as the Illustrations and Client Analyzer PDFs."
+            subtitle="A view of the full analysis on screen — the downloadable PDF below matches this same data, in the same light, minimal style as the Illustrations and Client Analyzer PDFs."
           />
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-[#D9CFBA] p-10 text-center">
+
+          <div className="mb-5 flex flex-col items-center gap-3 rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">
             <div className="font-serif text-lg text-[#1C1C1C]">{state.profile.clientName || clientName}</div>
-            <div className="text-sm text-[#707070]">
-              Overall Financial Wellness Score: <span className="font-semibold text-[#1C1C1C]">{computed.overallScore} / 100</span>
+            {state.profile.analysisDate && <div className="text-xs text-[#707070]">{state.profile.analysisDate}</div>}
+            <div className="mt-1 h-2.5 w-64 overflow-hidden rounded-full bg-[#EDE8DF]">
+              <div
+                className="h-full rounded-full bg-[#1E6B3C] transition-all"
+                style={{ width: `${Math.max(0, Math.min(100, computed.overallScore))}%` }}
+              />
             </div>
-            <button
-              type="button"
-              onClick={() => generateFAReportPDF(state, computed)}
-              className="rounded-md bg-[#1C1C1C] px-5 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
-            >
-              Download Client Report (PDF)
-            </button>
+            <div className="text-sm text-[#707070]">
+              Overall Financial Wellness Score: <span className="font-serif text-lg text-[#1C1C1C]">{computed.overallScore}</span>{" "}
+              / 100
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => generateFAReportPDF(state, computed)}
+                className="rounded-md bg-[#1C1C1C] px-5 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
+              >
+                Download Client Report (PDF)
+              </button>
+              {/* 9/11 — Karina: "once the financial need analysis is done, can it also mesh in with
+                  the recommendations for the products? Can there be a fresh version of the
+                  recommendations?" Client Analyzer already reads this client's saved plan fresh
+                  every time this link is opened (see client-analyzer/page.tsx) and pre-fills
+                  income, budget, and goals from whatever the FNA currently says — so every visit
+                  here produces an up-to-date starting point, not a one-time copy. */}
+              <a
+                href={`/client-analyzer?client=${clientId}`}
+                className="rounded-md border border-[#D9CFBA] px-5 py-2.5 text-sm font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+              >
+                Get Product Recommendations →
+              </a>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <Panel label="Overview" title="Pillar scores">
+              <ScoreBar label="I · Cash Flow" score={computed.cashflow.pillarScore} />
+              <ScoreBar label="II · Debt" score={computed.debt.pillarScore} />
+              <ScoreBar label="III · Protection" score={computed.protection.pillarScore} />
+              <ScoreBar label="IV · Liquidity" score={computed.liquidity.pillarScore} />
+              <ScoreBar label="V · Retirement" score={computed.retirement.pillarScore} />
+              <ScoreBar label="Education" score={computed.education.pillarScore} />
+              <ScoreBar label="VI · Estate" score={computed.estate.pillarScore} />
+            </Panel>
+            <Panel label="Net Worth" title="Assets vs. liabilities">
+              <CompareBar
+                label="What's owned vs. owed"
+                haveLabel="Total assets"
+                have={computed.networth.totalAssets}
+                needLabel="Total liabilities"
+                need={computed.networth.totalLiabilities}
+              />
+              <div className="mt-3 rounded-md bg-[#F5F0E8] p-3 text-center">
+                <div className="font-serif text-2xl" style={{ color: computed.networth.netWorth < 0 ? "#8B1A1A" : "#1C1C1C" }}>
+                  {fmt(computed.networth.netWorth)}
+                </div>
+                <div className="text-[11px] text-[#707070]">net worth</div>
+              </div>
+            </Panel>
+            <Panel label="Shortfalls" title="Protection & Liquidity">
+              <CompareBar
+                label="Life insurance coverage vs. need"
+                haveLabel="Current coverage"
+                have={computed.protection.totalCoverage}
+                needLabel="Total need"
+                need={computed.protection.totalNeed}
+              />
+              <CompareBar
+                label="Emergency reserve vs. target"
+                haveLabel="Current reserve"
+                have={state.liquidity.currentLiquidSavings}
+                needLabel="Target reserve"
+                need={computed.liquidity.targetReserve}
+              />
+            </Panel>
+            <Panel label="Shortfalls" title="Retirement & Education">
+              <CompareBar
+                label="Projected retirement assets vs. capital needed"
+                haveLabel="Projected at retirement"
+                have={computed.retirement.projectedAssetsAtRetirement}
+                needLabel="Capital needed"
+                need={computed.retirement.capitalNeeded}
+              />
+              <CompareBar
+                label="Education savings vs. projected cost"
+                haveLabel="Saved so far"
+                have={state.education.currentEducationSavings}
+                needLabel="Projected cost"
+                need={computed.education.totalCost}
+              />
+            </Panel>
           </div>
         </div>
       )}

@@ -21,7 +21,7 @@ import FinancialAnalysisLinkCard from "./FinancialAnalysisLinkCard";
 import ClientLocationLine from "./ClientLocationLine";
 import LocalDateTime from "../../LocalDateTime";
 import { addNote, addTask } from "../actions";
-import { computeFA, type FAState } from "@/lib/fa";
+import { computeFA, EMPTY_FA_STATE, type FAState } from "@/lib/fa";
 import { calculateAge, daysUntilNextBirthday } from "@/lib/family";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -369,12 +369,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Full Financial Analysis</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Financial Needs Analysis</h2>
           {plan?.data ? (
             <>
               <div className="mb-2 text-xs text-[#666]">
                 Financial Wellness Score:{" "}
-                <span className="font-semibold text-[#1C1C1C]">{computeFA(plan.data as FAState).overallScore} / 100</span>
+                <span className="font-semibold text-[#1C1C1C]">
+                  {/* 9/11 — a client whose plan was saved before the Liquidity/Retirement/Education/Estate
+                      pillars existed won't have those keys in its saved JSON, and computeFA() reads deep into
+                      all of them — calling it on the raw row crashed this whole page for any such client
+                      ("his page could not be loaded"). FAClient.tsx/PublicFAClient.tsx already backfill missing
+                      pillars with EMPTY_FA_STATE before calling computeFA(); this was the one call site that
+                      never got the same treatment. */}
+                  {computeFA({ ...EMPTY_FA_STATE, ...(plan.data as FAState) }).overallScore} / 100
+                </span>
               </div>
               <div className="mb-3 text-xs text-[#707070]">
                 Last updated <LocalDateTime iso={plan.updated_at} options={{ dateStyle: "medium" }} />
@@ -383,12 +391,34 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           ) : (
             <p className="mb-3 text-xs text-[#707070]">Not started yet.</p>
           )}
-          <a
-            href={`/clients/${client.id}/financial-analysis`}
-            className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
-          >
-            {plan?.data ? "Open Analysis" : "Start Full Financial Analysis"}
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/clients/${client.id}/financial-analysis`}
+              className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+            >
+              {plan?.data ? "Open Analysis" : "Start Financial Needs Analysis"}
+            </a>
+            {plan?.data && (
+              // 9/11 — Karina: "can we also have a view version [of the Client Report] in the full
+              // financial analysis and on the profile?" The report itself only lives in one place
+              // (the wizard's Report tab, so it always matches the wizard's live data) — this deep-links
+              // straight to it with ?tab=report instead of duplicating the report's rendering here.
+              <a
+                href={`/clients/${client.id}/financial-analysis?tab=report`}
+                className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+              >
+                View Report
+              </a>
+            )}
+            {plan?.data && (
+              <a
+                href={`/client-analyzer?client=${client.id}`}
+                className="inline-block rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+              >
+                Get Product Recommendations
+              </a>
+            )}
+          </div>
           <FinancialAnalysisLinkCard siteUrl={siteUrl} token={client.financial_analysis_token} />
         </div>
 

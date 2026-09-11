@@ -143,6 +143,14 @@ interface PrefillClient {
   height_ft: number | null;
   height_in: number | null;
   weight: number | null;
+  // 9/11 — when this client has a completed Financial Needs Analysis, these come from it (see
+  // client-analyzer/page.tsx): monthly household income, monthly discretionary income as a
+  // starting "budget available," and goals inferred from whichever pillars show a real gap
+  // (coverage gap → protection, retirement shortfall → accumulation, education gap → college,
+  // estate exposure → legacy). All still fully editable before running the analysis.
+  income?: string;
+  monthlyBudget?: string;
+  goals?: Goal[];
 }
 
 export default function AnalyzerClient({
@@ -173,6 +181,9 @@ export default function AnalyzerClient({
           heightFt: prefillClient.height_ft?.toString() ?? "",
           heightIn: prefillClient.height_in?.toString() ?? "",
           weight: prefillClient.weight?.toString() ?? "",
+          income: prefillClient.income ?? "",
+          monthlyBudget: prefillClient.monthlyBudget ?? "",
+          goals: prefillClient.goals ?? [],
         }
       : EMPTY;
   });
@@ -262,6 +273,12 @@ export default function AnalyzerClient({
           <div className="mb-5 rounded-md border border-[#1B4F8A] bg-[#EEF3FA] px-3 py-2 text-xs text-[#1B4F8A]">
             Starting from a previous analysis&rsquo;s answers — adjust anything below, then save. This
             creates a brand-new analysis; the original one is untouched.
+          </div>
+        )}
+        {!prefillInputs && prefillClient && (prefillClient.income || prefillClient.goals?.length) && (
+          <div className="mb-5 rounded-md border border-[#1B4F8A] bg-[#EEF3FA] px-3 py-2 text-xs text-[#1B4F8A]">
+            Income, budget, and goals below are pre-filled from {prefillClient.full_name}&rsquo;s completed
+            Financial Needs Analysis — adjust anything before running the analysis.
           </div>
         )}
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#707070]">Client Info</div>
@@ -797,7 +814,7 @@ export default function AnalyzerClient({
                         View client profile →
                       </a>{" "}
                       <a href={`/clients/${saveStatus.clientId}/financial-analysis`} className="underline">
-                        Start Full Financial Analysis →
+                        Start Financial Needs Analysis →
                       </a>
                     </>
                   )}

@@ -3244,6 +3244,137 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      the app, which already had it) — added it back so the amount breathes the same as it does on
      Illustrations/Scenarios/Products.
 
+- **9/11, tab-by-tab feedback pass on the Financial Analysis wizard — BUILT, no new SQL.** Karina's
+  quote (partially voice-transcribed, verbatim): "I see dependents. Um, location. I feel like it
+  should say state on new client analysis. ... they shouldn't say new client analysis. It should
+  just say financial need analysis... where it says full financial analysis, exchange that to
+  financial need analysis. ... Why is there a save client button here? Wouldn't it just
+  automatically save? ... The one goal per line that is written on the goals and dreams, I think
+  that can go away. ... Net worth. Retirement accounts and cash and liquid reserve where it says
+  from retirement pillar not yet built, from liquid pillar not yet built. Why does it say not yet
+  built when you did build them? And why are they even there on the net worth if we can't input
+  them there? ... business interest. Like, what does that mean? I need to understand and maybe put
+  a note there... The debt management analysis, the part that says those get paid off first,
+  remove that. For protection... life client insurance case amount... it should just say client's
+  face amount and then spouse's face amount. ... why is there this red text warning down here? I
+  don't think that's really necessary. ... final expense allowance is fifteen thousand. Education
+  fund per dependent says twenty five thousand. So does dependent mean kids only? ... where did
+  you get this fifteen thousand and twenty five thousand gap and years of income to replace, where
+  is that number coming from? Is that industry standard or what?" (Message ended mid-sentence —
+  "I'll come right back" — more feedback may follow in a later entry.)
+  1. **"Location" renamed to "State"** on the Dashboard/Profile panel, both the advisor tool and
+     the public client-facing link.
+  2. **"New Client Analysis" and "Full Financial Analysis" renamed to "Financial Needs Analysis"**
+     — the Dashboard tab heading and the page's top title. (The public client-facing link already
+     said "Financial Needs Analysis" and "About You" — nothing to change there.)
+  3. **Manual "Save client" button replaced with autosave.** Matches the pattern already used on
+     the client profile's Contact Info card (save-on-blur). The wizard's state is one large nested
+     object rather than one field per input, so instead of wiring every single input's onBlur, a
+     debounced effect watches the whole state tree and saves ~1.2s after the last change. A small
+     "Saving…" / "Saved ✓" indicator sits under the page title now (visible from any tab) in place
+     of the old button. Left the public client-facing link's explicit save action alone — that one
+     is a client submitting their own info back to you, where an explicit "your changes are in"
+     moment still seems like the right call rather than silent autosave; flagging in case you want
+     that changed too.
+  4. **"— one goal per line" removed** from the Goals & Dreams subtitle and the three textarea
+     placeholders, both tools.
+  5. **Fixed the stale "not yet built" bug on the Net Worth tab.** This was a real bug, not a
+     design choice — the Retirement and Liquidity pillars were built earlier in this project, but
+     the Net Worth tab's display text was never updated to match, so it kept showing "$0" and
+     "(not yet built)" even though the underlying total (and the PDF/scoring) already pulled in
+     the real numbers correctly. Now shows the actual retirement/liquidity balances, with a note
+     explaining they're read-only here — pulled from their own tabs — specifically so a balance
+     never gets entered twice in two places and drifts out of sync. That's also the answer to "why
+     are they even there if we can't input them there": they're there so the Net Worth total is
+     complete, not so you re-enter the number.
+  6. **Added a note under "Business interests"** (both tools) explaining it's the value of the
+     client's ownership stake in a business they own or co-own — equity, not revenue.
+  7. **Removed "— those get paid off first"** from the Debt tab subtitle (advisor tool only — the
+     public link's Debt subtitle never had this phrase).
+  8. **Protection tab: "Client life insurance (face amount)" → "Client's face amount"; "Spouse
+     life insurance (face amount)" → "Spouse's face amount"** (advisor tool; public link's
+     equivalent renamed the same way, "Your life insurance (face amount)" → "Your face amount").
+  9. **Removed the red warning badges** ("No disability coverage", etc.) from the Protection tab's
+     "In Force" panel. The underlying data still feeds the Action Plan tab and the PDF — only this
+     in-panel badge display was removed.
+
+  **Two questions from this message I answered here rather than silently deciding in code:**
+  - **Where do the $15,000 final expense / $25,000 per-dependent education / 10-years-of-income
+    defaults come from — industry standard?** Not a formal industry standard — they're editable
+    starting defaults carried over from the original GP Agent Portal tool this was built on top
+    of, before I was involved in this project. They're reasonable planning rules of thumb (final
+    expense costs and per-child education funding are commonly estimated in that range, and 10x
+    income replacement is a widely used conservative starting point), but nothing enforces them —
+    every one of those three fields is directly editable per client, same as any other number on
+    the page.
+  - **Does "dependent" mean kids only?** Right now, no — it's a single headcount
+    (`profile.dependents`) with no distinction between a child, a dependent parent, or anyone
+    else. That same number feeds both the Protection tab's education-funding need and the
+    Education pillar's cost calculation, so as it stands it's assuming every dependent is a
+    college-bound child, which isn't always true. I didn't want to silently redefine this — it's
+    worth deciding whether to (a) leave it as-is with a relabel to "Dependent children" so the
+    assumption is explicit, or (b) split it into two fields (e.g. "Dependent children" and "Other
+    dependents") so a dependent parent counts toward the household picture without pulling
+    education dollars. Let me know which you'd want and I'll build it.
+
+- **9/11, continued feedback (resuming from "I'll come right back") — BUILT, no new SQL.**
+  Karina's quote (partially voice-transcribed, verbatim): "Capital needed, four percent rule slash
+  twenty five x. Like, what does that mean? I need an explanation of that... Estate questions,
+  find federal exemption check. What does this mean? Federal threshold only... I don't know what
+  this means, so can you explain that? ... The client report. It's a download PDF, but can we also
+  have a view version in the full financial analysis and on the profile? I do like the light and
+  airy look... but can there be some graphs on this maybe? To show, like, the shortfall and just
+  really bring this up to speed and make it a bit more visual. And then once this financial need
+  analysis is done, can it also mesh in with the recommendations for the products? Can there be a
+  fresh version of the recommendations, or just an updated version? And also the profile for [a
+  client] is not coming up. It says his page could not be loaded. I don't know what happened
+  during some of our updates. All the other clients on my portal seem to be working."
+  1. **Found and fixed the broken client profile bug.** This was a real, reproducible bug, not
+     something on your end. `computeFA()` reads deep into every pillar of a saved plan
+     (Retirement, Liquidity, Education, Estate...), and the wizard itself already protects against
+     older saved plans missing those newer pillars by filling in defaults first — but the client
+     PROFILE page's "Financial Wellness Score" had its own separate call to `computeFA()` that
+     never got that same protection. So any client whose Financial Needs Analysis was saved before
+     those pillars existed (this project added them earlier this session) would crash that one
+     client's whole profile page — exactly matching "all the other clients seem to be working,"
+     since only clients with an older saved plan would ever hit it. Fixed by applying the same
+     default-filling the wizard already uses.
+  2. **Added inline explanations directly on the page** for both formulas you flagged, so neither
+     needs re-explaining next time:
+     - **Retirement tab, "Capital needed (4% rule / 25x)":** the 4% rule is a standard
+       retirement-planning guideline — a portfolio can typically support withdrawing about 4% of
+       its value a year without running out. Worked backwards, that means the portfolio needed is
+       roughly 25× (1 ÷ 4%) the annual income gap Social Security doesn't cover. Added a line
+       explaining exactly this right under that row.
+     - **Estate tab, "Federal exemption check":** the federal government only taxes an estate on
+       the amount ABOVE a set threshold (the exemption) — most households never come close. This
+       panel checks net worth against that threshold so you know whether federal estate tax is a
+       real consideration for this household at all. Added an intro line explaining this at the
+       top of the panel, above the existing "state taxes vary" caveat.
+  3. **Client Report is now a real on-screen view, not just a PDF download.** The Report tab shows
+     the client name, overall score with a progress bar, a bar chart of all 7 pillar scores, and
+     comparison bar charts for the numbers that matter most — assets vs. liabilities, coverage vs.
+     need, reserve vs. target, projected retirement assets vs. capital needed, and education
+     savings vs. projected cost. Download Client Report (PDF) is still right there for anything
+     you want to hand the client physically/by email. **Reachable from the client's profile page
+     too** — added a "View Report" button next to Open Analysis (only shows once a plan exists),
+     which jumps straight to this same on-screen report.
+  4. **"Get Product Recommendations" now connects the two tools.** Added a button on the Report
+     tab and on the profile page that opens Client Analyzer already pre-filled with monthly
+     income, a starting budget (monthly discretionary income), and goals INFERRED from whichever
+     pillars show a real gap — a coverage gap suggests "Pure protection," a retirement shortfall
+     suggests "Build cash value/savings," an education funding gap suggests "College funding," and
+     estate tax exposure suggests "Maximize legacy." All of that stays fully editable before you
+     run the analysis — nothing is decided for you, it's just a starting point instead of retyping
+     everything Client Analyzer already knows from the FNA. And because it reads the CURRENT saved
+     plan every time the link is opened (not a one-time copy at some point in the past), every
+     visit is a "fresh version" pulling from whatever the FNA says right now — my read on "fresh
+     version... or just an updated version" was that these are really the same ask (recommendations
+     that reflect the latest FNA data), so I built one mechanism that satisfies both rather than
+     two separate things. Say the word if you actually wanted something more automatic (e.g.
+     auto-running a new analysis the moment the FNA is marked done, with no click) — that's a
+     bigger change and I didn't want to guess my way into it.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

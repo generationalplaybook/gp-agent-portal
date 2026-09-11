@@ -38,7 +38,7 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   setText(OBSIDIAN);
-  doc.text("Full Financial Analysis — Client Report", M, 26);
+  doc.text("Financial Needs Analysis — Client Report", M, 26);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText(CHARCOAL);
