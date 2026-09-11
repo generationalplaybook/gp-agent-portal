@@ -43,6 +43,11 @@ const TABS: { value: Tab; label: string }[] = [
 // cents. Converged on the same dollar/percent NumberField as the advisor's FAClient.tsx: "dollar"
 // wraps DollarInput (fixes both formatting and the scroll-wheel bug), "percent" is a plain
 // text/decimal input (also scroll-bug-free, just no $).
+// 9/11, second pass: matches the identical fix in the advisor tool's FAClient.tsx — a field like
+// "Years of income to replace" isn't money, and was defaulting to the "dollar" variant along with
+// everything else in the original currency-formatting fix. Added a "count" variant: plain
+// whole-number text input, no $ sign, no forced decimals, still none of the native-number-input
+// scroll-wheel bug.
 function NumberField({
   label,
   value,
@@ -52,7 +57,7 @@ function NumberField({
   label: string;
   value: number;
   onChange: (v: number) => void;
-  variant?: "dollar" | "percent";
+  variant?: "dollar" | "percent" | "count";
 }) {
   const inputClass = "w-32 rounded-md border border-[#D9CFBA] py-1 text-right text-sm outline-none focus:border-[#1C1C1C]";
   return (
@@ -72,11 +77,24 @@ function NumberField({
           />
           <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-[#707070]">%</span>
         </div>
+      ) : variant === "count" ? (
+        <input
+          type="text"
+          inputMode="numeric"
+          value={String(value)}
+          onChange={(e) => {
+            const n = parseInt(e.target.value.replace(/[^0-9]/g, ""), 10);
+            onChange(isNaN(n) ? 0 : n);
+          }}
+          className={inputClass.replace("py-1", "py-1 px-2")}
+        />
       ) : (
+        // pr-3 added 9/11 — matches the identical fix in the advisor tool's FAClient.tsx: the
+        // right-aligned "0.00" had no right padding and sat flush against the border.
         <DollarInput
           value={String(value)}
           onChange={(v) => onChange(parseMoney(v))}
-          className={inputClass}
+          className={inputClass + " pr-3"}
         />
       )}
     </div>
@@ -521,7 +539,7 @@ export default function PublicFAClient({
               </div>
             </Panel>
             <Panel label="Needed" title="Coverage need & gap">
-              <NumberField label="Years of income to replace" value={state.protection.years} onChange={(v) => updateProtection("years", v)} />
+              <NumberField label="Years of income to replace" variant="count" value={state.protection.years} onChange={(v) => updateProtection("years", v)} />
               <NumberField label="Final expense allowance" value={state.protection.finalExpense} onChange={(v) => updateProtection("finalExpense", v)} />
               <NumberField label="Education fund per dependent" value={state.protection.eduPerDep} onChange={(v) => updateProtection("eduPerDep", v)} />
               <div className="mt-4">

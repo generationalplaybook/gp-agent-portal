@@ -64,6 +64,14 @@ const SECONDARY_TABS: { value: Tab; label: string; placeholder: string }[] = [
 // text input, no scroll-to-change, comma+cents formatting on blur via formatMoney(). The one
 // non-dollar use of this field (the debt interest-rate percentage) gets its own `variant="percent"`
 // instead of a dollar sign, but still loses the native spinner/scroll bug the same way.
+// 9/11, second pass: "Dependents" was showing up as "$0.00" — Karina noticed it on the Dashboard
+// tab screenshot. The dollar/percent rewrite above defaulted every un-annotated NumberField to
+// the "dollar" variant, and a few fields (a headcount, a count of years, a count of months, an
+// age) aren't money at all — they just got swept up in the same mechanical fix. Added a third
+// "count" variant: plain whole-number text input, no $ sign, no forced decimals, still none of
+// the native-number-input scroll-wheel bug the whole rewrite was for in the first place. Existing
+// dollar/percent fields are unaffected — this only changes what a field with variant="count" (or
+// no variant, since "dollar" stays the default for the majority that ARE money) renders as.
 function NumberField({
   label,
   value,
@@ -73,7 +81,7 @@ function NumberField({
   label: string;
   value: number;
   onChange: (v: number) => void;
-  variant?: "dollar" | "percent";
+  variant?: "dollar" | "percent" | "count";
 }) {
   const inputClass = "w-32 rounded-md border border-[#D9CFBA] py-1 text-right text-sm outline-none focus:border-[#1C1C1C]";
   return (
@@ -93,11 +101,26 @@ function NumberField({
           />
           <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-[#707070]">%</span>
         </div>
+      ) : variant === "count" ? (
+        <input
+          type="text"
+          inputMode="numeric"
+          value={String(value)}
+          onChange={(e) => {
+            const n = parseInt(e.target.value.replace(/[^0-9]/g, ""), 10);
+            onChange(isNaN(n) ? 0 : n);
+          }}
+          className={inputClass.replace("py-1", "py-1 px-2")}
+        />
       ) : (
+        // pr-3 added 9/11, third pass — Karina: "not enough space wehreh te .00 is they touch
+        // the end, give it some breathign room." inputClass had no horizontal padding at all
+        // (DollarInput's own left padding is set inline to clear the $ sign, but nothing handled
+        // the right side), so the right-aligned "0.00" sat flush against the border.
         <DollarInput
           value={String(value)}
           onChange={(v) => onChange(parseMoney(v))}
-          className={inputClass}
+          className={inputClass + " pr-3"}
         />
       )}
     </div>
@@ -387,7 +410,7 @@ export default function FAClient({
               <TextField label="Spouse / partner" value={state.profile.spouseName} onChange={(v) => updateProfile("spouseName", v)} placeholder="Optional" />
               <TextField label="Client date of birth" type="date" value={state.profile.clientDob} onChange={(v) => updateProfile("clientDob", v)} />
               <TextField label="Spouse date of birth" type="date" value={state.profile.spouseDob} onChange={(v) => updateProfile("spouseDob", v)} />
-              <NumberField label="Dependents" value={state.profile.dependents} onChange={(v) => updateProfile("dependents", v)} />
+              <NumberField label="Dependents" variant="count" value={state.profile.dependents} onChange={(v) => updateProfile("dependents", v)} />
               <TextField label="Location" value={state.profile.location} onChange={(v) => updateProfile("location", v)} placeholder="City, State" />
               <TextField label="Analysis date" type="date" value={state.profile.analysisDate} onChange={(v) => updateProfile("analysisDate", v)} />
             </Panel>
@@ -656,7 +679,7 @@ export default function FAClient({
               </div>
             </Panel>
             <Panel label="Needed" title="Coverage need & gap">
-              <NumberField label="Years of income to replace" value={state.protection.years} onChange={(v) => updateProtection("years", v)} />
+              <NumberField label="Years of income to replace" variant="count" value={state.protection.years} onChange={(v) => updateProtection("years", v)} />
               <NumberField label="Final expense allowance" value={state.protection.finalExpense} onChange={(v) => updateProtection("finalExpense", v)} />
               <NumberField label="Education fund per dependent" value={state.protection.eduPerDep} onChange={(v) => updateProtection("eduPerDep", v)} />
               <div className="mt-4">
@@ -710,6 +733,7 @@ export default function FAClient({
             <Panel label="Target" title="Reserve goal & gap">
               <NumberField
                 label="Target months of essential expenses"
+                variant="count"
                 value={state.liquidity.targetMonths}
                 onChange={(v) => updateLiquidity("targetMonths", v)}
               />
@@ -751,6 +775,7 @@ export default function FAClient({
               />
               <NumberField
                 label="Target retirement age"
+                variant="count"
                 value={state.retirement.retirementAge}
                 onChange={(v) => updateRetirement("retirementAge", v)}
               />

@@ -3228,6 +3228,22 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   fails silently from your end. Worth checking your Vercel project's environment variables for
   those two before assuming this is a code bug — I can't check or set Vercel env vars from here.
 
+- **9/11 follow-up — two quick fixes from screenshots off the delivery above, both BUILT, no new
+  SQL.**
+  1. **"Dependents" was showing as "$0.00."** The currency-formatting fix (item 1 above) made
+     every un-annotated money field in the Financial Analysis wizard route through the dollar
+     input — but a few fields aren't money (a headcount, a count of years, a count of months, an
+     age) and got swept up in that same mechanical change. Added a third "count" variant (plain
+     whole number, no $, still none of the scroll-wheel bug) and switched Dependents, "Years of
+     income to replace" (Protection), "Target months of essential expenses" (Liquidity), and
+     "Target retirement age" (Retirement) to it, in both the advisor tool and the public
+     client-facing link.
+  2. **Dollar fields' "0.00" was flush against the box's right edge.** "not enough space wehreh
+     te .00 is they touch the end, give it some breathign room." The Financial Analysis wizard's
+     shared dollar-field styling had no right padding at all (unlike every other dollar field in
+     the app, which already had it) — added it back so the amount breathes the same as it does on
+     Illustrations/Scenarios/Products.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
