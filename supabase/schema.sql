@@ -1395,3 +1395,22 @@ alter table public.profiles add column if not exists notify_reminder_email boole
 -- ─────────────────────────────────────────────────────────────
 alter table public.profiles add column if not exists onboarding_steps jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists onboarding_dismissed_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────
+-- 50. Pending-stage check-in nudge (added 9/11) — Karina, after moving a client to Pending
+-- (approved for a quote but the premium hadn't been paid yet, so it's not actually in force):
+-- "once a client is pending, can we set an automatic nudge maybe for three or four days out where
+-- it goes into an automatic reminder to check on the pending ones?"
+-- Same shape as the existing daily reminder crons (check-birthdays, check-conversion-deadlines):
+--   stage_entered_pending_at        — set the moment a client's stage is changed TO "pending"
+--                                      (src/app/(app)/clients/actions.ts, updateStage), cleared
+--                                      when they move to any other stage. The cron below only
+--                                      fires once this has aged 3+ days.
+--   pending_checkin_reminder_sent   — one-time "already sent" flag, same purpose as
+--                                      conversion_reminder_sent — reset to false whenever a client
+--                                      re-enters Pending (so a client who cycles back through
+--                                      Pending a second time gets a fresh reminder, not silence).
+-- See src/app/api/cron/check-pending-checkins/route.ts.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists stage_entered_pending_at timestamptz;
+alter table public.clients add column if not exists pending_checkin_reminder_sent boolean not null default false;

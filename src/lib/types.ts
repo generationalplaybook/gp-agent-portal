@@ -4,11 +4,16 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
   { value: "lead", label: "Lead", color: "#8b6a00" },
   { value: "quoted", label: "Quoted", color: "#0057b8" },
   { value: "applied", label: "Applied", color: "#4b2d83" },
-  { value: "issued", label: "Issued", color: "#00693c" },
-  // For a client who already has a policy in force but is actively being worked on new
-  // business — keeps them out of "Issued" (which now reads as "nothing to do") without losing
-  // their existing coverage, which stays visible in Products the whole time either way.
+  // 9/11, repositioned per Karina after a client meeting: applied-and-approved clients had
+  // nowhere to go except straight to "Issued," even when the policy isn't actually in force yet
+  // because the premium hasn't been paid. "Pending should come after applied, and issued should
+  // be where pending is" — this now sits between Applied and Issued for exactly that gap: the
+  // client was approved but hasn't paid, so the advisor knows to check in and follow up before
+  // it lapses back or finally goes in force. (Previously positioned after Issued for a different
+  // purpose — a client with an existing in-force policy who's actively being worked on new
+  // business; that case still fits here too, "approved/awaiting action" either way.)
   { value: "pending", label: "Pending", color: "#0e7490" },
+  { value: "issued", label: "Issued", color: "#00693c" },
   { value: "declined", label: "Declined", color: "#8b1a1a" },
 ];
 

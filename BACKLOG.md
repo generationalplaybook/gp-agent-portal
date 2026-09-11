@@ -3134,6 +3134,100 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   whatever value is on the record.
   **No new SQL** — same jsonb blob, one more possible value in it.
 
+- **9/11 — the big one. Karina's message, verbatim:** "So you just embarrassed me during a
+  client meeting. I was doing a financial needs analysis, and that analysis is not fully
+  complete. I have told you to complete it. It only went up to protection, liquidity,
+  retirement, education, estate, action plan, and client report is not built out. And then,
+  also, I told you to put commas everywhere where there's supposed to be money and dollar signs.
+  There is throughout this whole thing when you're going into cash flow, there's zeros. There's
+  no dollar sign. Also, get rid of the up and down sign because if the mouse scrolls up or down,
+  it changes the amount... on the Client analysis... why are the colors still thick black at the
+  top? It needs to be minimalistic just like the renderings are for the illustrations... based on
+  the answers where we said funding method, thousand dollars lump sum, you are recommending a[n]
+  Athene[,] Ascent Pro annuity, which has a minimum requirement for the lump sum... gotta fix the
+  colors. All of the PDFs need to match... It needs to be at the bottom center of each page on a
+  PDF... I did not get an email when the client did an intake... this client was approved for a
+  quote, but they didn't pay for it yet... pending should come after applied, and issued should
+  be where pending is in the pipeline... once a client is pending, can we set an automatic nudge
+  maybe for three or four days out... the intake form does not have state and location... We
+  should also ask for the city and state on the pre intake form... Advisor on this case, adviser
+  name, title. I mean, do we really need that because you're the adviser?... Medium term needs to
+  be changed to, like, middle or something... there needs to be a next button at the bottom of
+  the page on each page... let's get this right because you cannot embarrass me at any more
+  meetings."
+  Nine things, all BUILT 9/11:
+  1. **Sitewide currency formatting.** The Financial Analysis wizard's money fields were a plain
+     native `<input type="number">` — no `$`, no commas, no forced cents, and the mouse scroll
+     wheel silently changed the value while focused. Rebuilt on `DollarInput`, the same component
+     every other money field in the app already uses (`src/app/.../financial-analysis/FAClient.tsx`
+     and the public `PublicFAClient.tsx`). Also fixed `formatMoney()` (`illustration.ts`) to
+     always show 2 decimals (was skipping them on even dollar amounts) and `fa.ts`'s separate
+     `fmt()` the same way, plus two un-decimaled Client Analyzer result lines — so every dollar
+     figure across Illustrations, Scenarios, Products, the Client Analyzer, and the full Financial
+     Analysis now formats identically. **No new SQL.**
+  2. **The five missing Financial Analysis pillars + Client Report, actually built.** Liquidity
+     (3-6-months emergency fund, default 6), Retirement (4%-rule/25x capital-needs analysis off
+     the client's real age, with an explicit "this doesn't assume future contributions" caveat),
+     Education (funding-progress vs. projected cost per dependent), and Estate (2026 federal
+     exemption — $15M individual / $30M married — with a loud state-tax-varies caveat since state
+     rules aren't modeled) are all real, editable-assumption calculators now, same pattern as the
+     existing Protection tab — not hardcoded, everything on each tab is something you can see and
+     adjust. Action Plan auto-synthesizes a prioritized gap list pulled from every pillar. Client
+     Report is a real "Download PDF" button on its own tab, in the same light/airy style as
+     everything else (see #3 below). Overall Financial Wellness Score now blends across all 7
+     scored pillars (was hardcoded /6 from when only 3 existed — preserved faithfully until now,
+     per fa.ts's own header comment about the original tool never building these). **No new SQL**
+     — `client_financial_plans.data` is one jsonb column, so new pillar fields just land in it.
+  3. **All PDFs rebuilt to match — no more black header block, branding moved to the bottom.**
+     `analyzer-pdf.ts` (Client Analyzer) had a solid black header bar — rebuilt entirely onto the
+     same monochrome palette `illustration-pdf.ts` already uses (obsidian/charcoal/sand/gray, no
+     green/red/blue — what used to be color-coded, like "Avoid" or "Primary," is now told apart
+     by label text instead). The "GENERATIONAL PLAYBOOK" wordmark moved out of every PDF's header
+     entirely and into a bottom-center footer on every page, next to GenerationalPlaybook.com
+     (which was already down there from an earlier request) — applies to `illustration-pdf.ts`,
+     `analyzer-pdf.ts`, and the new `fa-pdf.ts` (Client Report) alike, so all three PDF types now
+     look the same.
+  4. **Annuity recommendations now check the lump sum against a real minimum.** Client Analyzer's
+     recommendation engine (`analyzer.ts`) never checked whether a lump sum could actually open
+     the annuity it was recommending. Added a $10,000 minimum check — below that, an insurable
+     client's recommendation redirects to an IUL with living benefits, funded by splitting the
+     lump sum across the first year's premiums (buying time to build an ongoing monthly budget),
+     exactly as described. Deliberately does NOT touch the uninsurable-client branch (annuities
+     are recommended there specifically because they require no underwriting — redirecting to an
+     underwritten IUL would be wrong for that case).
+  5. **"Pending" pipeline stage repositioned between Applied and Issued.** Was sitting after
+     Issued (for a different original purpose — an in-force client being worked on new business,
+     which still fits fine here too). Reviewed every place in the code that checks a specific
+     stage by name (`products.ts`, `StageSelect.tsx`, `clients/actions.ts`) — none of them assume
+     array order, so this was a safe reorder. **No new SQL** — `pending` already existed in the
+     Postgres enum.
+  6. **Automatic 3-day nudge reminder for Pending clients.** New daily cron
+     (`api/cron/check-pending-checkins`) — same shape as the existing birthday/conversion-deadline
+     crons. **Needs new SQL — see schema.sql section 50** (`clients.stage_entered_pending_at`,
+     `clients.pending_checkin_reminder_sent`). Also added a 3rd entry to `vercel.json`'s cron
+     list — if your Vercel plan caps the number of daily cron jobs, double-check this one actually
+     registers after deploying.
+  7. **City/State added to both the Pre-Intake and full Intake forms.** The full Intake form had
+     no location field at all (the "Location" field you may be thinking of is a different one, on
+     the advisor-facing Financial Analysis form). **No new SQL** — `clients.city`/`clients.state`
+     already existed from an earlier request, just weren't wired into either public form yet.
+  8. **Financial Analysis "Advisor on this case" simplified.** Name/Email/Phone are now read-only,
+     auto-filled from your own logged-in profile (no more typing your own name in) — Title was
+     dropped entirely since nothing ever auto-filled it anyway. Also renamed "Medium Term" to
+     "Mid-Term" on the Goals tab (matches "Short Term"/"Long Term").
+  9. **Next/Back buttons on every Financial Analysis tab**, both the advisor tool and the public
+     client-facing link — walks the same tab order as the tab strip up top, scrolls to the top of
+     the page on click.
+
+  **On the missing intake email** — I dug into this rather than guessing at a fix. The
+  notification code itself is correct and symmetric in both the Pre-Intake and full Intake forms
+  (both gate on your own "new intake alerts" toggle in My Profile, default on). The most likely
+  real cause is that `RESEND_API_KEY` and `REMINDER_FROM_EMAIL` aren't actually set in Vercel yet
+  — `sendEmail()` is designed to no-op silently rather than error when they're missing, exactly so
+  a misconfigured environment doesn't break the rest of the app, which unfortunately also means it
+  fails silently from your end. Worth checking your Vercel project's environment variables for
+  those two before assuming this is a code bug — I can't check or set Vercel env vars from here.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

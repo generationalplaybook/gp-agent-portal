@@ -204,12 +204,18 @@ export function parseMoney(str: string | undefined | null): number {
 // advisor types "50000", another types "50,000" — so two PDFs for the same numbers could come
 // out looking different depending on who typed it. Flagged 9/1: Karina wants every PDF to look
 // the same regardless of advisor typing habits. This re-formats through parseMoney at PDF-render
-// time only (nothing stored changes) — always "50,000", or "50,000.25" if real cents were
+// time only (nothing stored changes) — always "50,000.00", or "50,000.25" if real cents were
 // entered. Blank/non-numeric input passes through untouched so a "—" placeholder upstream still
 // works.
+//
+// 9/11: was only forcing 2 decimals when cents were actually present (an even "$50,000" showed
+// with none) — Karina, after a client meeting: "automatic decimal and zero zero needs to be
+// there automatic comma throughout the entire financial analysis... across the entire platform
+// wherever there is money." This is the one function nearly every dollar figure in the app
+// (DollarInput's on-screen formatting, every Illustration/Scenario PDF) already routes through,
+// so always forcing 2 decimals here is what makes that true everywhere at once.
 export function formatMoney(str: string | undefined | null): string {
   if (!str || !String(str).trim()) return "";
   const n = parseMoney(str);
-  const hasCents = Math.round(n * 100) % 100 !== 0;
-  return n.toLocaleString("en-US", hasCents ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {});
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

@@ -16,14 +16,18 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   const M = 50;
   let y = 0;
 
-  const OBSIDIAN: RGB = [28, 28, 28];
-  const CHARCOAL: RGB = [46, 46, 46];
-  const SAND: RGB = [217, 207, 186];
-  const GREEN: RGB = [30, 107, 60];
-  const WARM: RGB = [250, 248, 244];
-  const RED: RGB = [139, 26, 26];
-  const GRAY: RGB = [102, 102, 102];
-  const BLUE: RGB = [27, 79, 138];
+  // Palette rebuilt 9/11 per Karina, after a client meeting: "gotta fix the colors. All of the
+  // PDFs need to match. I don't like the big black block at the top... make everything match the
+  // illustrations page, the color scheme, the layout, the light and airy vibe." Reuses the exact
+  // monochrome palette illustration-pdf.ts already settled on (see that file's own palette
+  // comment for the full history) — OBSIDIAN/CHARCOAL/SAND/GRAY/NEUTRAL_FILL, no green/red/blue.
+  // What used to be told apart by color (Primary vs. Avoid vs. Combo) is now told apart by label
+  // text + weight instead, same principle illustration-pdf.ts used for its own chart series.
+  const OBSIDIAN: RGB = [42, 45, 47];
+  const CHARCOAL: RGB = [78, 81, 83];
+  const SAND: RGB = [229, 223, 211];
+  const GRAY: RGB = [155, 155, 152];
+  const NEUTRAL_FILL: RGB = [244, 241, 235];
 
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
   const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
@@ -31,29 +35,29 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   const ensureRoom = (needed: number) => {
     if (y > H - needed) {
       doc.addPage();
-      y = 50;
+      y = 60;
     }
   };
 
-  // Header
-  setFill(OBSIDIAN);
-  doc.rect(0, 0, W, 70, "F");
-  setText(WARM);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("GENERATIONAL PLAYBOOK", M, 28);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  setText(SAND);
-  doc.text("Client Needs Analysis  ·  GenerationalPlaybook.com", M, 42);
+  // Header — no more solid black block or top-of-page wordmark; see the per-page footer loop
+  // near the bottom of this function for where "GENERATIONAL PLAYBOOK" and the site URL live now.
+  // Client name isn't repeated up here — it's the first thing in the info box just below.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  setText(WARM);
-  doc.text("Client Profile & Recommendation", M, 60);
-  y = 95;
+  setText(OBSIDIAN);
+  doc.text("Client Profile & Recommendation", M, 26);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(CHARCOAL);
+  doc.text("Client Needs Analysis", W - M, 26, { align: "right" });
+
+  doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
+  doc.setLineWidth(1.5);
+  doc.line(M, 40, W - M, 40);
+  y = 58;
 
   // Client info box
-  setFill([245, 240, 232]);
+  setFill(NEUTRAL_FILL);
   doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -81,11 +85,11 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   y += 95;
 
   if (d.suggestedDB) {
-    setFill([235, 245, 238]);
+    setFill(NEUTRAL_FILL);
     doc.roundedRect(M, y, W - 2 * M, 55, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text("Suggested Death Benefit: $" + d.suggestedDB.toLocaleString(), M + 14, y + 20);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
@@ -93,7 +97,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
     doc.text("(10x annual income + total debt)", M + 14, y + 32);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text(
       "Living Benefit Reserve: $" +
         (d.suggestedReserveLow ?? 0).toLocaleString() +
@@ -114,7 +118,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   setText(OBSIDIAN);
   doc.text("Client Profile Summary", M, y);
   y += 6;
-  doc.setDrawColor(217, 207, 186);
+  doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
   doc.setLineWidth(1);
   doc.line(M, y, W - M, y);
   y += 16;
@@ -151,11 +155,11 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
 
   if (d.hasRollover && d.rolloverProduct && d.rolloverReasons) {
     ensureRoom(150);
-    setFill([255, 251, 240]);
+    setFill(NEUTRAL_FILL);
     doc.roundedRect(M, y, W - 2 * M, 20 + d.rolloverReasons.length * 13 + 14, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    setText([139, 106, 0]);
+    setText(OBSIDIAN);
     doc.text("Also Recommended — Rollover Opportunity", M + 14, y + 18);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
@@ -184,15 +188,15 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
       y += 18;
     }
 
-    setFill([235, 245, 238]);
+    setFill(NEUTRAL_FILL);
     const primH = 20 + (rec.reasons?.length ?? 0) * 13 + 20;
     doc.roundedRect(M, y, W - 2 * M, primH, 4, 4, "F");
-    doc.setDrawColor(30, 107, 60);
+    doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
     doc.setLineWidth(2);
     doc.line(M, y, M, y + primH);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    setText(GREEN);
+    setText(OBSIDIAN);
     doc.text("PRIMARY RECOMMENDATION" + (d.hasRollover ? " — Today's New Plan" : ""), M + 14, y + 18);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -227,7 +231,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
     if (rec.talking?.length) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText([27, 79, 138]);
+      setText(OBSIDIAN);
       doc.text("CLIENT TALKING POINTS", M, y);
       y += 14;
       doc.setFont("helvetica", "normal");
@@ -245,7 +249,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
       ensureRoom(100);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(RED);
+      setText(OBSIDIAN);
       doc.text("AVOID FOR THIS CLIENT: " + rec.avoid, M, y);
       y += 14;
       doc.setFont("helvetica", "normal");
@@ -263,7 +267,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
       ensureRoom(100);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(BLUE);
+      setText(OBSIDIAN);
       doc.text("COMBO OPTION: " + rec.combo, M, y);
       y += 14;
       doc.setFont("helvetica", "normal");
@@ -284,7 +288,7 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
 
   if (advisor && (advisor.name || advisor.phone || advisor.email)) {
     ensureRoom(60);
-    doc.setDrawColor(217, 207, 186);
+    doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
     doc.setLineWidth(1);
     doc.line(M, y, W - M, y);
     y += 16;
@@ -307,9 +311,27 @@ function buildClientPDF(d: AnalyzerResult, advisor?: AdvisorInfo): jsPDF {
   doc.text(
     "For agent use only. Generated by the Generational Playbook Client Analyzer. Not a formal insurance illustration. All figures and recommendations are approximations for discussion purposes only — final numbers depend on carrier underwriting, approval, and current rates.",
     M,
-    H - 20,
+    Math.max(H - 34, y + 14),
     { maxWidth: W - 2 * M }
   );
+
+  // Per-page footer, bottom center — same pattern as illustration-pdf.ts (see that file's own
+  // comment for the full history): Karina, 9/11, after a client meeting, re: the old top header:
+  // "I don't like... the way that the Generation Playbook is in the header. It needs to be at the
+  // bottom center of each page on a PDF." Looped across every page since a multi-page client
+  // profile should carry it on each one, not just wherever the content happened to end.
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    setText(OBSIDIAN);
+    doc.text("GENERATIONAL PLAYBOOK", W / 2, H - 14, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    setText(GRAY);
+    doc.text("GenerationalPlaybook.com", W / 2, H - 4, { align: "center" });
+  }
 
   return doc;
 }

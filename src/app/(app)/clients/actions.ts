@@ -81,9 +81,22 @@ export async function createClientRecord(formData: FormData) {
   redirect(`/clients/${data!.id}`);
 }
 
+// 9/11 — Karina, moving a client to Pending: "once a client is pending, can we set an automatic
+// nudge maybe for three or four days out where it goes into an automatic reminder to check on the
+// pending ones?" stage_entered_pending_at/pending_checkin_reminder_sent (schema.sql section 50)
+// track when a client entered Pending and whether the cron's already reminded about it — set here
+// on the way in, cleared on the way out, so re-entering Pending later starts a fresh cycle instead
+// of silently never firing again.
 export async function updateStage(clientId: string, stage: ClientStage) {
   const { supabase } = await requireUser();
-  await supabase.from("clients").update({ stage }).eq("id", clientId);
+  await supabase
+    .from("clients")
+    .update(
+      stage === "pending"
+        ? { stage, stage_entered_pending_at: new Date().toISOString(), pending_checkin_reminder_sent: false }
+        : { stage, stage_entered_pending_at: null }
+    )
+    .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
 }
@@ -97,7 +110,7 @@ export async function resolveQuotesOnIssue(
   allQuoteProductIds: string[]
 ): Promise<void> {
   const { supabase } = await requireUser();
-  await supabase.from("clients").update({ stage: "issued" }).eq("id", clientId);
+  await supabase.from("clients").update({ stage: "issued", stage_entered_pending_at: null }).eq("id", clientId);
   await supabase.from("client_products").update({ is_quote: false }).eq("id", chosenProductId);
   const toDelete = allQuoteProductIds.filter((id) => id !== chosenProductId);
   if (toDelete.length > 0) {
@@ -815,13 +828,22 @@ export async function markOutreachOutcome(
   // field per client, not per policy. Deliberate per her description, but worth knowing.
   // Only "Couldn't reach them" leaves stage untouched.
   if (outcome === "shopping" || outcome === "renewing") {
-    const { error: stageError } = await supabase.from("clients").update({ stage: "lead" }).eq("id", clientId);
+    const { error: stageError } = await supabase
+      .from("clients")
+      .update({ stage: "lead", stage_entered_pending_at: null })
+      .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "keeping") {
-    const { error: stageError } = await supabase.from("clients").update({ stage: "issued" }).eq("id", clientId);
+    const { error: stageError } = await supabase
+      .from("clients")
+      .update({ stage: "issued", stage_entered_pending_at: null })
+      .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "declining") {
-    const { error: stageError } = await supabase.from("clients").update({ stage: "declined" }).eq("id", clientId);
+    const { error: stageError } = await supabase
+      .from("clients")
+      .update({ stage: "declined", stage_entered_pending_at: null })
+      .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   }
 

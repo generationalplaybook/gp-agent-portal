@@ -18,6 +18,14 @@ import { generateClientPDF, type AdvisorInfo } from "@/lib/analyzer-pdf";
 import { GENDER_OPTIONS } from "@/lib/types";
 import { saveAnalysisToClient, saveAnalysisAsNewClient } from "./actions";
 
+// 9/11: Karina, after a client meeting: "automatic decimal and zero zero needs to be there
+// automatic comma... across the entire platform wherever there is money." These suggested-coverage
+// figures were rendering via bare toLocaleString() (no forced cents) — matches formatMoney()'s
+// behavior (illustration.ts) so every dollar figure on this page looks the same.
+function fmt2(n: number): string {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function OptionGroup<T extends string>({
   options,
   value,
@@ -616,13 +624,13 @@ export default function AnalyzerClient({
               <div className="rounded-lg border-l-4 border-[#1E6B3C] bg-white p-4">
                 <div className="mb-2 text-sm font-semibold text-[#1E6B3C]">Suggested Coverage Amounts</div>
                 <div className="mb-1.5 text-sm text-[#333]">
-                  <strong>Suggested Death Benefit:</strong> ${result.suggestedDB.toLocaleString()}{" "}
+                  <strong>Suggested Death Benefit:</strong> ${fmt2(result.suggestedDB)}{" "}
                   <span className="text-xs text-[#707070]">(10x annual income + total debt)</span>
                 </div>
                 <div className="text-sm text-[#333]">
                   <strong>Suggested Living Benefit Reserve:</strong> $
-                  {(result.suggestedReserveLow ?? 0).toLocaleString()} – $
-                  {(result.suggestedReserveHigh ?? 0).toLocaleString()}{" "}
+                  {fmt2(result.suggestedReserveLow ?? 0)} – $
+                  {fmt2(result.suggestedReserveHigh ?? 0)}{" "}
                   <span className="text-xs text-[#707070]">(6-12 months of income if too sick to work)</span>
                 </div>
               </div>

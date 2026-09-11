@@ -176,6 +176,56 @@ export function parseCurrencyValue(str: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+// 9/11 — Karina, after a client meeting: a $1,000 lump sum funding answer got recommended into
+// an Athene Ascent Pro Bonus annuity. "There is no annuity that will only take a thousand dollar
+// lump sum to start it... annuity is usually a minimum of ten thousand dollars." Nothing in
+// computeRecommendation() below ever checked the lump sum amount against a real minimum — the
+// branches choose annuity vs. IUL/term based on insurability, qualified-money status, and goal,
+// never on whether the client's lump sum could actually open the annuity being suggested. Fixed
+// as a post-process in runAnalyzer (see isAnnuityProduct/buildSmallLumpSumOverride below) rather
+// than threading a new check through every branch above, since this is one blanket rule ("don't
+// recommend an annuity the client's money can't actually fund"), not goal-specific logic.
+export const ANNUITY_MINIMUM_LUMP_SUM = 10000;
+
+function isAnnuityProduct(name: string): boolean {
+  return /athene|annuity|spia|f&g/i.test(name);
+}
+
+// Karina's own described alternative: "recommend... a living benefit policy and take that
+// thousand dollars and divide it across the first year['s] of premiums, so the person can have
+// time to save for the next year's premiums... or into an IUL and cross that budget[,] make that
+// budget last a full year." Reuses the same living-benefits IUL this engine already recommends
+// for goal=income/growth clients elsewhere — just funded month-by-month out of the lump sum for
+// Year 1 instead of paid into an annuity as a single deposit.
+function buildSmallLumpSumOverride(lumpSumAmount: string): Omit<GoalRecommendation, "goal" | "goalLabel"> {
+  const amountNum = parseCurrencyValue(lumpSumAmount);
+  const monthlyStr =
+    amountNum > 0
+      ? (amountNum / 12).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : null;
+  const minStr = ANNUITY_MINIMUM_LUMP_SUM.toLocaleString("en-US");
+  return {
+    primary: "North American Builder Plus IUL 4 — funded monthly from the lump sum",
+    secondary: "North American Smart Builder IUL 3 — if early policy access before 59½ turns out to be a firm need",
+    avoid: "Any annuity",
+    reasons: [
+      `Most annuities require a minimum deposit around $${minStr} — this lump sum isn't enough to open one`,
+      monthlyStr
+        ? `Split the lump sum across the first 12 months of premiums (~$${monthlyStr}/mo) instead of paying it in all at once`
+        : "Split the lump sum across the first 12 months of premiums instead of paying it in all at once",
+      "That first year buys the client time to build an ongoing monthly budget for Year 2 and beyond, without lapsing the policy",
+      "Living benefits (Critical, Chronic, Terminal Illness) are included at no extra cost, same as this engine's other IUL recommendations",
+    ],
+    talking: [
+      `An annuity isn't an option yet at this amount — most carriers need at least $${minStr} to open one`,
+      "Instead, let's put that money to work in a policy today — we'll spread it across your first year of premiums so you have time to build the habit of funding it monthly going forward",
+    ],
+    avoidReasons: [`Insufficient lump sum for any annuity's minimum deposit (typically ~$${minStr}+)`],
+    combo: "",
+    comboReasons: [],
+  };
+}
+
 export function calcAgeFromDob(dob: string): number | null {
   if (!dob) return null;
   const birth = new Date(dob);
@@ -531,11 +581,22 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
   // One full recommendation block per selected goal. If no goal was selected, fall back to a
   // single general-purpose recommendation (matches the original tool's "goal skipped" behavior).
   const goalsToUse: (Goal | undefined)[] = goals.length > 0 ? goals : [undefined];
-  const recommendations: GoalRecommendation[] = goalsToUse.map((g) => ({
-    goal: g ?? null,
-    goalLabel: g ? GOAL_LABELS[g] : "General Recommendation",
-    ...computeRecommendation(g, ctx),
-  }));
+  // Lump sum too small for any annuity — see buildSmallLumpSumOverride above. Gated on
+  // insurable !== "no": an uninsurable client is routed to an annuity specifically because it
+  // requires no underwriting, and this fix must not undo that by redirecting them into an
+  // underwritten IUL they may not be able to pass.
+  const lumpSumInvolved = funding === "lumpsum" || funding === "both";
+  const lumpSumNum = parseCurrencyValue(inputs.lumpSumAmount ?? "");
+  const lumpSumTooSmallForAnnuity = insurable !== "no" && lumpSumInvolved && lumpSumNum > 0 && lumpSumNum < ANNUITY_MINIMUM_LUMP_SUM;
+  const recommendations: GoalRecommendation[] = goalsToUse.map((g) => {
+    const base = computeRecommendation(g, ctx);
+    const rec = lumpSumTooSmallForAnnuity && isAnnuityProduct(base.primary) ? buildSmallLumpSumOverride(inputs.lumpSumAmount ?? "") : base;
+    return {
+      goal: g ?? null,
+      goalLabel: g ? GOAL_LABELS[g] : "General Recommendation",
+      ...rec,
+    };
+  });
 
   const otherRetirement = inputs.otherRetirement !== "skip" ? inputs.otherRetirement : undefined;
   const otherAmount = inputs.otherAmount ?? "";

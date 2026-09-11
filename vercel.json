@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/check-conversion-deadlines",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/check-pending-checkins",
+      "schedule": "0 15 * * *"
     }
   ]
 }

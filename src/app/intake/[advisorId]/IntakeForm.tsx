@@ -98,7 +98,11 @@ function Field({ label, optional, children }: { label: string; optional?: boolea
 
 const inputClass = "rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C] w-full";
 
-const EMPTY_CONTACT = { firstName: "", middleName: "", lastName: "" };
+// city/state added 9/11 — Karina, after a client meeting: "the name went in, the birth date
+// went in, the location did not[,] because the intake form does not have state and location."
+// clients.city/clients.state already exist (added 9/3 for the Contact Info card) — this just
+// wires them into the public form too, same free-text pattern as ContactInfoForm.tsx uses.
+const EMPTY_CONTACT = { firstName: "", middleName: "", lastName: "", city: "", state: "" };
 
 const EMPTY_INPUTS: AnalyzerInputs = {
   name: "",
@@ -142,6 +146,8 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
     if (!inputs.dob) req.push("Date of Birth");
     if (!inputs.phone.trim()) req.push("Phone Number");
     if (!inputs.email.trim()) req.push("Email");
+    if (!contact.city.trim()) req.push("City");
+    if (!contact.state.trim()) req.push("State");
     if (!inputs.gender) req.push("Gender");
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
@@ -248,6 +254,24 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           className={inputClass}
         />
       </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="City">
+          <input
+            value={contact.city}
+            onChange={(e) => setContact((c) => ({ ...c, city: e.target.value }))}
+            className={inputClass}
+          />
+        </Field>
+        <Field label="State">
+          <input
+            value={contact.state}
+            onChange={(e) => setContact((c) => ({ ...c, state: e.target.value }))}
+            placeholder="e.g. TX"
+            className={inputClass}
+          />
+        </Field>
+      </div>
 
       <Field label="Gender">
         <select value={inputs.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inputClass}>

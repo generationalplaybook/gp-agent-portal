@@ -19,6 +19,9 @@ export interface PreIntakeContact {
   lastName: string;
   phone: string;
   email: string;
+  // Added 9/11 — Karina: "we should also ask for the city and state on the pre intake form."
+  city: string;
+  state: string;
 }
 
 export interface PreIntakeInputs {
@@ -51,6 +54,8 @@ export async function submitPreIntake(
   const middleName = contact.middleName.trim() || null;
   const phone = contact.phone.trim();
   const email = contact.email.trim();
+  const city = contact.city.trim() || null;
+  const state = contact.state.trim() || null;
   const goals = inputs.goals.trim();
 
   if (!firstName || !lastName) return { ok: false, error: "First and last name are required." };
@@ -76,7 +81,14 @@ export async function submitPreIntake(
     // pipeline stage and lead-source attribution the advisor already has on file.
     const { error: updateError } = await admin
       .from("clients")
-      .update({ phone, email, intake_pending_review: true, updated_at: new Date().toISOString() })
+      .update({
+        phone,
+        email,
+        ...(city ? { city } : {}),
+        ...(state ? { state } : {}),
+        intake_pending_review: true,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", existingClientId);
     if (updateError) return { ok: false, error: updateError.message };
     clientId = existingClientId;
@@ -92,6 +104,8 @@ export async function submitPreIntake(
         last_name: lastName,
         phone,
         email,
+        city,
+        state,
         stage: "lead",
         source: "Pre-Intake Form",
         intake_pending_review: true,

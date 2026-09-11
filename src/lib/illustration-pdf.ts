@@ -179,32 +179,20 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     }
   }
 
-  // Header — reworked again 9/7 per Karina, same day: "heading the product name can be much
-  // smaller... so that can move everything up higher... does it have to be in a block? Can we
-  // just put it on the right side in the header?" Product name is back down to 13pt (smaller than
-  // even the original 14pt — it's the wordmark/subtitle stack's third line now, not the headline),
-  // and the separate cream client-info box is gone entirely: client name and product type/carrier
-  // now sit inline in the header, right-aligned opposite the wordmark. This is shorter than the
-  // old header+box combined (which ran to y=104 before any content started), so everything below
-  // starts noticeably higher on the page.
-  // Wordmark + subtitle recolored 9/7, fourth round, per Karina: "Generational playbook should be
-  // in black and the text udner it should be darker but not black just a bit darker to its easier
-  // to read." Wordmark is OBSIDIAN (was WARM/sage-green — she doesn't want the brand name itself
-  // colored). Subtitle reuses CHARCOAL (already defined, dark gray rather than true black) instead
-  // of GRAY — GRAY stays reserved for genuinely secondary text (placeholders, footer disclaimer)
-  // elsewhere in this file, so this doesn't darken those too.
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  setText(OBSIDIAN);
-  doc.text("GENERATIONAL PLAYBOOK", M, 22);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  setText(CHARCOAL);
-  doc.text("Policy Illustration Summary", M, 35);
+  // Header — reworked 9/11 per Karina, after a client meeting: "gotta fix the colors... I don't
+  // like the big black block at the top and the way that the Generation Playbook is in the
+  // header. It needs to be at the bottom center of each page on a PDF." The wordmark ("GENERATIONAL
+  // PLAYBOOK") and "Policy Illustration Summary" subtitle that used to sit top-left are gone from
+  // here entirely — see the per-page footer loop further down, which now carries both, stacked
+  // above the GenerationalPlaybook.com line it already had. What's left up top is just the
+  // document-identifying content (product name, client name, product type/carrier) — no branding.
+  //
+  // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
+  // with the client name opposite it; client name/product type/carrier sit inline, right-aligned.)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 52);
+  doc.text(input.productName, M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -222,8 +210,8 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
-  doc.line(M, 62, W - M, 62);
-  y = 82;
+  doc.line(M, 40, W - M, 40);
+  y = 60;
 
   const data = input.data;
 
@@ -568,7 +556,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   doc.text(
     "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
     M,
-    770,
+    758,
     { maxWidth: 612 - 2 * M }
   );
 
@@ -576,15 +564,23 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   // playbook dot com that is right next to policy illustration summary should move to the bottom
   // of each page in the center, like, as a footer." Looped across every page (not just the last,
   // where the disclaimer above lands) since a multi-page illustration should carry it on each one.
-  // Placed at y=787, just below the disclaimer's lowest possible line on the last page (baseline
-  // 770 plus one wrapped line at this font size lands around 778-780), well inside the 792pt page.
+  //
+  // 9/11: the wordmark itself joined it here — Karina, after a client meeting, re: the header:
+  // "I don't like... the way that the Generation Playbook is in the header. It needs to be at the
+  // bottom center of each page on a PDF." Moved down to y=778/788, just below the disclaimer's
+  // lowest possible line on the last page (baseline 758 plus one wrapped line lands around
+  // 766-768), well inside the 792pt page either way.
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
+    setText(OBSIDIAN);
+    doc.text("GENERATIONAL PLAYBOOK", W / 2, 778, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
     setText(GRAY);
-    doc.text("GenerationalPlaybook.com", W / 2, 787, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 788, { align: "center" });
   }
 
   if (action === "view") {
@@ -628,32 +624,20 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
   }
 
-  // Header — reworked again 9/7 per Karina, same day: "heading the product name can be much
-  // smaller... so that can move everything up higher... does it have to be in a block? Can we
-  // just put it on the right side in the header?" Product name is back down to 13pt (smaller than
-  // even the original 14pt — it's the wordmark/subtitle stack's third line now, not the headline),
-  // and the separate cream client-info box is gone entirely: client name and product type/carrier
-  // now sit inline in the header, right-aligned opposite the wordmark. This is shorter than the
-  // old header+box combined (which ran to y=104 before any content started), so everything below
-  // starts noticeably higher on the page.
-  // Wordmark + subtitle recolored 9/7, fourth round, per Karina: "Generational playbook should be
-  // in black and the text udner it should be darker but not black just a bit darker to its easier
-  // to read." Wordmark is OBSIDIAN (was WARM/sage-green — she doesn't want the brand name itself
-  // colored). Subtitle reuses CHARCOAL (already defined, dark gray rather than true black) instead
-  // of GRAY — GRAY stays reserved for genuinely secondary text (placeholders, footer disclaimer)
-  // elsewhere in this file, so this doesn't darken those too.
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  setText(OBSIDIAN);
-  doc.text("GENERATIONAL PLAYBOOK", M, 22);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  setText(CHARCOAL);
-  doc.text("Policy Illustration Summary", M, 35);
+  // Header — reworked 9/11 per Karina, after a client meeting: "gotta fix the colors... I don't
+  // like the big black block at the top and the way that the Generation Playbook is in the
+  // header. It needs to be at the bottom center of each page on a PDF." The wordmark ("GENERATIONAL
+  // PLAYBOOK") and "Policy Illustration Summary" subtitle that used to sit top-left are gone from
+  // here entirely — see the per-page footer loop further down, which now carries both, stacked
+  // above the GenerationalPlaybook.com line it already had. What's left up top is just the
+  // document-identifying content (product name, client name, product type/carrier) — no branding.
+  //
+  // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
+  // with the client name opposite it; client name/product type/carrier sit inline, right-aligned.)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 52);
+  doc.text(input.productName, M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -671,8 +655,8 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
-  doc.line(M, 62, W - M, 62);
-  y = 82;
+  doc.line(M, 40, W - M, 40);
+  y = 60;
 
   const data = input.data;
 
@@ -1313,19 +1297,23 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   doc.text(
     "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
     M,
-    Math.max(770, y + 14),
+    Math.max(758, y + 14),
     { maxWidth: 612 - 2 * M }
   );
 
-  // Site URL moved out of the header and into a page footer — see the identical comment in
-  // generateIllustrationPDF above.
+  // Site URL moved out of the header and into a page footer, and the wordmark joined it 9/11 —
+  // see the identical comment in generateIllustrationPDF above.
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
+    setText(OBSIDIAN);
+    doc.text("GENERATIONAL PLAYBOOK", W / 2, 778, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
     setText(GRAY);
-    doc.text("GenerationalPlaybook.com", W / 2, 787, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 788, { align: "center" });
   }
 
   if (action === "view") {

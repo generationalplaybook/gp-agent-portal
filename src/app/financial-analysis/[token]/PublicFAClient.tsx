@@ -14,6 +14,8 @@ import {
   type FAProtectionInputs,
 } from "@/lib/fa";
 import { savePublicFinancialAnalysis } from "./actions";
+import DollarInput from "@/app/(app)/clients/[id]/DollarInput";
+import { parseMoney } from "@/lib/illustration";
 
 // Client-facing counterpart to the advisor's Full Financial Analysis tool
 // (clients/[id]/financial-analysis/FAClient.tsx) — same underlying data (FAState) and math
@@ -36,27 +38,47 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "protection", label: "III · Protection" },
 ];
 
+// 9/11: was a native type="number" input — Karina, after a client meeting: scrolling the mouse
+// wheel over the field silently changed the value, and dollar amounts showed no $, commas, or
+// cents. Converged on the same dollar/percent NumberField as the advisor's FAClient.tsx: "dollar"
+// wraps DollarInput (fixes both formatting and the scroll-wheel bug), "percent" is a plain
+// text/decimal input (also scroll-bug-free, just no $).
 function NumberField({
   label,
   value,
   onChange,
-  step,
+  variant = "dollar",
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
-  step?: number;
+  variant?: "dollar" | "percent";
 }) {
+  const inputClass = "w-32 rounded-md border border-[#D9CFBA] py-1 text-right text-sm outline-none focus:border-[#1C1C1C]";
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
       <label className="text-xs text-[#555]">{label}</label>
-      <input
-        type="number"
-        value={value}
-        step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-32 rounded-md border border-[#D9CFBA] px-2 py-1 text-right text-sm outline-none focus:border-[#1C1C1C]"
-      />
+      {variant === "percent" ? (
+        <div className="relative w-32">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={String(value)}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ""));
+              onChange(isNaN(n) ? 0 : n);
+            }}
+            className={inputClass.replace("py-1", "py-1 pr-6 pl-2")}
+          />
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-[#707070]">%</span>
+        </div>
+      ) : (
+        <DollarInput
+          value={String(value)}
+          onChange={(v) => onChange(parseMoney(v))}
+          className={inputClass}
+        />
+      )}
     </div>
   );
 }
@@ -160,7 +182,10 @@ export default function PublicFAClient({
 }) {
   const [tab, setTab] = useState<Tab>("info");
   const [state, setState] = useState<FAState>(() => {
-    if (savedState) return savedState;
+    // 9/11: backfill any pillar keys a plan saved before Liquidity/Retirement/Education/Estate
+    // existed won't have — this form never edits those pillars, but computeFA() now always reads
+    // them, so a plan missing those keys would otherwise crash this page. Same fix as FAClient.tsx.
+    if (savedState) return { ...EMPTY_FA_STATE, ...savedState };
     return {
       ...EMPTY_FA_STATE,
       profile: {
@@ -318,7 +343,8 @@ export default function PublicFAClient({
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </Panel>
-            <Panel label="3–7 Years" title="Medium Term">
+            {/* 9/11 — matches the advisor tool's rename: "Medium Term" → "Mid-Term". */}
+            <Panel label="3–7 Years" title="Mid-Term">
               <textarea
                 value={state.goals.goalsMedium}
                 onChange={(e) => updateGoals("goalsMedium", e.target.value)}
@@ -440,7 +466,7 @@ export default function PublicFAClient({
               <TotalRow label="Total monthly debt payments" value={fmt(computed.debt.totalPayment) + " / mo"} />
             </Panel>
             <Panel label="Cost" title="Debt health">
-              <NumberField label="Avg. rate on cards / personal loans (%)" value={state.debt.highRate} step={0.1} onChange={(v) => updateDebt("highRate", v)} />
+              <NumberField label="Avg. rate on cards / personal loans (%)" value={state.debt.highRate} variant="percent" onChange={(v) => updateDebt("highRate", v)} />
               <div className="mt-4">
                 <ResultRow label="Debt-to-income ratio (monthly)" value={computed.debt.dti.toFixed(1) + "%"} negative={computed.debt.dtiHigh} />
               </div>
@@ -521,16 +547,47 @@ export default function PublicFAClient({
         </div>
       )}
 
-      <div className="mt-6 flex justify-center">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={handleSave}
-          className="rounded-md bg-[#1C1C1C] px-6 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save My Answers"}
-        </button>
-      </div>
+      {/* 9/11 — matches the advisor tool's Next/Back buttons (Karina: going up to click the next
+          tab isn't intuitive), same idea here since this is the client's own self-serve version. */}
+      {(() => {
+        const idx = TABS.findIndex((t) => t.value === tab);
+        const prevTab = idx > 0 ? TABS[idx - 1] : null;
+        const nextTab = idx >= 0 && idx < TABS.length - 1 ? TABS[idx + 1] : null;
+        function go(t: Tab) {
+          setTab(t);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        return (
+          <div className="mt-6 flex items-center justify-between border-t border-[#EDE8DF] pt-4">
+            <button
+              type="button"
+              onClick={() => prevTab && go(prevTab.value)}
+              disabled={!prevTab}
+              className="rounded-md border border-[#D9CFBA] px-4 py-2 text-sm font-semibold text-[#2E2E2E] hover:border-[#1C1C1C] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ← Back{prevTab ? `: ${prevTab.label}` : ""}
+            </button>
+            {nextTab ? (
+              <button
+                type="button"
+                onClick={() => go(nextTab.value)}
+                className="rounded-md bg-[#1C1C1C] px-4 py-2 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
+              >
+                Next: {nextTab.label} →
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleSave}
+                className="rounded-md bg-[#1C1C1C] px-6 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save My Answers"}
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

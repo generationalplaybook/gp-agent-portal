@@ -71,6 +71,10 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  // Added 9/11 — Karina: "we should also ask for the city and state on the pre intake form."
+  // clients.city/clients.state already exist (added 9/3 for the Contact Info card).
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [goals, setGoals] = useState("");
   const [amount, setAmount] = useState("");
   const [timeline, setTimeline] = useState<PreIntakeTimeline | undefined>(undefined);
@@ -98,7 +102,7 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
     try {
       const res = await submitPreIntake(
         advisorId,
-        { firstName, middleName, lastName, phone, email },
+        { firstName, middleName, lastName, phone, email, city, state },
         { goals, amount, timeline }
       );
       if (res.ok) {
@@ -153,6 +157,15 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
             placeholder="you@email.com"
             className={inputClass}
           />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="City" optional>
+          <input value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} />
+        </Field>
+        <Field label="State" optional>
+          <input value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g. TX" className={inputClass} />
         </Field>
       </div>
 

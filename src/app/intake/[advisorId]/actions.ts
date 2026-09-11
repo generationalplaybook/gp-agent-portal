@@ -46,7 +46,7 @@ function buildHouseholdSummary(family: IntakeFamilyInput): string | null {
 // row tied to it. Nothing else.
 export async function submitIntake(
   advisorId: string,
-  contact: { firstName: string; middleName: string; lastName: string },
+  contact: { firstName: string; middleName: string; lastName: string; city: string; state: string },
   inputs: AnalyzerInputs,
   family: IntakeFamilyInput
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -55,6 +55,11 @@ export async function submitIntake(
   const firstName = contact.firstName.trim();
   const lastName = contact.lastName.trim();
   const middleName = contact.middleName.trim() || null;
+  // 9/11 — Karina, after a client meeting: "the name went in, the birth date went in, the
+  // location did not[,] because the intake form does not have state and location." clients.city/
+  // clients.state already existed (added 9/3), just weren't wired into this form.
+  const city = contact.city.trim() || null;
+  const state = contact.state.trim() || null;
   if (!firstName || !lastName) return { ok: false, error: "First and last name are required." };
 
   const { data: advisor } = await admin
@@ -95,6 +100,8 @@ export async function submitIntake(
         email,
         birth_date: inputs.dob || null,
         gender: inputs.gender?.trim() || null,
+        city,
+        state,
         intake_pending_review: true,
         household_summary: householdSummary,
         height_ft: parseIntOrNull(inputs.heightFt),
@@ -118,6 +125,8 @@ export async function submitIntake(
         email,
         birth_date: inputs.dob || null,
         gender: inputs.gender?.trim() || null,
+        city,
+        state,
         stage: "lead",
         source: "Client Intake Form",
         intake_pending_review: true,

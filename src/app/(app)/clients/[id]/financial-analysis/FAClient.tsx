@@ -7,14 +7,21 @@ import {
   EMPTY_FA_STATE,
   type FAState,
   type FAProfile,
-  type FAAdvisor,
   type FAGoals,
   type FACashFlowInputs,
   type FANetWorthInputs,
   type FADebtInputs,
   type FAProtectionInputs,
+  type FALiquidityInputs,
+  type FARetirementInputs,
+  type FAEducationInputs,
+  type FAEstateInputs,
+  type YesNoUnsure,
 } from "@/lib/fa";
 import { saveFinancialPlan } from "./actions";
+import DollarInput from "../DollarInput";
+import { parseMoney } from "@/lib/illustration";
+import { generateFAReportPDF } from "@/lib/fa-pdf";
 
 type Tab =
   | "dashboard"
@@ -48,27 +55,51 @@ const SECONDARY_TABS: { value: Tab; label: string; placeholder: string }[] = [
   { value: "report", label: "Client Report", placeholder: "Client Report PDF" },
 ];
 
+// Karina, 9/11, after a client meeting: money fields in this wizard were a plain
+// `<input type="number">` — no $, no commas, no forced cents, and scrolling the mouse wheel over
+// one silently changed the value while it had focus (a well-known native-number-input footgun).
+// "It should only be enterable... automatic dollar sign, automatic decimal and zero zero...
+// automatic comma." Rebuilt on DollarInput — the same component every other money field in the
+// app (Illustrations/Scenarios/Products) already uses — which has none of those problems: plain
+// text input, no scroll-to-change, comma+cents formatting on blur via formatMoney(). The one
+// non-dollar use of this field (the debt interest-rate percentage) gets its own `variant="percent"`
+// instead of a dollar sign, but still loses the native spinner/scroll bug the same way.
 function NumberField({
   label,
   value,
   onChange,
-  step,
+  variant = "dollar",
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
-  step?: number;
+  variant?: "dollar" | "percent";
 }) {
+  const inputClass = "w-32 rounded-md border border-[#D9CFBA] py-1 text-right text-sm outline-none focus:border-[#1C1C1C]";
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
       <label className="text-xs text-[#555]">{label}</label>
-      <input
-        type="number"
-        value={value}
-        step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-32 rounded-md border border-[#D9CFBA] px-2 py-1 text-right text-sm outline-none focus:border-[#1C1C1C]"
-      />
+      {variant === "percent" ? (
+        <div className="relative w-32">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={String(value)}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ""));
+              onChange(isNaN(n) ? 0 : n);
+            }}
+            className={inputClass.replace("py-1", "py-1 pr-6 pl-2")}
+          />
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-[#707070]">%</span>
+        </div>
+      ) : (
+        <DollarInput
+          value={String(value)}
+          onChange={(v) => onChange(parseMoney(v))}
+          className={inputClass}
+        />
+      )}
     </div>
   );
 }
@@ -97,6 +128,48 @@ function TextField({
         className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
       />
     </div>
+  );
+}
+
+// 9/11 — Karina, re: the old editable Advisor Name/Title fields: "do we really need that because
+// you're the advisor?" Since this tool is only ever run by the logged-in advisor on their own
+// case, that information is already known — no reason to make her type her own name in. Replaced
+// the editable name/title inputs with a plain read-only display of her own profile info; dropped
+// Title entirely since it was never backed by real profile data (just a freeform box with nothing
+// to auto-fill it).
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mb-2 flex flex-col gap-1">
+      <label className="text-xs text-[#555]">{label}</label>
+      <div className="rounded-md border border-[#EDE8DF] bg-[#F5F0E8] px-3 py-1.5 text-sm text-[#333]">{value || "—"}</div>
+    </div>
+  );
+}
+
+// Same Yes/No/Unsure select the Protection tab already uses inline (disability/LTC coverage) —
+// pulled out as its own component for the Estate tab's checklist, which needs three of them.
+function YesNoUnsureField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: YesNoUnsure;
+  onChange: (v: YesNoUnsure) => void;
+}) {
+  return (
+    <label className="mb-2 flex items-center justify-between text-xs text-[#555]">
+      {label}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as YesNoUnsure)}
+        className="rounded-md border border-[#D9CFBA] px-2 py-1 text-sm"
+      >
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+        <option value="unsure">Unsure</option>
+      </select>
+    </label>
   );
 }
 
@@ -172,7 +245,14 @@ export default function FAClient({
 }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [state, setState] = useState<FAState>(() => {
-    if (savedState) return savedState;
+    if (savedState) {
+      // 9/11: a plan saved before the Liquidity/Retirement/Education/Estate pillars existed won't
+      // have those keys in its saved JSON at all — spreading EMPTY_FA_STATE's defaults first,
+      // then the saved data over it, backfills exactly those missing pillars without touching
+      // anything the client already has saved (same additive-only spirit as everywhere else in
+      // this app). A saved plan that already HAS these keys just overrides the defaults as normal.
+      return { ...EMPTY_FA_STATE, ...savedState };
+    }
     return {
       ...EMPTY_FA_STATE,
       profile: {
@@ -197,9 +277,8 @@ export default function FAClient({
   function updateProfile<K extends keyof FAProfile>(key: K, value: FAProfile[K]) {
     setState((s) => ({ ...s, profile: { ...s.profile, [key]: value } }));
   }
-  function updateAdvisor<K extends keyof FAAdvisor>(key: K, value: FAAdvisor[K]) {
-    setState((s) => ({ ...s, advisor: { ...s.advisor, [key]: value } }));
-  }
+  // Advisor info is now read-only (auto-filled from the logged-in advisor's own profile — see
+  // ReadOnlyField above), so there's no longer an editable path that needs an updater here.
   function updateGoals<K extends keyof FAGoals>(key: K, value: FAGoals[K]) {
     setState((s) => ({ ...s, goals: { ...s.goals, [key]: value } }));
   }
@@ -214,6 +293,18 @@ export default function FAClient({
   }
   function updateProtection<K extends keyof FAProtectionInputs>(key: K, value: FAProtectionInputs[K]) {
     setState((s) => ({ ...s, protection: { ...s.protection, [key]: value } }));
+  }
+  function updateLiquidity<K extends keyof FALiquidityInputs>(key: K, value: FALiquidityInputs[K]) {
+    setState((s) => ({ ...s, liquidity: { ...s.liquidity, [key]: value } }));
+  }
+  function updateRetirement<K extends keyof FARetirementInputs>(key: K, value: FARetirementInputs[K]) {
+    setState((s) => ({ ...s, retirement: { ...s.retirement, [key]: value } }));
+  }
+  function updateEducation<K extends keyof FAEducationInputs>(key: K, value: FAEducationInputs[K]) {
+    setState((s) => ({ ...s, education: { ...s.education, [key]: value } }));
+  }
+  function updateEstate<K extends keyof FAEstateInputs>(key: K, value: FAEstateInputs[K]) {
+    setState((s) => ({ ...s, estate: { ...s.estate, [key]: value } }));
   }
 
   async function handleSave() {
@@ -231,7 +322,6 @@ export default function FAClient({
   }
 
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
-  const activeLabel = allTabs.find((t) => t.value === tab)?.label ?? "";
 
   return (
     <div>
@@ -302,10 +392,9 @@ export default function FAClient({
               <TextField label="Analysis date" type="date" value={state.profile.analysisDate} onChange={(v) => updateProfile("analysisDate", v)} />
             </Panel>
             <Panel label="Profile" title="Advisor on this case">
-              <TextField label="Advisor name" value={state.advisor.advisorName} onChange={(v) => updateAdvisor("advisorName", v)} />
-              <TextField label="Title" value={state.advisor.advisorTitle} onChange={(v) => updateAdvisor("advisorTitle", v)} placeholder="Financial Strategist" />
-              <TextField label="Email" type="email" value={state.advisor.advisorEmail} onChange={(v) => updateAdvisor("advisorEmail", v)} />
-              <TextField label="Phone" type="tel" value={state.advisor.advisorPhone} onChange={(v) => updateAdvisor("advisorPhone", v)} />
+              <ReadOnlyField label="Advisor name" value={state.advisor.advisorName} />
+              <ReadOnlyField label="Email" value={state.advisor.advisorEmail} />
+              <ReadOnlyField label="Phone" value={state.advisor.advisorPhone} />
             </Panel>
           </div>
           <div className="mt-5 flex items-center gap-3">
@@ -338,7 +427,8 @@ export default function FAClient({
                 className="w-full rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </Panel>
-            <Panel label="3–7 Years" title="Medium Term">
+            {/* 9/11 — Karina: "medium term sounds weird," renamed to Mid-Term (parallel with Short/Long Term). */}
+            <Panel label="3–7 Years" title="Mid-Term">
               <textarea
                 value={state.goals.goalsMedium}
                 onChange={(e) => updateGoals("goalsMedium", e.target.value)}
@@ -478,7 +568,7 @@ export default function FAClient({
               <TotalRow label="Total monthly debt payments" value={fmt(computed.debt.totalPayment) + " / mo"} />
             </Panel>
             <Panel label="Cost" title="Debt health & payoff priority">
-              <NumberField label="Avg. rate on cards / personal loans (%)" value={state.debt.highRate} step={0.1} onChange={(v) => updateDebt("highRate", v)} />
+              <NumberField label="Avg. rate on cards / personal loans (%)" value={state.debt.highRate} variant="percent" onChange={(v) => updateDebt("highRate", v)} />
               <div className="mt-4">
                 <ResultRow label="Debt-to-income ratio (monthly)" value={computed.debt.dti.toFixed(1) + "%"} negative={computed.debt.dtiHigh} />
                 <ResultRow label="Leverage debt (mortgage, auto, student)" value={fmt(computed.debt.goodDebt)} />
@@ -592,16 +682,287 @@ export default function FAClient({
         </div>
       )}
 
-      {SECONDARY_TABS.some((t) => t.value === tab) && (
-        <div className="flex min-h-[240px] items-center justify-center rounded-lg border border-dashed border-[#D9CFBA] p-10 text-center">
-          <div>
-            <div className="mb-1 font-serif text-lg text-[#1C1C1C]">{activeLabel}</div>
-            <div className="text-sm text-[#707070]">
-              {SECONDARY_TABS.find((t) => t.value === tab)?.placeholder} — coming soon.
-            </div>
+      {/* 9/11 — Karina, after being embarrassed mid-client-meeting: "that analysis is not fully
+          complete... It only went up to protection, liquidity, retirement, education, estate,
+          action plan, and client report is not built out." These five tabs were literal
+          "coming soon" placeholders (see fa.ts's header comment — never built even in the
+          original source tool) — now real, editable-assumption pillars, same pattern as
+          Protection above. */}
+      {tab === "liquidity" && (
+        <div>
+          <SectionHeader
+            title="Emergency Fund Analysis"
+            subtitle="Could the household cover several months of essential expenses from savings alone if income stopped tomorrow — without touching retirement accounts or going into debt?"
+            pillarScore={computed.liquidity.pillarScore}
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <Panel label="Current" title="Liquid savings on hand">
+              <NumberField
+                label="Cash / savings / money market (accessible without penalty)"
+                value={state.liquidity.currentLiquidSavings}
+                onChange={(v) => updateLiquidity("currentLiquidSavings", v)}
+              />
+              <p className="mt-3 text-[11px] text-[#707070]">
+                Included in Net Worth&rsquo;s total assets automatically — don&rsquo;t also count this balance under
+                Investments/Other on the Net Worth tab.
+              </p>
+            </Panel>
+            <Panel label="Target" title="Reserve goal & gap">
+              <NumberField
+                label="Target months of essential expenses"
+                value={state.liquidity.targetMonths}
+                onChange={(v) => updateLiquidity("targetMonths", v)}
+              />
+              <div className="mt-4">
+                <ResultRow label="Monthly essential expenses (from Cash Flow)" value={fmt(computed.cashflow.essential)} />
+                <ResultRow label="Months currently covered" value={computed.liquidity.monthsCovered.toFixed(1)} />
+              </div>
+              <TotalRow label="Target reserve" value={fmt(computed.liquidity.targetReserve)} />
+              <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
+                <span>Reserve gap (target − current)</span>
+                <span style={{ color: computed.liquidity.gap > 0 ? "#8B1A1A" : "#1E6B3C" }}>
+                  {computed.liquidity.gap > 0
+                    ? fmt(computed.liquidity.gap)
+                    : "Fully funded (+" + fmt(Math.abs(computed.liquidity.gap)) + ")"}
+                </span>
+              </div>
+              <p className="mt-3 text-[11px] text-[#707070]">
+                Standard planning guidance is 3-6 months of essential expenses; the default here is 6 (the more
+                conservative end) — adjust as appropriate for this household.
+              </p>
+            </Panel>
           </div>
         </div>
       )}
+
+      {tab === "retirement" && (
+        <div>
+          <SectionHeader
+            title="Asset Accumulation & Retirement"
+            subtitle="Based on today's income, savings, and time horizon, is this household on track to replace enough income to retire comfortably?"
+            pillarScore={computed.retirement.pillarScore}
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <Panel label="Current" title="Retirement assets & timeline">
+              <NumberField
+                label="Current retirement assets (401k, IRA, etc.)"
+                value={state.retirement.currentRetirementAssets}
+                onChange={(v) => updateRetirement("currentRetirementAssets", v)}
+              />
+              <NumberField
+                label="Target retirement age"
+                value={state.retirement.retirementAge}
+                onChange={(v) => updateRetirement("retirementAge", v)}
+              />
+              <NumberField
+                label="Expected annual growth rate (%)"
+                variant="percent"
+                value={state.retirement.expectedReturn}
+                onChange={(v) => updateRetirement("expectedReturn", v)}
+              />
+              <div className="mt-4">
+                <ResultRow label="Current age" value={computed.retirement.currentAge !== null ? String(computed.retirement.currentAge) : "—"} />
+                <ResultRow
+                  label="Years to retirement"
+                  value={computed.retirement.yearsToRetirement !== null ? String(computed.retirement.yearsToRetirement) : "—"}
+                />
+                <ResultRow label="Projected assets at retirement" value={fmt(computed.retirement.projectedAssetsAtRetirement)} />
+              </div>
+              <p className="mt-3 text-[11px] text-[#707070]">
+                Projection compounds the CURRENT balance only — it does not assume any future contributions, so
+                treat this as a floor estimate, not a full projection.
+              </p>
+            </Panel>
+            <Panel label="Need" title="Income replacement & gap">
+              <NumberField
+                label="Desired income replacement (%)"
+                variant="percent"
+                value={state.retirement.desiredIncomeReplacement}
+                onChange={(v) => updateRetirement("desiredIncomeReplacement", v)}
+              />
+              <NumberField
+                label="Estimated monthly Social Security"
+                value={state.retirement.estimatedSocialSecurity}
+                onChange={(v) => updateRetirement("estimatedSocialSecurity", v)}
+              />
+              <div className="mt-4">
+                <ResultRow label="Desired annual retirement income" value={fmt(computed.retirement.desiredAnnualIncome)} />
+                <ResultRow label="Annual income gap after Social Security" value={fmt(computed.retirement.incomeGapAnnual)} />
+              </div>
+              <TotalRow label="Capital needed (4% rule / 25x)" value={fmt(computed.retirement.capitalNeeded)} />
+              <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
+                <span>Shortfall (needed − projected)</span>
+                <span style={{ color: computed.retirement.shortfall > 0 ? "#8B1A1A" : "#1E6B3C" }}>
+                  {computed.retirement.shortfall > 0
+                    ? fmt(computed.retirement.shortfall)
+                    : "On track (+" + fmt(Math.abs(computed.retirement.shortfall)) + ")"}
+                </span>
+              </div>
+            </Panel>
+          </div>
+        </div>
+      )}
+
+      {tab === "education" && (
+        <div>
+          <SectionHeader
+            title="Education Funding"
+            subtitle="How much progress has been made toward funding college/education for the dependents already captured on the Profile tab?"
+            pillarScore={computed.education.pillarScore}
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <Panel label="Current" title="Education savings on hand">
+              <NumberField
+                label="Current education savings (529s, UTMAs, etc. — combined)"
+                value={state.education.currentEducationSavings}
+                onChange={(v) => updateEducation("currentEducationSavings", v)}
+              />
+              <ResultRow label="Dependents (from Profile tab)" value={String(state.profile.dependents)} />
+            </Panel>
+            <Panel label="Target" title="Projected cost & gap">
+              <NumberField
+                label="Projected cost per dependent"
+                value={state.education.costPerDependent}
+                onChange={(v) => updateEducation("costPerDependent", v)}
+              />
+              <TotalRow label="Total projected cost" value={fmt(computed.education.totalCost)} />
+              <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
+                <span>Funding gap (cost − current)</span>
+                <span style={{ color: computed.education.gap > 0 ? "#8B1A1A" : "#1E6B3C" }}>
+                  {computed.education.gap > 0
+                    ? fmt(computed.education.gap)
+                    : "Fully funded (+" + fmt(Math.abs(computed.education.gap)) + ")"}
+                </span>
+              </div>
+              <p className="mt-3 text-[11px] text-[#707070]">
+                Distinct from Protection&rsquo;s education line — that&rsquo;s the insurance death-benefit need; this
+                is funding progress already in place.
+              </p>
+            </Panel>
+          </div>
+        </div>
+      )}
+
+      {tab === "estate" && (
+        <div>
+          <SectionHeader
+            title="Estate Preservation & Legacy"
+            subtitle="Are the basics in place (will, trust, beneficiary designations), and does this household's net worth come anywhere near the federal estate tax exemption?"
+            pillarScore={computed.estate.pillarScore}
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <Panel label="Checklist" title="Estate planning basics">
+              <YesNoUnsureField label="Has a will?" value={state.estate.hasWill} onChange={(v) => updateEstate("hasWill", v)} />
+              <YesNoUnsureField label="Has a trust?" value={state.estate.hasTrust} onChange={(v) => updateEstate("hasTrust", v)} />
+              <YesNoUnsureField
+                label="Beneficiary designations up to date?"
+                value={state.estate.beneficiariesUpdated}
+                onChange={(v) => updateEstate("beneficiariesUpdated", v)}
+              />
+            </Panel>
+            <Panel label="Exposure" title="Federal exemption check">
+              <ResultRow label="Marital status (from Profile tab)" value={computed.estate.married ? "Married" : "Single"} />
+              <ResultRow label="Net worth (from Net Worth tab)" value={fmt(computed.estate.taxableEstate)} />
+              <ResultRow
+                label={"Federal exemption (2026, " + (computed.estate.married ? "married" : "individual") + ")"}
+                value={fmt(computed.estate.applicableExemption)}
+              />
+              <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
+                <span>Federal estate tax exposure</span>
+                <span style={{ color: computed.estate.exposure > 0 ? "#8B1A1A" : "#1E6B3C" }}>
+                  {computed.estate.exposure > 0 ? fmt(computed.estate.exposure) : "None"}
+                </span>
+              </div>
+              <p className="mt-3 text-[11px] text-[#707070]">
+                Federal threshold only. State estate/inheritance taxes vary widely — some states apply their own
+                tax as low as ~$1M, far below the federal number. Confirm this household&rsquo;s specific state rules
+                with an estate attorney/CPA.
+              </p>
+            </Panel>
+          </div>
+        </div>
+      )}
+
+      {tab === "actionplan" && (
+        <div>
+          <SectionHeader
+            title="Action Plan"
+            subtitle="Every number in this analysis exists to serve a goal — this is where the gaps across every pillar turn into a prioritized next-steps list."
+          />
+          {computed.actionPlan.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[#D9CFBA] p-8 text-center text-sm text-[#707070]">
+              No gaps flagged — every pillar entered so far looks on track.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {computed.actionPlan.map((item, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-lg border border-[#D9CFBA] bg-white p-4">
+                  <span className="mt-0.5 shrink-0 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#707070]">
+                    {item.pillar}
+                  </span>
+                  <span className="text-sm text-[#2E2E2E]">{item.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "report" && (
+        <div>
+          <SectionHeader
+            title="Client Report"
+            subtitle="A client-ready PDF summarizing every pillar of this analysis, in the same light, minimal style as the Illustrations and Client Analyzer PDFs."
+          />
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-[#D9CFBA] p-10 text-center">
+            <div className="font-serif text-lg text-[#1C1C1C]">{state.profile.clientName || clientName}</div>
+            <div className="text-sm text-[#707070]">
+              Overall Financial Wellness Score: <span className="font-semibold text-[#1C1C1C]">{computed.overallScore} / 100</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => generateFAReportPDF(state, computed)}
+              className="rounded-md bg-[#1C1C1C] px-5 py-2.5 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
+            >
+              Download Client Report (PDF)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 9/11 — Karina: "there needs to be a next button at the bottom of the page on each page
+          because going up to click the next tab is not intuitive." Walks the same PRIMARY_TABS +
+          SECONDARY_TABS order the tab strip above uses, so Next/Back always matches what's
+          highlighted up top. */}
+      {(() => {
+        const idx = allTabs.findIndex((t) => t.value === tab);
+        const prevTab = idx > 0 ? allTabs[idx - 1] : null;
+        const nextTab = idx >= 0 && idx < allTabs.length - 1 ? allTabs[idx + 1] : null;
+        function go(t: Tab) {
+          setTab(t);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        return (
+          <div className="mt-6 flex items-center justify-between border-t border-[#EDE8DF] pt-4">
+            <button
+              type="button"
+              onClick={() => prevTab && go(prevTab.value)}
+              disabled={!prevTab}
+              className="rounded-md border border-[#D9CFBA] px-4 py-2 text-sm font-semibold text-[#2E2E2E] hover:border-[#1C1C1C] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ← Back{prevTab ? `: ${prevTab.label}` : ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => nextTab && go(nextTab.value)}
+              disabled={!nextTab}
+              className="rounded-md bg-[#1C1C1C] px-4 py-2 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next{nextTab ? `: ${nextTab.label}` : ""} →
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
