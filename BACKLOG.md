@@ -3455,6 +3455,182 @@ Things Karina has asked to defer to a future build, so they don't get lost.
     didn't audit each one for this pass). Tell me which of those you run into most as an advisor
     forgetting-to-save risk and I'll convert those next, rather than guessing at all of them.
 
+- **9/11, pie chart colors — BUILT, no new SQL.** Karina's quote (voice-transcribed, verbatim):
+  "Edits of the graphs that you're showing me — the pie chart is black, really the primary color,
+  the dominant color. That does not look good to me. Can we play with maybe the color palette that
+  I have uploaded to you previously for generational playbook?" — followed by a screenshot of her
+  site's "Edit Palette" panel (5 swatches) captioned "the colors from the website."
+  1. **Rebuilt both Client Report PDF pie charts around her actual brand swatches**, pixel-sampled
+     directly from that screenshot rather than approximated: a cream, a parchment, a sand, a
+     charcoal, and an obsidian (near-black). The lightest three of those five are what a pie chart
+     can actually show as a filled slice — cream and parchment are too close to the white page to
+     read as color at all, they're staying as box backgrounds instead (the "Client info" box now
+     uses parchment, "Overall score" keeps cream, so the two boxes read as distinct).
+  2. **The real fix for "black is the dominant color" isn't a new color, it's the assignment
+     logic.** Both pies now rank their own slices biggest-to-smallest and hand out the palette
+     light-to-dark in that order — biggest slice always gets the lightest usable tone (sand),
+     smallest gets the darkest (obsidian/near-black). That's true no matter how a given client's
+     numbers actually split, so a client with a huge coverage gap won't quietly end up with a
+     black-dominant "Coverage vs. Gap" pie the way the old version could have — I checked this on
+     purpose before calling it done, since the old version hardcoded "gap = black," which would've
+     reproduced your exact complaint for the right (or wrong) client.
+  3. **One color isn't a literal swatch from your screenshot, and I want to flag that rather than
+     bury it**: her 5 confirmed swatches only give 3 tones usable as chart fill (sand, charcoal,
+     obsidian) — not enough to make a 4-slice pie (income replacement / debt / final expenses /
+     education) visually distinct. I added a 4th in-between shade by literally averaging sand and
+     charcoal's RGB values, so it sits inside her existing range rather than being invented from
+     scratch — but it's not one of the 5 colors from the screenshot, and I didn't want to pass it
+     off as if it were. Say the word if you'd rather I use a real accent color from elsewhere on
+     the site instead.
+  4. Also changed the pie slice borders from the old off-white to solid white — against the new
+     darker fills the old border color had gotten hard to see, so slices next to each other were
+     blurring together.
+  Wedge stroke, legend swatches, and the box-background change were all re-checked against two
+  rendered test PDFs (one lopsided 92%-in-one-slice case, one more evenly split across all four
+  categories) before calling this done — no pie came out majority-black in either.
+
+- **9/11, pie chart colors round 2 and 3 — BUILT, no new SQL.** Right after the neutral-palette
+  fix above, Karina asked for something more colorful: "let's go with brighter colors then, maybe
+  that are not within the color palette range... income replacement should be green, because
+  that's how much you need, the go-ahead... debt payoff, final expense — those could be a
+  different color... currently covered can be green, but coverage gap may be a nice tone of
+  red... this kinda looks dull and mundane and isn't striking enough." Built that version —
+  green/orange/blue/purple on the "coverage need" pie, green/red on the "covered vs. gap" pie,
+  fixed per category instead of ranked by size — verified it visually, and was about to log/ship
+  it when she saw it and said: "those colors are too Christmasy... I'm not a fan of the purple...
+  the red and that green gotta go... the blue is okay, but it's still a little too corporate —
+  let's find something a little different, like maybe a cobalt blue." So round 2 never shipped;
+  this entry covers what actually went out, which is round 3:
+  1. Dropped literal red and green entirely (that combination was the "Christmasy" one), dropped
+     purple, and swapped the flat blue for an actual cobalt blue (`#0047AB`-range).
+  2. Landed on a warm/cool pair that still reads as "good vs. needs attention" without leaning on
+     stoplight colors: **cobalt blue** for the positive/"covered" side, a **warm terracotta** for
+     the side that needs attention, plus a **teal** and a **gold** for the two categories that
+     don't carry a good/bad connotation on their own (debt payoff, education funding).
+  3. "Coverage Need Is Made Of" pie: income replacement = teal, debt payoff = gold, final expenses
+     = cobalt blue, education funding = terracotta. "Coverage vs. Gap" pie: currently covered =
+     cobalt blue (matches final expenses — reads as "the solid part"), coverage gap = terracotta
+     (matches education funding — reads as "needs attention," without an alarm-red).
+  4. These are fixed per-category now, not ranked by size like the very first neutral-palette
+     version — so unlike that version, this one doesn't structurally guarantee "the biggest slice
+     is never the darkest." That's an intentional trade: you specifically asked for color to carry
+     meaning (which category is which, and covered vs. gap) rather than just visual balance. Flag
+     it to me if a specific client's numbers ever make one of these look off and I'll take a look.
+  Re-verified with two rendered test PDFs after the round-3 swap (same lopsided and balanced
+  scenarios as round 1) before shipping.
+
+- **9/11, pie chart colors round 4 — BUILT, no new SQL.** Karina sent 4 screenshots of colors
+  she'd found — maroon/brick red/cream strips, a sage green swatch labeled "Earthy Tones," a sky
+  blue, and a mustard-and-coral Pinterest pin — with "what about these colors." Two of those are a
+  red and a green, exactly the pairing she'd said to drop two rounds ago ("the red and that green
+  gotta go... too Christmasy"), so before building anything I asked whether she wanted them
+  combined anyway given how much more muted/earthy this set is than the bright round-2 version, or
+  wanted them kept apart like before. She said combine them.
+  1. Pixel-sampled straight from her 4 screenshots (not approximated): maroon `[110,18,11]`, brick
+     red `[177,42,41]`, sage green `[62,109,76]`, sky blue `[83,183,234]`, mustard `[249,218,138]`.
+  2. Skipped the cream/ivory strip from the first screenshot — same issue as the original brand
+     cream from round 1, too close to white to read as a filled chart slice. Also skipped the
+     coral sliver from the mustard pin — mustard + coral together read like that pin's own
+     two-tone accent, not a clean 4th category color on their own.
+  3. "Coverage Need Is Made Of" pie: income replacement = mustard, debt payoff = brick red, final
+     expenses = sky blue, education funding = sage green. "Coverage vs. Gap" pie: currently
+     covered = sky blue (same as final expenses — "the solid part"), coverage gap = maroon (the
+     darker oxblood from the same screenshot, not a plain reuse of debt payoff's brick red, so the
+     two pies' reds don't look identical).
+  Re-verified with a rendered test PDF (debt, final expenses, and education funding all nonzero
+  this time, so all 4 "need" colors actually show) before shipping.
+
+- **9/11, pie chart colors round 5 — BUILT, no new SQL.** Karina's quote (voice-transcribed,
+  verbatim, self-corrected mid-message): "The red and blue that you were using before had to go...
+  I want the red and the green to be using the coverage need versus coverage what's covered. Not
+  the blue. Also, you're using the wrong tone of red — I want the same red tone that you used for
+  the debt payoff red to be on this other graph. We're using these four colors. I'm thinking I
+  might wanna go a little bit deeper on the blue. Show me an option that's a little bit deeper."
+  1. **"Coverage Need Is Made Of" pie keeps all 4 round-4 colors** — mustard (income
+     replacement), brick red (debt payoff), blue (final expenses), sage green (education funding)
+     — only the blue itself changed (see #3).
+  2. **"Coverage Need vs. What's Covered" pie switched from blue+maroon to red+green** — no blue on
+     this one anymore. Currently covered = the exact same sage green as "education funding";
+     coverage gap = the exact same brick red as "debt payoff" — literally the same RGB values
+     reused, not just a similar shade, since round 4's separate darker maroon was "the wrong tone
+     of red."
+  3. **Blue itself went deeper** on the first pie's "final expenses" slice — from the lighter sky
+     blue (round 4, pixel-sampled from her Pinterest screenshot) to a deeper, more saturated blue.
+     Framed this explicitly as "an option" per her ask, not a final answer — say the word if it
+     should go deeper still, or back toward the lighter sky blue, or toward the cobalt from round
+     3.
+  Re-verified with a rendered test PDF (same debt/final-expenses/education-funding-all-nonzero
+  scenario as round 4) before shipping.
+
+- **9/11, pipeline stage colors — BUILT, no new SQL.** Karina, after landing on the Client Report
+  PDF colors: "I think I want these colors on the portal too for the pipeline colors. How many
+  colors do we need for the pipeline? Are these enough, or do we need more?" Answer: 6 pipeline
+  stages exist (Lead, Quoted, Applied, Pending, Issued, Declined) and only 4 colors were confirmed
+  for the PDF, so 2 more were needed. Updated `CLIENT_STAGES` in `src/lib/types.ts` — the single
+  source of truth every stage dot/badge across the portal reads from (dashboard pipeline bar +
+  legend, the Clients page stage filter pills, the stage dot on Client Search results, the client
+  profile page, and the Family section) — so this one small change reaches everywhere a stage
+  color shows up.
+  1. Kept each stage in the same hue FAMILY it already had, rather than reassigning colors at
+     random — advisors are already used to blue = Quoted, green = Issued, red = Declined, gold =
+     Lead, so this reads as "the same system, nicer colors," not "everything just changed."
+  2. Lead: was a dark amber (#8b6a00) → now a deeper goldenrod in the same mustard family as the
+     PDF's income-replacement color — not the literal pale mustard hex, since that reads fine as a
+     big pie wedge but washes out as a small badge dot; deepened it for legibility at that size
+     while keeping the same gold hue.
+  3. Quoted → reuses the PDF's deep blue exactly. Issued → reuses the PDF's sage green exactly.
+     Declined → reuses the PDF's brick red exactly (the same red from "coverage gap").
+  4. Applied was a purple (#4b2d83) — since Karina said she's not a fan of purple (during the PDF
+     color rounds), moved it to a terracotta/rust instead of carrying purple over. Pending stays in
+     its existing teal family, just deepened to sit alongside the richer palette.
+  Checked all 6 new colors rendered as small dots side by side before shipping — all 6 stay
+  clearly distinguishable at actual badge size, not just as bigger pie-chart wedges.
+
+- **9/11, pipeline stage colors, finalized — BUILT, no new SQL.** After seeing a reference image
+  of the report colors, Karina assigned 4 of the 6 stages explicitly: "lead should be the same
+  color as income replacement because it's like, you know, it's an alert... quoted should be the
+  same as final expense, blue... issued obviously the green, declined the red." She then asked to
+  see options for the other 2, picked, and gave direction: "applied, maybe it should be like an
+  orangey tone, like the terracotta, but maybe a little bit more orange, or like a sienna
+  color... pending, maybe the slate blue gray or like a mixture of the warm tone gray, let's try
+  that."
+  1. **Lead** → the literal PDF mustard (`#f9da8a`), not the deepened goldenrod from the prior
+     entry — I'd flagged that the exact mustard reads faint as a small badge dot next to the other
+     5, she saw both side by side and confirmed she's fine with the paleness.
+  2. **Quoted / Issued / Declined** → exact same hex as the PDF's final expenses / education
+     funding / debt payoff colors respectively, per her explicit calls.
+  3. **Applied** → `#d2691e`, a more saturated burnt-orange/sienna than the terracotta option she
+     was shown, per "a little bit more orange."
+  4. **Pending** → `#737776`, not a straight pick of either option she was shown — a literal
+     50/50 blend of the "slate blue-gray" and "warm stone gray" RGB values, since she asked for
+     "a mixture" rather than committing to one alone.
+  Re-verified lint/build clean and re-checked all 6 final colors as small dots side by side. Also
+  sent an updated reference image per her ask ("can you add the others in there so I can see all
+  the stages with the colors") showing all 6 stages together plus which PDF pie each of the 4
+  reused colors came from.
+
+- **9/11, color palette — final round, BUILT, no new SQL.** Two more tweaks after seeing all 6
+  pipeline colors side by side, worked through with preview images before committing to code each
+  time: she considered a coral alternative for Applied and sent screenshots of two candidate blues
+  from a coolors.co palette ("Ocean Blue Serenity"). Landed on: keep the sienna for Applied, pick
+  "Option B" (`#0096c7`) for the blue, and "what about brightening the green just a touch?" — I
+  built a brightened option (`#478c5c`, same hue, lifted lightness/saturation), gave an honest
+  opinion when asked ("I'd go with the touch-brighter version — the current green reads a little
+  flat next to sienna and mustard"), and she agreed. Her exact words once all of it was settled:
+  "all these colors that we just confirmed, go ahead and build them into the charts, the pie
+  charts, the pipeline, the pipeline on the dashboard everywhere."
+  1. `fa-pdf.ts`: `NEED_COLOR_FINAL` (final expenses) → `#0096c7`; `NEED_COLOR_EDUCATION`
+     (education funding, and therefore `GAP_COLOR_COVERED`/currently covered, which reads off it)
+     → `#478c5c`.
+  2. `types.ts`: `CLIENT_STAGES` → Quoted `#0096c7`, Issued `#478c5c` (Lead/Applied/Pending/Declined
+     unchanged from the prior entry).
+  Re-verified with a rendered test PDF and re-confirmed lint/build clean before shipping.
+  Also built a one-page color reference PDF (`GP_Advisor_Portal_Colors.pdf`) per her ask to "keep
+  track of these colors" — every confirmed hex value with a swatch and where it's used, both on
+  the report and the portal, so this doesn't have to get reconstructed from BACKLOG.md entries
+  later. A second PDF for her actual generationalplaybook.com website colors is intentionally not
+  started — her call: "we can do that later because I need to get the actual color codes for you."
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

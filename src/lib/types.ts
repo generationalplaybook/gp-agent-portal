@@ -1,9 +1,41 @@
 export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "declined";
 
+// 9/11 — Karina, after landing on the Client Report PDF's pie chart colors (mustard, brick red,
+// a deep blue, sage green — see fa-pdf.ts's palette comments for the full round-by-round history):
+// "I think I want these colors on the portal too for the pipeline colors... how many colors do we
+// need for the pipeline? Are these enough, or do we need more?" 6 pipeline stages exist (below),
+// and only 4 colors were confirmed for the PDF, so 2 more were needed. Kept each stage in the same
+// hue FAMILY it already had (advisors are used to blue = Quoted, green = Issued, red = Declined,
+// gold = Lead) rather than reassigning hues at random, so the refresh reads as "the same system,
+// nicer colors" instead of "everything just changed."
+//
+// 9/11, follow-up — Karina then assigned these explicitly, stage by stage, after seeing a
+// side-by-side reference image: "lead should be the same color as income replacement because it's
+// like, you know, it's an alert... quoted should be the same as final expense, blue... issued
+// obviously the green, declined the red." Then for the two she wasn't sure about: "applied, maybe
+// it should be like an orangey tone, like the terracotta, but maybe a little bit more orange, or
+// like a sienna color... pending, maybe the slate blue gray or like a mixture of the warm tone
+// gray, let's try that."
+//   - Lead: the literal PDF mustard, not a deepened version — she confirmed she's fine with the
+//     paleness after seeing both side by side (I'd flagged it reads faint as a small badge dot).
+//   - Quoted / Issued / Declined: exact same hex as the PDF's final expenses / education funding /
+//     debt payoff colors, respectively.
+//   - Applied: a more saturated burnt-orange/sienna than the terracotta option she was shown, per
+//     "a little bit more orange."
+//   - Pending: not a pure pick from either option she was shown — a literal blend of "slate
+//     blue-gray" and "warm tone gray" (average of the two RGB values), since she asked for "a
+//     mixture" rather than committing to one.
+//
+// 9/11, final round — two more tweaks after seeing all 6 together: a different blue ("Option B,"
+// #0096c7, picked from two coolors.co "Ocean Blue Serenity" swatches she sent) and the green
+// "brightened just a touch" (#478c5c — same hue as before, lightness/saturation nudged up).
+// Sienna for Applied stayed as-is after she considered a coral alternative and kept the sienna.
+// Both changes mirror fa-pdf.ts's NEED_COLOR_FINAL / NEED_COLOR_EDUCATION exactly, so Quoted and
+// Issued still match the report's Final Expenses and Education Funding colors 1:1.
 export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }[] = [
-  { value: "lead", label: "Lead", color: "#8b6a00" },
-  { value: "quoted", label: "Quoted", color: "#0057b8" },
-  { value: "applied", label: "Applied", color: "#4b2d83" },
+  { value: "lead", label: "Lead", color: "#f9da8a" },
+  { value: "quoted", label: "Quoted", color: "#0096c7" },
+  { value: "applied", label: "Applied", color: "#d2691e" },
   // 9/11, repositioned per Karina after a client meeting: applied-and-approved clients had
   // nowhere to go except straight to "Issued," even when the policy isn't actually in force yet
   // because the premium hasn't been paid. "Pending should come after applied, and issued should
@@ -12,9 +44,9 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
   // it lapses back or finally goes in force. (Previously positioned after Issued for a different
   // purpose — a client with an existing in-force policy who's actively being worked on new
   // business; that case still fits here too, "approved/awaiting action" either way.)
-  { value: "pending", label: "Pending", color: "#0e7490" },
-  { value: "issued", label: "Issued", color: "#00693c" },
-  { value: "declined", label: "Declined", color: "#8b1a1a" },
+  { value: "pending", label: "Pending", color: "#737776" },
+  { value: "issued", label: "Issued", color: "#478c5c" },
+  { value: "declined", label: "Declined", color: "#b12a29" },
 ];
 
 export const GENDER_OPTIONS = ["Male", "Female"];

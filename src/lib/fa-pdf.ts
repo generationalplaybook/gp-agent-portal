@@ -10,14 +10,21 @@ import { fmt, type FAState, type FAComputed } from "./fa";
 
 type RGB = [number, number, number];
 
-const OBSIDIAN: RGB = [42, 45, 47];
-const CHARCOAL: RGB = [78, 81, 83];
-const SAND: RGB = [229, 223, 211];
+// 9/11, re-pulled from Karina's actual "Edit Palette" screenshot (5 swatches, sampled pixel-exact
+// from the image she sent) rather than colors this file invented — these ARE the real
+// generationalplaybook.com neutrals, lightest to darkest. No hue in any of them, matching what she
+// showed of the live site back when the monochrome decision was made (see illustration-pdf.ts's
+// palette comment for that history) — this just replaces the approximated near-black/gray/sand
+// this file was using with the exact confirmed values.
+const CREAM: RGB = [250, 248, 245]; // lightest swatch — used for page/box backgrounds, too close to white to use as a chart fill
+const PARCHMENT: RGB = [245, 241, 235]; // second swatch
+const SAND: RGB = [236, 232, 223]; // third (center) swatch
+const CHARCOAL: RGB = [46, 46, 46]; // fourth swatch
+const OBSIDIAN: RGB = [28, 28, 28]; // fifth (darkest) swatch
+const NEUTRAL_FILL: RGB = CREAM;
+// Not one of the 5 confirmed swatches — kept only for small incidental text (disclaimer/footer)
+// that was already using a lighter gray than CHARCOAL; the confirmed palette has no true mid-gray.
 const GRAY: RGB = [155, 155, 152];
-const NEUTRAL_FILL: RGB = [244, 241, 235];
-// A fourth mid-tone, between SAND and GRAY, purely so a 4-slice pie chart (see drawPieChart below)
-// has enough distinguishable shades without reaching outside the existing monochrome palette.
-const TAUPE: RGB = [196, 188, 169];
 
 // 9/11 — Karina: "can there be some graphs on this maybe? To show, like, the shortfall and just
 // really bring this up to speed and make it a bit more visual... a circle graph, like a pie chart
@@ -26,6 +33,72 @@ const TAUPE: RGB = [196, 188, 169];
 // via doc.lines() with closed+fill. Every slice also gets a legend swatch + label + dollar amount
 // underneath, since a strictly grayscale pie (this report's established monochrome palette — no
 // red/green, see the file header) genuinely can't be told apart by color alone.
+//
+// 9/11, follow-up — Karina: "the dominant color is black, that does not look good... can we play
+// with the color palette I uploaded?" The first version hardcoded "Income replacement" (almost
+// always the biggest slice, since it's years-of-income × income) to the darkest color, so the pie
+// read as "mostly black" by default. assignPieColors below fixes that structurally: slices are
+// ranked by size and colored light-to-dark as they get SMALLER, so the biggest wedge is always the
+// lightest tone and black is reserved for slivers, which is also just better pie-chart practice —
+// a large area can afford a subtle fill, a thin sliver needs contrast to still read at all.
+//
+// 9/11, second round — Karina, after seeing the neutral-palette version above: "let's go with
+// brighter colors then, maybe that are not within the color palette range... income replacement
+// should be green, because that's how much you need, the go-ahead... debt payoff, final expense —
+// those could be a different color... currently covered can be green, but coverage gap may be a
+// nice tone of red... this kinda looks dull and mundane and isn't striking enough." Explicit
+// direction to drop the rank-based neutral assignment above in favor of fixed, semantic, vivid
+// colors — scoped to just these two pie charts. Everything else in this report (text, dividers,
+// boxes) stays the established neutral palette; this section is the one deliberate exception.
+//
+// 9/11, third round — Karina, after seeing the green/red/purple/blue version: "those colors are
+// too Christmasy... I'm not a fan of the purple... the red and that green gotta go... the blue is
+// okay, but it's still a little too corporate — let's find something a little different, like
+// maybe a cobalt blue." Dropped literal red/green entirely (that was the "Christmasy" pairing),
+// dropped purple, and swapped the flat corporate blue for an actual cobalt. Landed on a
+// warm/cool pair that still reads as "good vs. needs attention" without leaning on stoplight
+// colors: cobalt blue for the positive/covered side, a warm terracotta for the side that needs
+// attention, plus a teal and a gold for the two categories that don't carry a
+// good/bad connotation on their own (debt payoff, education funding).
+//
+// 9/11, fourth round — Karina sent 4 screenshots of colors she'd found (maroon/brick red/cream,
+// a sage green swatch labeled "Earthy Tones," a sky blue, and a mustard/coral pin) with "what
+// about these colors." Since two of those are a red and a green — the exact pairing she'd just
+// said to drop — I checked first whether she wanted them combined anyway given how much more
+// muted/earthy these are than the bright versions from round 2; she said yes, combine them.
+// Pixel-sampled straight from her screenshots (not approximated) — maroon [110,18,11], brick red
+// [177,42,41], sage green [62,109,76], sky blue [83,183,234], mustard [249,218,138]. Skipped the
+// cream/ivory strip from the first screenshot (same problem as the original brand cream — too
+// close to white to read as a chart fill) and didn't use the coral sliver from the mustard pin,
+// since mustard + coral together read closer to the pin's own two-tone accent than a 4th distinct
+// category color.
+//
+// 9/11, fifth round — Karina, after seeing round 4: the coverage-need pie's 4 colors stay
+// (mustard/brick red/blue/sage green), but the gap pie should switch FROM blue+maroon TO the same
+// red and green already used in the first pie — "not the blue" on this one. Also: "you're using
+// the wrong tone of red, I want the same red tone that you used for the debt payoff red to be on
+// this other graph" — round 4 used a separate darker maroon for the gap pie instead of reusing
+// debt payoff's exact brick red; fixed to reuse the literal same RGB now. And a request to see a
+// deeper option for the blue itself (still used for "final expenses" in the first pie, no longer
+// used in the second) — this is one option, not a locked-in final answer; can go deeper/lighter
+// again if this isn't quite it.
+//
+// 9/11, sixth round (final) — after the round-5 blue and green went into the pipeline-color
+// discussion too (see CLIENT_STAGES in types.ts for that thread), Karina picked a final blue from
+// two coolors.co swatches she sent ("Option B," #0096c7) and asked for the green "brightened just
+// a touch" — confirmed both, plus sienna staying as Applied's color (not used in this file, see
+// types.ts): "all these colors that we just confirmed, go ahead and build them into the charts,
+// the pie charts, the pipeline... everywhere." Final expenses' blue and education funding's green
+// (which the gap pie's "currently covered" already inherits via GAP_COLOR_COVERED above) both
+// updated to match.
+const NEED_COLOR_INCOME: RGB = [249, 218, 138]; // mustard — income replacement
+const NEED_COLOR_DEBT: RGB = [177, 42, 41]; // brick red — debt payoff
+const NEED_COLOR_FINAL: RGB = [0, 150, 199]; // coolors.co "Option B" (#0096c7) — final expenses
+const NEED_COLOR_EDUCATION: RGB = [71, 140, 92]; // sage green, brightened a touch (#478c5c) — education funding
+
+const GAP_COLOR_COVERED: RGB = NEED_COLOR_EDUCATION; // same brightened green as "education funding" — currently covered
+const GAP_COLOR_GAP: RGB = NEED_COLOR_DEBT; // same exact brick red as "debt payoff" — coverage gap
+
 function drawPieChart(
   doc: jsPDF,
   setFill: (c: RGB) => void,
@@ -37,8 +110,11 @@ function drawPieChart(
 ) {
   const total = slices.reduce((s, sl) => s + Math.max(0, sl.value), 0);
   if (total <= 0) return;
-  setDraw(NEUTRAL_FILL);
-  doc.setLineWidth(0.75);
+  // White, not a palette neutral — a thin white gap between wedges stays visible no matter how
+  // light or dark the two neighboring fills are (PARCHMENT-next-to-SAND needed this; the old
+  // NEUTRAL_FILL/PARCHMENT stroke nearly vanished against its own fill).
+  setDraw([255, 255, 255]);
+  doc.setLineWidth(1);
   let startAngle = -Math.PI / 2;
   slices.forEach((slice) => {
     const value = Math.max(0, slice.value);
@@ -136,8 +212,9 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
   doc.text("Blended across seven pillars: Cash Flow, Debt, Protection, Liquidity, Retirement, Education, Estate.", M + 14, y + 42);
   y += 76;
 
-  // Client info box
-  setFill(NEUTRAL_FILL);
+  // Client info box — PARCHMENT rather than NEUTRAL_FILL/CREAM, so it reads as a subtly distinct
+  // box from the score box above rather than the two blending into one another.
+  setFill(PARCHMENT);
   doc.roundedRect(M, y, W - 2 * M, 60, 4, 4, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -213,18 +290,22 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
     doc.text("What the Coverage Need Is Made Of", M, chartTop);
     doc.text("Coverage Need vs. What's Covered", M + 245, chartTop);
 
-    const needSlices: { label: string; value: number; color: RGB }[] = [
-      { label: "Income replacement", value: computed.protection.needIncome, color: OBSIDIAN },
-      { label: "Debt payoff", value: computed.protection.needDebt, color: CHARCOAL },
-      { label: "Final expenses", value: computed.protection.needFinal, color: GRAY },
-      { label: "Education funding", value: computed.protection.needEducation, color: TAUPE },
+    // Fixed, semantic colors per category (see comment above drawPieChart's color constants) —
+    // Karina's explicit ask, replacing the earlier rank-based neutral assignment.
+    const needSlices = [
+      { label: "Income replacement", value: computed.protection.needIncome, color: NEED_COLOR_INCOME },
+      { label: "Debt payoff", value: computed.protection.needDebt, color: NEED_COLOR_DEBT },
+      { label: "Final expenses", value: computed.protection.needFinal, color: NEED_COLOR_FINAL },
+      { label: "Education funding", value: computed.protection.needEducation, color: NEED_COLOR_EDUCATION },
     ];
     drawPieChart(doc, setFill, setDraw, col1CenterX, pieCy, pieRadius, needSlices);
     const legend1Bottom = pieLegend(doc, setFill, setText, M, chartTop + pieRadius * 2 + 22, needSlices);
 
-    const gapSlices: { label: string; value: number; color: RGB }[] = [
-      { label: "Currently covered", value: Math.min(computed.protection.totalCoverage, computed.protection.totalNeed), color: TAUPE },
-      { label: "Coverage gap", value: Math.max(0, computed.protection.gap), color: OBSIDIAN },
+    // Sage green = covered, brick red = gap — reusing the exact same colors as "education
+    // funding" and "debt payoff" in the pie above, per Karina's explicit round-5 request.
+    const gapSlices = [
+      { label: "Currently covered", value: Math.min(computed.protection.totalCoverage, computed.protection.totalNeed), color: GAP_COLOR_COVERED },
+      { label: "Coverage gap", value: Math.max(0, computed.protection.gap), color: GAP_COLOR_GAP },
     ];
     drawPieChart(doc, setFill, setDraw, col2CenterX, pieCy, pieRadius, gapSlices);
     const legend2Bottom = pieLegend(doc, setFill, setText, M + 245, chartTop + pieRadius * 2 + 22, gapSlices);
