@@ -42,9 +42,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <nav className="relative flex h-14 items-center justify-between border-b border-[#D9CFBA] bg-white px-4 sm:px-6">
           <div className="flex items-center gap-6">
             {/* 9/11 — replaced the plain "GP Advisor Portal" text link with the real
-                Generational Playbook logo per Karina. */}
+                Generational Playbook logo per Karina. 9/12 — she flagged it as too small to
+                make out ("can barely see it") on the actual dashboard; sized up from 26 to 40. */}
             <Link href="/" aria-label="Generational Playbook">
-              <Logo size={26} />
+              <Logo size={40} />
             </Link>
             {/* Full 9-link row only fits from md: (768px) up — MobileNav's hamburger drawer takes
                 over below that (see the comment in NavLinks.tsx). */}

@@ -3729,6 +3729,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      the right product, drops products that don't fit, and gives an honest "nothing fits, here's
      why" message when neither option's age window matches. Lint/build clean.
 
+- **9/12, logo size on the nav bar — BUILT, no new SQL.** Karina, on the dashboard screenshot:
+  "this needs to be larger the logo, can barely see it." The nav bar's `Logo` was sized at 26px
+  (chosen back on 9/11 without her seeing it live) — clearly too small once she actually looked at
+  the real page.
+  1. `src/app/(app)/layout.tsx`: bumped the nav bar `Logo` from `size={26}` to `size={40}`.
+  2. Verified before shipping by rendering the exact same SVG markup at 40px inside a mockup of
+     the real nav bar's layout (56px bar height, same padding/gaps as the actual `<nav>`) and
+     screenshotting it — confirms it reads clearly at a glance now without crowding the nav links
+     or overflowing the bar. Lint/build clean.
+  3. Left the login page's logo at its existing `size={34}` — she only flagged the dashboard nav
+     bar this time; happy to size that one up too if she wants it bigger as well.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
