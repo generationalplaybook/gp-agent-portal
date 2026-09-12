@@ -3698,6 +3698,37 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   3. Re-ran lint/build clean after all 29 edits; spot-checked the Living Promise entry to confirm
      formatting matches the rest of the Knowledge Base.
 
+- **9/12, Client Analyzer now hard-filters final expense recommendations by real issue age —
+  BUILT, no new SQL.** Karina asked directly: "if somebody says that they have a condition, like
+  a health condition, will you be recommending final expense options as well and then base it on
+  their age? Is that a thing that you're gonna be doing?" The Client Analyzer already asked about
+  health/decline history and already had a "Final expense" goal, but the recommendation logic
+  never checked the client's actual age against a product's real issue-age window — it would
+  happily recommend Living Promise to a 30-year-old or a 90-year-old. Shown 3 options for how age
+  should factor in (hard filter only / hard filter + flag borderline cases / note only, no
+  filtering) — she picked hard filter by real issue ages.
+  1. `analyzer.ts`: added `age` (the client's actual computed age, not just the young/mid/
+     pre-retiree/retiree bucket used elsewhere) to the recommendation engine's internal context,
+     and a small table of the real, carrier-sourced issue-age windows for the final-expense
+     products it recommends (TruStage Guaranteed Issue 45-85, TruStage Simplified Issue 45-85,
+     Living Promise Level 45-85, Living Promise Graded 45-80 — same figures now in kb-data.ts).
+  2. The final_expense branch now checks the client's age against these windows before
+     recommending: if the usual primary product doesn't fit, it promotes whichever option
+     actually does fit instead (and drops in a line explaining why); if the client is a declined/
+     rated risk, it also picks Living Promise's Graded Benefit (not Level) as the fitting tier,
+     since Graded is the one actually built for elevated-risk applicants. If NOTHING in the
+     Knowledge Base fits the client's age at all, it says so plainly instead of forcing a
+     recommendation — and if they're too young for final expense whole life entirely, it flags
+     that a term or IUL goal is probably the better fit in the first place.
+  3. Banner Life Final Expense's own issue-age range is still unconfirmed (see the KB entry) — it
+     deliberately is NOT part of the hard filter, so it's never silently included or excluded on a
+     guessed number. It stays offered as a secondary option with a "verify with Ethos" note
+     instead.
+  4. Verified with a compiled test script running 7 age/health scenarios (declined at 30/60/90,
+     healthy at 40/70, significant-health-not-declined at 82/87) — confirmed the engine promotes
+     the right product, drops products that don't fit, and gives an honest "nothing fits, here's
+     why" message when neither option's age window matches. Lint/build clean.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

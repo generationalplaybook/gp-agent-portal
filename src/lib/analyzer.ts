@@ -278,10 +278,35 @@ interface RecommendationContext {
   // still an adult client, and that case is handled by the goal === "college" branch below
   // regardless of this flag.
   isMinor: boolean;
+  // Karina, 9/12: "if somebody says that they have a condition... will you be recommending final
+  // expense options as well and then base it on their age?" Raw age (not just the bucketed
+  // ageGroup) so the final_expense branch below can hard-filter against each product's REAL,
+  // carrier-sourced issue-age window from the Knowledge Base (kb-data.ts) — never guess or round
+  // to ageGroup for this, since a few years either side of a cutoff is exactly what matters here.
+  age: number | null;
+}
+
+// Real, carrier-sourced issue-age windows for the final-expense products this engine recommends —
+// pulled from the same research pass that filled in kb-data.ts's "Issue ages" lines (9/12). Only
+// listing ranges we're actually confident in; Banner Life's final-expense age window was NOT
+// confirmed by any primary source during that research (see kb-data.ts), so it's deliberately left
+// out of this hard-filter table rather than gated on a guessed number — it stays offered as a
+// "verify with Ethos" option instead of being silently included or excluded.
+const FINAL_EXPENSE_AGE_RANGES = {
+  trustageGuaranteed: { min: 45, max: 85, label: "TruStage Final Expense (Guaranteed Issue)" },
+  trustageSimplified: { min: 45, max: 85, label: "TruStage Final Expense (Simplified Issue)" },
+  livingPromiseLevel: { min: 45, max: 85, label: "Mutual of Omaha Living Promise (Level Benefit)" },
+  livingPromiseGraded: { min: 45, max: 80, label: "Mutual of Omaha Living Promise (Graded Benefit)" },
+} as const;
+
+function fitsAge(age: number | null, range: { min: number; max: number }): boolean {
+  // An unknown age (DOB not entered yet) never gets hard-filtered out — there's nothing to check
+  // it against, so let it through and let the advisor confirm once DOB is on file.
+  return age === null || (age >= range.min && age <= range.max);
 }
 
 function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContext): Omit<GoalRecommendation, "goal" | "goalLabel"> {
-  const { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor } = ctx;
+  const { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor, age } = ctx;
 
   let primary = "";
   let secondary = "";
@@ -328,29 +353,79 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   // annuity-only recommendations by the "uninsurable" branch below — so it's checked first,
   // ahead of the insurability/money-type logic that governs every other goal.
   if (goal === "final_expense") {
-    if (insurable === "no") {
-      primary = "Ethos Final Expense Whole Life (TruStage) — Guaranteed Issue";
-      reasons = [
-        "Guaranteed acceptance — no health questions, no exam, no declines",
-        "Permanent coverage with fixed premiums that never increase",
-        "Graded 2-year benefit applies to natural causes only — accidental death is covered in full from day one",
-      ];
-      secondary =
-        "Banner Life Final Expense (Guaranteed Issue, via Ethos) — worth it if Social Security Billing (premiums auto-deducted from their SS check) would help them keep the policy current";
-    } else {
-      primary = "Ethos Final Expense Whole Life (TruStage) — Simplified Issue";
-      reasons = [
-        "Simplified issue — a handful of health questions, no medical exam",
-        "Permanent coverage with fixed premiums that never increase, plus guaranteed cash value growth",
-        "Sized for funeral, burial, and small final bills — not a large policy with a payment to match",
-      ];
-      secondary =
-        "Mutual of Omaha Living Promise — also no exam and purchasable online, if a well-known carrier name matters to the client";
-    }
+    const r = FINAL_EXPENSE_AGE_RANGES;
     talking = [
       "This isn't about replacing your income — it's making sure your family never has to come up with money for funeral or burial costs",
       "The payment is small and locked in for life, because the coverage amount is sized to the actual need, not overbuilt",
     ];
+
+    if (insurable === "no") {
+      const trustageFits = fitsAge(age, r.trustageGuaranteed);
+      if (trustageFits) {
+        primary = "Ethos Final Expense Whole Life (TruStage) — Guaranteed Issue";
+        reasons = [
+          "Guaranteed acceptance — no health questions, no exam, no declines",
+          "Permanent coverage with fixed premiums that never increase",
+          "Graded 2-year benefit applies to natural causes only — accidental death is covered in full from day one",
+          age !== null ? `Client's age (${age}) fits TruStage Guaranteed Issue's published window (${r.trustageGuaranteed.min}-${r.trustageGuaranteed.max})` : "",
+        ].filter(Boolean);
+        secondary =
+          "Banner Life Final Expense (Guaranteed Issue, via Ethos) — worth it if Social Security Billing (premiums auto-deducted from their SS check) would help them keep the policy current; Banner Life's own issue-age window isn't confirmed in our records, so verify eligibility with Ethos before quoting";
+      } else {
+        // Age doesn't fit the one guaranteed-issue product we have a confirmed range for.
+        primary = "No confirmed Guaranteed Issue final expense match on file";
+        reasons = [
+          `Client's age (${age}) falls outside TruStage Guaranteed Issue's published window (${r.trustageGuaranteed.min}-${r.trustageGuaranteed.max})`,
+          "Banner Life Final Expense (Guaranteed Issue) may still be an option, but its issue-age range isn't confirmed in our records — check directly with Ethos before ruling it out",
+          age !== null && age < r.trustageGuaranteed.min
+            ? "Client is younger than every guaranteed-issue final expense product we have a confirmed range for — this age/health combination may need a different approach entirely (e.g. a simplified-issue term or graded life product) rather than final expense whole life"
+            : "Client is older than every guaranteed-issue final expense product we have a confirmed range for — worth a direct call to carriers for an over-85 guaranteed-issue option",
+        ];
+        secondary = "Banner Life Final Expense (Guaranteed Issue, via Ethos) — confirm age eligibility directly, not filtered here";
+        avoid = "";
+      }
+    } else {
+      // insurable is "maybe" (rated, or a significant-but-not-declined health condition) or "yes".
+      // Use that same signal to pick which Living Promise tier is the realistic secondary — Graded
+      // Benefit is the one built for elevated-risk applicants, Level Benefit for everyone else.
+      const livingPromiseRange = insurable === "maybe" ? r.livingPromiseGraded : r.livingPromiseLevel;
+      const livingPromiseTierLabel = insurable === "maybe" ? "Graded Benefit" : "Level Benefit";
+      const trustageFits = fitsAge(age, r.trustageSimplified);
+      const livingPromiseFits = fitsAge(age, livingPromiseRange);
+
+      if (trustageFits) {
+        primary = "Ethos Final Expense Whole Life (TruStage) — Simplified Issue";
+        reasons = [
+          "Simplified issue — a handful of health questions, no medical exam",
+          "Permanent coverage with fixed premiums that never increase, plus guaranteed cash value growth",
+          "Sized for funeral, burial, and small final bills — not a large policy with a payment to match",
+          age !== null ? `Client's age (${age}) fits TruStage Simplified Issue's published window (${r.trustageSimplified.min}-${r.trustageSimplified.max})` : "",
+        ].filter(Boolean);
+        secondary = livingPromiseFits
+          ? `Mutual of Omaha Living Promise (${livingPromiseTierLabel}) — also no exam and purchasable online, if a well-known carrier name matters to the client; age fits its ${livingPromiseRange.min}-${livingPromiseRange.max} window`
+          : `Mutual of Omaha Living Promise doesn't fit — client's age (${age}) falls outside its ${livingPromiseTierLabel} window (${livingPromiseRange.min}-${livingPromiseRange.max})`;
+      } else if (livingPromiseFits) {
+        // TruStage doesn't fit but Living Promise does — promote it to primary instead of
+        // recommending a product the client's age rules out.
+        primary = `Mutual of Omaha Living Promise (${livingPromiseTierLabel})`;
+        reasons = [
+          "No exam required and purchasable online",
+          "Permanent coverage with guaranteed level premiums",
+          `Client's age (${age}) fits Living Promise's ${livingPromiseTierLabel} window (${livingPromiseRange.min}-${livingPromiseRange.max}), while TruStage Simplified Issue's window (${r.trustageSimplified.min}-${r.trustageSimplified.max}) does not`,
+        ];
+        secondary = "";
+      } else {
+        primary = "No confirmed final expense whole life match on file for this age";
+        reasons = [
+          `Client's age (${age}) falls outside both TruStage Simplified Issue (${r.trustageSimplified.min}-${r.trustageSimplified.max}) and Mutual of Omaha Living Promise ${livingPromiseTierLabel} (${livingPromiseRange.min}-${livingPromiseRange.max})`,
+          age !== null && age < r.trustageSimplified.min
+            ? "Client is younger than every final expense whole life product we have a confirmed range for — final expense whole life usually isn't the right tool this young anyway; a term or IUL goal may fit the actual need better"
+            : "Client is older than every final expense whole life product we have a confirmed range for — worth a direct call to carriers for a higher-age option",
+        ];
+        secondary = "";
+        avoid = "";
+      }
+    }
     return { primary, secondary, avoid, reasons, talking, avoidReasons, combo, comboReasons };
   }
 
@@ -580,7 +655,7 @@ export function runAnalyzer(inputs: AnalyzerInputs): AnalyzerResult {
   }
 
   const isMinor = age !== null && age < 18;
-  const ctx: RecommendationContext = { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor };
+  const ctx: RecommendationContext = { insurable, money, ageGroup, horizon, funding, earlyAccess, isMinor, age };
 
   // One full recommendation block per selected goal. If no goal was selected, fall back to a
   // single general-purpose recommendation (matches the original tool's "goal skipped" behavior).
