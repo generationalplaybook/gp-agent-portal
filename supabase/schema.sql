@@ -1414,3 +1414,39 @@ alter table public.profiles add column if not exists onboarding_dismissed_at tim
 -- ─────────────────────────────────────────────────────────────
 alter table public.clients add column if not exists stage_entered_pending_at timestamptz;
 alter table public.clients add column if not exists pending_checkin_reminder_sent boolean not null default false;
+
+-- ─────────────────────────────────────────────────────────────
+-- 51. Per-product "pending carrier approval" check-in reminder (added 9/12) — replaces section
+-- 50's client-stage version. Karina, after adding a Max Cash Value Juvenile product for a client
+-- she'd just moved to Pending: "is there a reminder for me to check-in on it in maybe two days,
+-- so twenty four hours? or should it be seventy two hours?" Then, once she went looking and
+-- couldn't find any reminder anywhere: "I don't see anywhere where there's a reminders
+-- triggered... I wanted to actually show up on the client's profile and in the reminders list...
+-- and that needs to happen across the board for pending products that are entered." Two real
+-- gaps, fixed here:
+--   (1) Section 50 only fired once per CLIENT, via their single overall pipeline `stage` — so a
+--       client with one already-Issued product and a second, newer product still awaiting carrier
+--       approval had no way to track that second product's pending status at all (the client's
+--       stage had already moved on). This is per-PRODUCT instead, same shape as
+--       conversion_pending_at (section 38) — a client can have any number of products, each
+--       independently pending approval or not.
+--   (2) Section 50's daily cron only created the reminder row on day 3 itself — so there was
+--       nothing to see in the Reminders list or on the client's profile in the meantime, which is
+--       exactly what Karina flagged. This creates the reminder row IMMEDIATELY, the moment a
+--       product is marked pending (markPendingApproval, src/app/(app)/clients/actions.ts), dated
+--       3 days out — so it's visible right away in both the Reminders list and the client's own
+--       Reminders card, the same way any manually-added reminder is, and turns red/overdue once
+--       due (see ReminderRow.tsx's isOverdue) rather than staying invisible until that day arrives.
+--   pending_approval_at         — set the moment a product is marked "Awaiting carrier approval,"
+--                                  cleared when the product is resolved: marked Undo, or the
+--                                  advisor fills in a policy_number on Edit (treated as "this is
+--                                  issued now" — see updateProduct).
+--   pending_checkin_reminder_id — the auto-created reminder's id, same pattern as
+--                                  outreach_reminder_id (section 46), so resolving the product
+--                                  deletes that exact reminder instead of leaving a stale "check on
+--                                  this" nudge behind for a product that isn't pending anymore.
+-- Section 50's client-level columns and cron are left in place but retired (no longer written to
+-- by updateStage) — harmless unused columns/route, not worth a destructive migration to remove.
+-- ─────────────────────────────────────────────────────────────
+alter table public.client_products add column if not exists pending_approval_at timestamptz;
+alter table public.client_products add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;

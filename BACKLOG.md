@@ -3741,6 +3741,45 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   3. Left the login page's logo at its existing `size={34}` — she only flagged the dashboard nav
      bar this time; happy to size that one up too if she wants it bigger as well.
 
+- **9/12, pending-approval check-in reminder, per product — BUILT, SQL REQUIRED (see below).**
+  Karina, describing a client she'd just moved to Pending with a new "Accumulation IUL — Max Cash
+  Value Juvenile" product not yet issued: "with me saving that as a product for them... is there a
+  reminder for me to check-in on it in maybe two days, so twenty four hours? or should it be
+  seventy two hours? I'm on the client profile. I don't see anywhere where there's a reminders
+  triggered. And even if there was... is a reminder quietly in the background, I wanted to actually
+  show up on the client's profile and in the reminders list so that there's some sort of, you know,
+  confirmation that I'm going to be reminded as the adviser to check-in on this pending policy, and
+  that needs to happen across the board for pending products that are entered." Asked her two
+  follow-up questions and built to her answers: per-product (not just client-level), 3 days out.
+  1. New columns on `client_products` (schema.sql section 51): `pending_approval_at` and
+     `pending_checkin_reminder_id` (points at the reminder it created, so resolving/undoing deletes
+     that exact reminder instead of leaving a stale one behind). This replaces the old 9/11
+     client-stage-only version (section 50) — that one only fired once per client via their single
+     overall pipeline stage, so a client with one already-Issued product and a second one newly
+     pending had no way to flag just that second product. Section 50's columns/cron are left in
+     place but no longer written to — harmless, not worth a destructive migration.
+  2. The reminder is created IMMEDIATELY when a product is marked pending approval — not by a
+     later daily cron — dated 3 days out, so it shows up right away in both the Reminders list and
+     the client's own Reminders card (same as any other reminder), and turns red/overdue once the
+     3 days pass, the same way every other reminder already does. No new cron needed.
+  3. Two ways to mark a product pending approval: (a) a new "Awaiting carrier approval — remind me
+     to check in in 3 days" checkbox right on the Add Product form, for a product entered
+     already-pending (like her Max Cash Value Juvenile example); (b) a "Mark Pending Approval"
+     button on any existing not-yet-issued product's card, with its own "Undo." Either way the
+     product's card immediately shows a gold "Pending Approval" badge and a "Pending approval
+     since {date} — a check-in reminder has been added to Reminders" line, so it's visible on the
+     client's profile right away, not hidden.
+  4. Auto-resolves: filling in a policy number on an existing pending-approval product (Edit → Save)
+     is treated as "this is issued now" — clears the pending flag and deletes the check-in reminder
+     automatically, so an issued policy doesn't keep a stale "check on this" nudge in Reminders.
+  5. Lint and build both clean.
+  **SQL REQUIRED before this works** — run in Supabase's SQL Editor (safe to run more than once,
+  uses `if not exists`):
+  ```sql
+  alter table public.client_products add column if not exists pending_approval_at timestamptz;
+  alter table public.client_products add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;
+  ```
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

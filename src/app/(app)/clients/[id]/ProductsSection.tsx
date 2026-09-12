@@ -41,6 +41,7 @@ const EMPTY_FIELDS: ProductFields = {
   contract_value: "",
   annuity_surrender_end_date: "",
   annuity_contract_end_date: "",
+  pending_approval: false,
 };
 
 export default function ProductsSection({
@@ -230,6 +231,22 @@ export default function ProductsSection({
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
+          {/* Karina, 9/12: adding a product that's already sitting with the carrier awaiting
+              approval should immediately create a visible check-in reminder — not a silent
+              background job, and not something she has to remember to click separately after
+              saving. Reuses the exact same markPendingApproval() the per-product "Mark Pending
+              Approval" button on an existing product calls (see ProductRow.tsx). */}
+          {!(fields.policy_number ?? "").trim() && (
+            <label className="flex items-center gap-2 text-xs font-medium text-[#2E2E2E]">
+              <input
+                type="checkbox"
+                checked={fields.pending_approval ?? false}
+                onChange={(e) => setFields((f) => ({ ...f, pending_approval: e.target.checked }))}
+                className="h-4 w-4 rounded border-[#D9CFBA]"
+              />
+              Awaiting carrier approval — remind me to check in in 3 days
+            </label>
+          )}
           {ownerOptions.length > 0 && (
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)

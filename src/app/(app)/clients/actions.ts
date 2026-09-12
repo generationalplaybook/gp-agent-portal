@@ -600,6 +600,12 @@ export interface ProductFields {
   // contract can outlast its surrender charge period. Now wired into the Outreach queue alongside
   // it — see getNextOutreachMilestone in lib/products.ts.
   annuity_contract_end_date?: string;
+  // Transient add-time flag only — NOT a column on client_products itself. When set on
+  // addProduct, immediately marks the new product pending approval the same way
+  // markPendingApproval does (see below) so a product entered as already-submitted-and-waiting
+  // doesn't need a separate follow-up click. Karina, 9/12: added a product for a client "in
+  // pending... it's pending approval" in the same breath as creating it.
+  pending_approval?: boolean;
 }
 
 function parseNumberOrNull(v?: string): number | null {
@@ -619,34 +625,45 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
   const { data: clientRow } = await supabase.from("clients").select("stage").eq("id", clientId).single();
   const is_quote = clientRow?.stage === "quoted";
 
-  const { error } = await supabase.from("client_products").insert({
-    client_id: clientId,
-    product_name,
-    product_type: fields.product_type?.trim() || null,
-    carrier: fields.carrier?.trim() || null,
-    policy_number: fields.policy_number?.trim() || null,
-    issue_date: fields.issue_date?.trim() || null,
-    expiration_date: fields.expiration_date?.trim() || null,
-    is_convertible: fields.is_convertible ?? false,
-    conversion_deadline: fields.conversion_deadline?.trim() || null,
-    final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
-    no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
-    term_end_date: fields.term_end_date?.trim() || null,
-    conversion_notes: fields.conversion_notes?.trim() || null,
-    face_amount: parseNumberOrNull(fields.face_amount),
-    premium: parseNumberOrNull(fields.premium),
-    minimum_premium: parseNumberOrNull(fields.minimum_premium),
-    notes: fields.notes?.trim() || null,
-    owner_client_id: fields.owner_client_id?.trim() || null,
-    riders: fields.riders ?? [],
-    is_quote,
-    annuity_contribution_amount: parseNumberOrNull(fields.annuity_contribution_amount),
-    annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
-    contract_value: parseNumberOrNull(fields.contract_value),
-    annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
-    annuity_contract_end_date: fields.annuity_contract_end_date?.trim() || null,
-  });
+  const { data: inserted, error } = await supabase
+    .from("client_products")
+    .insert({
+      client_id: clientId,
+      product_name,
+      product_type: fields.product_type?.trim() || null,
+      carrier: fields.carrier?.trim() || null,
+      policy_number: fields.policy_number?.trim() || null,
+      issue_date: fields.issue_date?.trim() || null,
+      expiration_date: fields.expiration_date?.trim() || null,
+      is_convertible: fields.is_convertible ?? false,
+      conversion_deadline: fields.conversion_deadline?.trim() || null,
+      final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
+      no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
+      term_end_date: fields.term_end_date?.trim() || null,
+      conversion_notes: fields.conversion_notes?.trim() || null,
+      face_amount: parseNumberOrNull(fields.face_amount),
+      premium: parseNumberOrNull(fields.premium),
+      minimum_premium: parseNumberOrNull(fields.minimum_premium),
+      notes: fields.notes?.trim() || null,
+      owner_client_id: fields.owner_client_id?.trim() || null,
+      riders: fields.riders ?? [],
+      is_quote,
+      annuity_contribution_amount: parseNumberOrNull(fields.annuity_contribution_amount),
+      annuity_contribution_frequency: fields.annuity_contribution_frequency?.trim() || null,
+      contract_value: parseNumberOrNull(fields.contract_value),
+      annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
+      annuity_contract_end_date: fields.annuity_contract_end_date?.trim() || null,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+
+  // Karina, 9/12: a product can be entered already pending carrier approval — don't make her add
+  // it first and then click a separate "Mark Pending Approval" after. Reuses the exact same
+  // reminder-creation logic as that action (see below) rather than duplicating it.
+  if (fields.pending_approval && inserted) {
+    await markPendingApproval(inserted.id, clientId, product_name);
+  }
 
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
@@ -658,13 +675,37 @@ export async function updateProduct(productId: string, clientId: string, fields:
   const product_name = fields.product_name.trim();
   if (!product_name) throw new Error("Product name is required.");
 
+  const newPolicyNumber = fields.policy_number?.trim() || null;
+
+  // 9/12 — filling in a policy number is the plain signal a product just got issued. If it was
+  // sitting pending approval (see markPendingApproval below), that's resolved now — clear the flag
+  // and delete the check-in reminder it created, same cleanup undoPendingApproval does by hand,
+  // so a policy that's actually in force doesn't keep a stale "check on this" nudge sitting in
+  // Reminders. Only fires on the transition (didn't have a policy number, now does) — re-saving an
+  // already-issued product with its existing policy number doesn't re-trigger anything because
+  // pending_approval_at will already be null by then.
+  let clearedPendingFields: { pending_approval_at: null; pending_checkin_reminder_id: null } | Record<string, never> = {};
+  if (newPolicyNumber) {
+    const { data: current } = await supabase
+      .from("client_products")
+      .select("policy_number, pending_approval_at, pending_checkin_reminder_id")
+      .eq("id", productId)
+      .single();
+    if (current?.pending_approval_at && !current.policy_number) {
+      if (current.pending_checkin_reminder_id) {
+        await supabase.from("reminders").delete().eq("id", current.pending_checkin_reminder_id);
+      }
+      clearedPendingFields = { pending_approval_at: null, pending_checkin_reminder_id: null };
+    }
+  }
+
   const { error } = await supabase
     .from("client_products")
     .update({
       product_name,
       product_type: fields.product_type?.trim() || null,
       carrier: fields.carrier?.trim() || null,
-      policy_number: fields.policy_number?.trim() || null,
+      policy_number: newPolicyNumber,
       issue_date: fields.issue_date?.trim() || null,
       expiration_date: fields.expiration_date?.trim() || null,
       is_convertible: fields.is_convertible ?? false,
@@ -684,6 +725,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       contract_value: parseNumberOrNull(fields.contract_value),
       annuity_surrender_end_date: fields.annuity_surrender_end_date?.trim() || null,
       annuity_contract_end_date: fields.annuity_contract_end_date?.trim() || null,
+      ...clearedPendingFields,
     })
     .eq("id", productId);
   if (error) throw new Error(error.message);
@@ -749,6 +791,61 @@ export async function undoConverted(productId: string, clientId: string): Promis
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
   revalidatePath("/");
+}
+
+// Pending Approval — per-product, independent of the client's own pipeline stage. See schema.sql
+// section 51 for the full "why" (replaces the old client-stage-only version from section 50).
+// Creates the check-in reminder IMMEDIATELY (not via a later cron run) so it's visible right away
+// in both the Reminders list and this client's own Reminders card — Karina, 9/12: "I wanted to
+// actually show up on the client's profile and in the reminders list... so that there's some sort
+// of confirmation." 3 days out, per her own call once shown the option (24hr vs 72hr).
+const PENDING_APPROVAL_CHECKIN_DAYS = 3;
+
+export async function markPendingApproval(productId: string, clientId: string, productName: string): Promise<void> {
+  const { supabase } = await requireUser();
+
+  const remindAt = new Date();
+  remindAt.setDate(remindAt.getDate() + PENDING_APPROVAL_CHECKIN_DAYS);
+  // Reuses the Reminders feature's own action (same reasoning as markOutreachOutcome above) so
+  // this stays in sync with whatever that table/validation looks like later, rather than inserting
+  // into `reminders` directly.
+  const reminderId = await addReminder({ clientId }, remindAt.toISOString(), `Check in — ${productName} pending carrier approval`);
+
+  const { error } = await supabase
+    .from("client_products")
+    .update({ pending_approval_at: new Date().toISOString(), pending_checkin_reminder_id: reminderId })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/reminders");
+}
+
+export async function undoPendingApproval(productId: string, clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+
+  const { data: product, error: fetchError } = await supabase
+    .from("client_products")
+    .select("pending_checkin_reminder_id")
+    .eq("id", productId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (product?.pending_checkin_reminder_id) {
+    const { error: reminderError } = await supabase.from("reminders").delete().eq("id", product.pending_checkin_reminder_id);
+    if (reminderError) throw new Error(reminderError.message);
+  }
+
+  const { error } = await supabase
+    .from("client_products")
+    .update({ pending_approval_at: null, pending_checkin_reminder_id: null })
+    .eq("id", productId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/reminders");
 }
 
 // Outreach — a separate manual workflow from Conversion Pending/Converted above. Karina, 9/4:

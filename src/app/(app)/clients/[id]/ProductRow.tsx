@@ -8,6 +8,8 @@ import {
   undoConversionPending,
   markConverted,
   undoConverted,
+  markPendingApproval,
+  undoPendingApproval,
   type ProductFields,
 } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
@@ -126,6 +128,7 @@ export default function ProductRow({
 
   const isConverted = !!product.converted_at;
   const isPending = !!product.conversion_pending_at && !isConverted;
+  const isPendingApproval = !!product.pending_approval_at;
   const isAnnuity = fields.product_type === "Annuity";
   const isPermanent = PERMANENT_PRODUCT_TYPES.includes(fields.product_type ?? "");
 
@@ -136,6 +139,21 @@ export default function ProductRow({
       await action(product.id, clientId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update conversion status.");
+    } finally {
+      setWorkflowBusy(false);
+    }
+  }
+
+  // markPendingApproval takes a 3rd arg (the product name, for the reminder's message text) —
+  // doesn't fit runWorkflowAction's 2-arg shape above, so it gets its own thin wrapper sharing the
+  // same busy/error state.
+  async function handleMarkPendingApproval() {
+    setWorkflowBusy(true);
+    setError("");
+    try {
+      await markPendingApproval(product.id, clientId, product.product_name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not mark pending approval.");
     } finally {
       setWorkflowBusy(false);
     }
@@ -473,7 +491,7 @@ export default function ProductRow({
   return (
     <div
       className={`flex flex-col gap-1.5 rounded-md border p-3 ${
-        isPending
+        isPending || isPendingApproval
           ? "border-[#8b6a00] bg-[#FFFBF0]"
           : isConverted
             ? "border-[#D9CFBA] bg-[#F5F0E8] opacity-80"
@@ -533,6 +551,31 @@ export default function ProductRow({
                 </button>
               </>
             )}
+            {/* Karina, 9/12: a product entered while still awaiting carrier approval should get a
+                visible 3-day check-in reminder — this is the manual trigger for an existing
+                product (addProduct's own "Awaiting carrier approval" checkbox covers the moment
+                it's first added). Hidden once a policy number is on file — that's already-issued,
+                not pending. */}
+            {!isPendingApproval && !isConverted && !product.policy_number && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={handleMarkPendingApproval}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Mark Pending Approval
+              </button>
+            )}
+            {isPendingApproval && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(undoPendingApproval)}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Undo
+              </button>
+            )}
             {isConverted && (
               <button
                 type="button"
@@ -563,6 +606,11 @@ export default function ProductRow({
         {isPending && (
           <span className="self-start rounded-full bg-[#8b6a00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             Conversion Pending
+          </span>
+        )}
+        {isPendingApproval && (
+          <span className="self-start rounded-full bg-[#8b6a00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Pending Approval
           </span>
         )}
         {isConverted && (
@@ -605,6 +653,14 @@ export default function ProductRow({
           Conversion pending since{" "}
           {new Date(product.conversion_pending_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — check in
           with the client until the new policy is issued.
+        </p>
+      )}
+
+      {isPendingApproval && product.pending_approval_at && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Pending approval since{" "}
+          {new Date(product.pending_approval_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — a check-in
+          reminder has been added to Reminders.
         </p>
       )}
 

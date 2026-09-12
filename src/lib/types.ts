@@ -388,6 +388,14 @@ export interface ClientProduct {
   // elsewhere as its own Product. See markConversionPending/markConverted in clients/actions.ts.
   conversion_pending_at: string | null;
   converted_at: string | null;
+  // 9/12 — Karina, after adding a product for a client while it's still awaiting carrier
+  // approval: "I wanted to actually show up on the client's profile and in the reminders list...
+  // across the board for pending products." Per-product, independent of the client's own
+  // pipeline stage — see markPendingApproval/undoPendingApproval in clients/actions.ts and
+  // schema.sql section 51. pending_checkin_reminder_id lets undo delete the exact auto-created
+  // reminder instead of leaving a stale one behind, same pattern as outreach_reminder_id.
+  pending_approval_at: string | null;
+  pending_checkin_reminder_id: string | null;
   face_amount: number | null;
   premium: number | null;
   // The bare-minimum monthly premium that keeps the policy from lapsing — usually lower than
