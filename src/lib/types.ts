@@ -32,8 +32,12 @@ export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" |
 // Sienna for Applied stayed as-is after she considered a coral alternative and kept the sienna.
 // Both changes mirror fa-pdf.ts's NEED_COLOR_FINAL / NEED_COLOR_EDUCATION exactly, so Quoted and
 // Issued still match the report's Final Expenses and Education Funding colors 1:1.
+//
+// 9/12 — Karina: "that yellow is a little bit too light on the portal on the lead list... a
+// little bit deeper, not too too mustardy, just a touch deeper" — confirmed against a preview
+// before it was built. Mirrors fa-pdf.ts's NEED_COLOR_INCOME exactly, same as before.
 export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }[] = [
-  { value: "lead", label: "Lead", color: "#f9da8a" },
+  { value: "lead", label: "Lead", color: "#f5cd66" },
   { value: "quoted", label: "Quoted", color: "#0096c7" },
   { value: "applied", label: "Applied", color: "#d2691e" },
   // 9/11, repositioned per Karina after a client meeting: applied-and-approved clients had

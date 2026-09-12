@@ -91,7 +91,13 @@ const GRAY: RGB = [155, 155, 152];
 // the pie charts, the pipeline... everywhere." Final expenses' blue and education funding's green
 // (which the gap pie's "currently covered" already inherits via GAP_COLOR_COVERED above) both
 // updated to match.
-const NEED_COLOR_INCOME: RGB = [249, 218, 138]; // mustard — income replacement
+//
+// 9/12 — Karina: "I feel like that yellow is a little bit too light on the portal on the lead
+// list. So I want it a little bit deeper, not too too mustardy, but just just a touch deeper."
+// Shown a preview against the current mustard before touching any code; she confirmed "the
+// deeper yellow is good." Same hue, lightness/saturation nudged down slightly so it reads as gold
+// rather than pale butter, short of tipping into a heavy mustard-brown.
+const NEED_COLOR_INCOME: RGB = [245, 205, 102]; // mustard, a touch deeper (#f5cd66) — income replacement
 const NEED_COLOR_DEBT: RGB = [177, 42, 41]; // brick red — debt payoff
 const NEED_COLOR_FINAL: RGB = [0, 150, 199]; // coolors.co "Option B" (#0096c7) — final expenses
 const NEED_COLOR_EDUCATION: RGB = [71, 140, 92]; // sage green, brightened a touch (#478c5c) — education funding

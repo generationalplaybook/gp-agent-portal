@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { login } from "./actions";
+import Logo from "@/components/Logo";
 
 export default async function LoginPage({
   searchParams,
@@ -11,7 +12,9 @@ export default async function LoginPage({
   return (
     <div className="flex flex-1 items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm rounded-xl border border-[#D9CFBA] bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-[#1C1C1C]">GP Advisor Portal</h1>
+        {/* 9/11 — replaced the plain "GP Advisor Portal" heading with the real Generational
+            Playbook logo per Karina. */}
+        <Logo size={34} className="mb-3" />
         <p className="mb-6 text-sm text-[#666]">Sign in to your advisor account.</p>
 
         {error && (

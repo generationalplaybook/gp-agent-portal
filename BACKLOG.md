@@ -3631,6 +3631,51 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   later. A second PDF for her actual generationalplaybook.com website colors is intentionally not
   started — her call: "we can do that later because I need to get the actual color codes for you."
 
+- **9/11, real logo on the portal — BUILT, no new SQL.** Karina sent her actual Generational
+  Playbook icon (512x512 PNG) and wordmark (560x100 PNG) and asked: "can you improve the
+  resolution and make these larger files so that I have real logo files? And then let's implement
+  that second one with the icon and the words onto the portal and remove that generic GP advisor
+  portal text."
+  1. **Rebuilt both as vector graphics rather than just upscaling the pixels.** Simply stretching
+     a 512px/560px source bigger doesn't add real detail, and her original icon file has a faint
+     dithering artifact that only gets more visible at higher zoom, not less. Instead, pixel-
+     sampled the actual shapes and opacities from her files — the icon mark is a diamond plus 3
+     chevron strokes, all the same near-black (`#1c1c1c`) at 4 measured opacities (14.1%, 32.9%,
+     60%, 100%) over her cream background — and rebuilt it as clean SVG paths. The wordmark reuses
+     the app's existing Georgia serif token (`--font-serif`, already in `globals.css` — wasn't a
+     new font decision) plus a pixel-sampled warm gray (`#9a9184`) for "PLAYBOOK."
+  2. Verified by rendering the reconstruction and comparing side-by-side against her original
+     files before wiring anything in — very close, though it's a redraw, not a pixel-identical
+     clone; worth knowing if she ever compares closely against the original files.
+  3. New `src/components/Logo.tsx` — a `Logo` component with `variant` ("full" wordmark or "mark"
+     icon-only) and `size` props, used in place of the plain text in two places:
+     `src/app/(app)/layout.tsx`'s nav bar (was the `<Link>GP Advisor Portal</Link>` text) and
+     `src/app/login/page.tsx`'s heading (was `<h1>GP Advisor Portal</h1>`). Verified visually by
+     running the built app and screenshotting the login page — logo renders cleanly at that size.
+  4. Left the browser tab title (`src/app/layout.tsx`'s `metadata.title`, still "GP Advisor
+     Portal") and the PWA/favicon files in `public/` (`icon-192.png`, `icon-512.png`,
+     `apple-touch-icon.png`) untouched — she asked specifically about "the portal" (the app UI
+     itself), not these; flagging both as easy follow-ups if she wants the same swap there too.
+  Also delivered the real logo files themselves separately (not part of the app zip): both as SVG
+  (infinite resolution, tiny file size — the actual answer to "make these larger files") and as
+  large PNG exports rendered from that SVG, since a raster file is still sometimes what's needed
+  for other tools.
+
+- **9/12, deepen the mustard — BUILT, no new SQL.** Karina, mid-way through the logo work: "Can we
+  deepen the mustard that is used for the pie chart and for the lead icon color, the pipeline
+  stage? I feel like that yellow is a little bit too light on the portal on the lead list. So I
+  want it a little bit deeper, not too too mustardy, but just just a touch deeper. Let me know
+  what that looks like so I can see it before we implement." Built a preview (current `#f9da8a`
+  vs. a candidate `#f5cd66`) in both the pie-wedge and Lead-badge contexts before touching any
+  code, per her ask. She confirmed: "the deeper yellow is good."
+  1. `fa-pdf.ts`: `NEED_COLOR_INCOME` (income replacement) → `#f5cd66` (`[245, 205, 102]`), same
+     hue as before with lightness/saturation nudged down just enough to read as gold rather than
+     pale butter, short of a heavy mustard-brown.
+  2. `types.ts`: `CLIENT_STAGES` → Lead `#f5cd66`, mirroring `NEED_COLOR_INCOME` exactly, same as
+     every other stage-color entry that reuses a report color.
+  Re-verified with a rendered test PDF (pie chart) and re-confirmed lint/build clean before
+  shipping.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
