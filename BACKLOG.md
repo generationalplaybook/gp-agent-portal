@@ -3676,6 +3676,28 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Re-verified with a rendered test PDF (pie chart) and re-confirmed lint/build clean before
   shipping.
 
+- **9/12, issue-age requirements across the whole Knowledge Base — BUILT, no new SQL.** Karina
+  asked what the age requirement was for the Mutual of Omaha Living Promise policy — the honest
+  answer was "not in the Knowledge Base," since that entry (and roughly half the other 45 carrier
+  entries) never had an issue-age range filled in. She asked me to audit the whole Knowledge Base
+  and fix it: "yes, do it all please." Researched all 29 entries that were missing issue-age info
+  (Mutual of Omaha, Ethos-branded, F&G, Athene, Ameritas, and Nationwide products) against carrier
+  product pages, agent/FMO marketing sites, and producer guides, then added an "Issue ages: X-Y"
+  line to each entry's highlights (and, where it added real value, a tweak to `does` too — e.g.
+  IUL Express's coverage tapering by age).
+  1. `kb-data.ts`: added sourced issue-age ranges to 29 entries. Most got a clean, confident range
+     (e.g. Living Promise: 45-85 Level / 45-80 Graded / 14 days-17 years for Children's Whole
+     Life — confirms the number I gave Karina directly when she first asked).
+  2. A handful of products genuinely don't have a publicly findable issue-age table (mostly
+     lower-profile Nationwide VUL/Survivorship products, a couple of Ameritas annuities, and two
+     Ethos-branded products where only a generic platform-wide range was findable, not one specific
+     to that exact carrier case design) — for those, the entry says so explicitly ("not published —
+     confirm before quoting") rather than silently leaving the field blank or guessing a number.
+     Flagging this to Karina directly: these are worth a follow-up call to the carrier/wholesaling
+     desk if she wants them filled in with certainty.
+  3. Re-ran lint/build clean after all 29 edits; spot-checked the Living Promise entry to confirm
+     formatting matches the rest of the Knowledge Base.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

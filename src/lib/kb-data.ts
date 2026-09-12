@@ -187,7 +187,7 @@ export const KB: KBItem[] =
   does:["All three living benefits via Care4Life rider at NO additional premium: Critical Illness, Chronic Illness, Terminal Illness","Critical Illness: access benefit after heart attack, stroke, cancer, and other qualifying events","Chronic Illness: access benefit if unable to perform 2 of 6 ADLs","Terminal Illness: access benefit with life expectancy of 24 months or less","Coverage up to $1,000,000 | Carrier: Ameritas (A rated AM Best)","90%+ instant decisions | No medical exam for most applicants","4 risk classes + table ratings 1-10 | Living benefits available up to Table 4","FREE Will & Trust included — can be gifted to friend or family member"],
   agent:"CRITICAL: Must select Term With Living Benefits tile specifically in the Ethos quoter — DO NOT use the standard term tile if client wants all 3 living benefits. Converts to Ameritas products ONLY — if client wants North American IUL later, use ADDvantage Term instead. Living benefits available up to Table 4 rating.",
   client:"This is term life insurance that also protects you while you are alive. If you get seriously ill — heart attack, stroke, cancer, terminal diagnosis — you can access a large portion of your benefit right away. No waiting, no restrictions, all included at no extra cost.",
-  highlights:["All 3 living benefits at NO extra cost: Critical, Chronic, Terminal via Care4Life rider","MUST select Term With Living Benefits tile specifically — standard routing skips it","Up to $1M coverage | Carrier: Ameritas (A rated)","Converts to Ameritas products ONLY — NOT North American","FREE Will & Trust included","Living benefits available up to Table 4 rating","NOT available in New York"] },
+  highlights:["All 3 living benefits at NO extra cost: Critical, Chronic, Terminal via Care4Life rider","MUST select Term With Living Benefits tile specifically — standard routing skips it","Up to $1M coverage | Carrier: Ameritas (A rated)","Converts to Ameritas products ONLY — NOT North American","FREE Will & Trust included","Living benefits available up to Table 4 rating","Issue ages: 18-80 (varies by term length/rate class) — based on Ameritas's underlying Care4Life term product","NOT available in New York"] },
 
 { cat:"ethos", badge:"b-ethos", label:"Ethos", name:"TruStage Term Life", group:"life", subgroup:"term", type:"Ethos — TruStage / Simplified / Increasing Term",
   tags:["trustage","term","simplified","instant","increasing term","health issues","ethos"],
@@ -211,7 +211,7 @@ export const KB: KBItem[] =
   does:["Permanent whole life coverage — never expires","Fixed premiums — never increase","Social Security Billing: premiums deducted automatically from Social Security benefit — no missed payments","Simplified Issue: few health questions, fast decision","Guaranteed Issue option: no health questions at all","Covers funeral, burial, final bills and remaining small debts","FREE Will & Trust included — can be gifted if not needed"],
   agent:"Social Security Billing is the key differentiator — solves the premium payment problem for seniors who forget bills or have limited banking access. Banner Life's A+ rating adds credibility. Good upgrade pitch if client already has TruStage Final Expense.",
   client:"Your premiums come straight out of your Social Security check automatically so you never have to worry about missing a payment. Coverage stays in force and your family is protected.",
-  highlights:["Social Security Billing — premiums auto-deducted from SS payment","Up to $50,000 | Carrier: Banner Life (A+ AM Best)","Simplified or Guaranteed Issue available","FREE Will & Trust included","Brand new — launched early 2026"] },
+  highlights:["Social Security Billing — premiums auto-deducted from SS payment","Up to $50,000 | Carrier: Banner Life (A+ AM Best)","Simplified or Guaranteed Issue available","FREE Will & Trust included","Brand new — launched early 2026","Issue ages: not published by Banner Life or Ethos — third-party estimates suggest roughly 50-80, but confirm with Ethos before quoting a client"] },
 
 { cat:"ethos", badge:"b-ethos", label:"Ethos", name:"Accumulation IUL (via Ethos)", group:"life", subgroup:"iul", type:"Ethos — North American / IUL / Accumulation",
   tags:["accumulation iul","ethos","north american","no exam","instant decision","2m","fidelity","net zero"],
@@ -219,7 +219,7 @@ export const KB: KBItem[] =
   does:["9 index options: S&P 500, S&P MidCap 400, Russell 2000, Fidelity Multifactor Yield Index 5% ER (exclusive to NA), and more","0% floor — cash value never loses due to market downturns","Net-zero cost loans — full balance stays in index earning credits even when loaned","Interest bonus on Fidelity index: 1% (Yrs 1-10), 1.5% (Yr 11+)","Tax-deferred growth + tax-free income via policy loans","Permanent death benefit | Protected Death Benefit Endorsement included","Overloan Protection Endorsement included","Instant decision for qualifying applicants — no medical exam up to $2M","FREE Will & Trust included — can be gifted if not needed","Critical, Chronic, Terminal illness living benefits at NO additional premium"],
   agent:"This is the same North American product detailed in the North American section of this portal — placed via Ethos's digital experience. Placed via Ethos platform only — not North American's direct agent portal. Cross-reference North American section for full product details.",
   client:"This is a savings vehicle that grows tax-free, protects you if you get sick, and lets you access your money whenever you need it — all in one. Plus you get a free will and trust included.",
-  highlights:["Same North American product — placed via Ethos digital platform","Up to $2M | Instant decision | No medical exam for qualifying applicants","9 index options including exclusive Fidelity Multifactor Yield Index","Net-zero cost loans — full balance earns even on loaned amount","FREE Will & Trust included ($249 & $449 value)","Placed via Ethos platform only — NOT North American's direct portal","Not available in New York"] },
+  highlights:["Same North American product — placed via Ethos digital platform","Up to $2M | Instant decision | No medical exam for qualifying applicants","9 index options including exclusive Fidelity Multifactor Yield Index","Net-zero cost loans — full balance earns even on loaned amount","FREE Will & Trust included ($249 & $449 value)","Placed via Ethos platform only — NOT North American's direct portal","Issue ages: 18-66 general adult range per Ethos's own IUL page (not broken out separately from the direct North American product — cross-check against Builder Plus IUL 4 / Smart Builder IUL 3's own ranges before quoting)","Not available in New York"] },
 
 { cat:"ethos", badge:"b-ethos", label:"Ethos", name:"Ethos Protection IUL", group:"life", subgroup:"iul", type:"Ethos — Ameritas / IUL / Retirement Income",
   tags:["ethos protection iul","ameritas","lifetime income","retirement","affordable","14%","pricing","smart solve"],
@@ -227,7 +227,7 @@ export const KB: KBItem[] =
   does:["14-15% below national average pricing — one of the most affordable IULs available","Lifetime Income Rider: converts accumulated cash value into guaranteed retirement income","Smart Solve tool: optimizes premium and coverage design for client's goals","Cash value grows linked to market indexes with 0% floor","Tax-deferred accumulation + tax-free income via policy loans","Flexible premiums — adjust contributions as income changes","No-lapse guarantee: short-term guarantee to age 95 included at no cost","Account value bonus begins in Year 11 (0.45% current)","Care4Life living benefits: Critical, Chronic, Terminal — all at NO additional premium","FREE Will & Trust included — can be gifted if not needed"],
   agent:"Best for clients who want guaranteed retirement income from their IUL. Lifetime Income Rider is the key differentiator. Smart Solve tool helps optimize the case design. 14-15% below national average means more value for the client.",
   client:"This policy grows your money tax-free and then converts it into a guaranteed income stream you cannot outlive — like building your own pension. And it costs 14-15% less than most comparable policies on the market.",
-  highlights:["14-15% below national average pricing","Lifetime Income Rider — guaranteed retirement income from cash value","Up to $1M | No medical exam | Instant decision","Care4Life living benefits at no extra cost","Account value bonus begins Year 11","Smart Solve case design tool","FREE Will & Trust included","Not available in New York"] },
+  highlights:["14-15% below national average pricing","Lifetime Income Rider — guaranteed retirement income from cash value","Up to $1M | No medical exam | Instant decision","Care4Life living benefits at no extra cost","Account value bonus begins Year 11","Smart Solve case design tool","FREE Will & Trust included","Issue ages: 18-66 per Ethos's general IUL page (not confirmed as specific to this exact Ameritas case design — verify before quoting)","Not available in New York"] },
 
 { cat:"ethos", badge:"b-ethos", label:"Ethos", name:"Will Estate Plan", group:"life", subgroup:"term", type:"Ethos — Estate Planning ($249)",
   tags:["will","estate plan","trust","ethos","free","gift","poa","healthcare directive"],
@@ -262,7 +262,7 @@ export const KB: KBItem[] =
   does:["Maximizes death benefit protection throughout the policy life","Still accumulates cash value linked to market indexes with 0% floor","Persistency Bonus in Years 11+ rewards long-term policyholders","Two death benefit options: Level (Option A) or Increasing (Option B)","Higher face amount minimums — built for larger estate transfer needs","InstApproval underwriting — no medical exam for qualifying clients","Overloan protection to prevent accidental policy lapse","Lump sum friendly — single premium accepted"],
   agent:"Same living benefits as Pathsetter at no extra cost. Same carrier, same underwriting. Run both illustrations and let the numbers decide. Pathsetter = cash value, Everlast = death benefit. Key for estate planning, business buy-sell, clients who want guaranteed permanent protection.",
   client:"This policy is designed to leave your family the maximum amount of money possible when you pass — while still growing your savings and covering you if you get sick.",
-  highlights:["Maximizes death benefit — not cash value","Same three living benefits as Pathsetter at no extra cost","Higher face amount minimums than Pathsetter","InstApproval available | No exam under 60","LUMP SUM FRIENDLY","Best for: estate planning, wealth transfer, buy-sell agreements","Not available in New York"] },
+  highlights:["Maximizes death benefit — not cash value","Same three living benefits as Pathsetter at no extra cost","Higher face amount minimums than Pathsetter","InstApproval available | No exam under 60","LUMP SUM FRIENDLY","Best for: estate planning, wealth transfer, buy-sell agreements","Issue ages: 0-60","Not available in New York"] },
 
 { cat:"fg", badge:"b-fg", label:"F&G", name:"F&G Safe Income Advantage", group:"annuity", type:"F&G — FIA / Guaranteed Lifetime Income",
   tags:["safe income advantage","f&g","7.2%","guaranteed income","income","inflation","retirement","roll-up","pension replacement"],
@@ -270,7 +270,7 @@ export const KB: KBItem[] =
   does:["7.2% guaranteed annual roll-up rate on income base while income is deferred","Three income payout options: Level (fixed), Increasing (set % annually), or Inflation-Linked","Income can start as early as Day 1 — immediate income option available","Index-linked account value growth with 0% floor while income is deferred","Three index options, 10 crediting strategies","Lump sum death benefit option available for heirs","10% annual penalty-free withdrawals","Nursing home and terminal illness waivers — full account access in qualifying situations","RMD friendly — no charges on required minimum distributions"],
   agent:"Split-ticket strategy: pair Safe Income Advantage (guaranteed income now) with Accelerator Plus (future income multiplier). 7.2% roll-up is one of the most competitive rates in the FIA market nationally. Income can start Day 1. Ranked #1 in 2023 J.D. Power customer satisfaction for annuity providers.",
   client:"This is like building your own pension. You put money in, it grows at a guaranteed rate, then you turn on a guaranteed paycheck for life that you cannot outlive — even if you live to 100.",
-  highlights:["7.2% guaranteed annual income base roll-up","Three payout options: Level / Increasing / Inflation-Linked","Income can start as early as Day 1","10-year surrender period | Min premium: $10,000","LUMP SUM FRIENDLY — direct 401k/IRA rollover accepted","Ranked #1 J.D. Power 2023 customer satisfaction","Not available in New York"] },
+  highlights:["7.2% guaranteed annual income base roll-up","Three payout options: Level / Increasing / Inflation-Linked","Income can start as early as Day 1","10-year surrender period | Min premium: $10,000","LUMP SUM FRIENDLY — direct 401k/IRA rollover accepted","Ranked #1 J.D. Power 2023 customer satisfaction","Issue ages: 0-80 non-qualified | 18-80 qualified","Not available in New York"] },
 
 { cat:"fg", badge:"b-fg", label:"F&G", name:"FG Guarantee Platinum MYGA", group:"annuity", type:"F&G — Multi-Year Guaranteed Annuity",
   tags:["guarantee platinum","myga","fixed rate","cd","guaranteed","f&g","simple","conservative"],
@@ -278,7 +278,7 @@ export const KB: KBItem[] =
   does:["Guaranteed fixed interest rate locked for the full term — no surprises, no market risk","Tax-deferred growth — no annual tax on interest credited","10% annual penalty-free withdrawals after Year 1","Full principal + interest available penalty-free after guarantee period ends","Nursing home and terminal illness waivers","Death benefit: full account value paid to beneficiaries","Available in 3, 5, and 7-year terms","Higher premium tiers ($100K+) unlock significantly better rates"],
   agent:"Best for conservative clients, CD replacements, clients who want to know exactly what they will earn. Always ask about rate tiers — $100K+ clients typically get meaningfully better rates. 10% annual free withdrawals after Year 1. After guarantee period full access with no carrier penalties.",
   client:"This is like a CD but with higher interest rates and no annual tax on the growth. You lock in a guaranteed rate today and watch it grow predictably for 3, 5, or 7 years — completely stress-free.",
-  highlights:["Guaranteed fixed rate for full term — top-5 nationally competitive","Terms: 3, 5, or 7 years | Min premium: $20,000","10% annual penalty-free withdrawals after Year 1","Full access after guarantee period with no carrier penalties","Higher premiums ($100K+) unlock better rates — always ask about tiers","LUMP SUM FRIENDLY — single premium","Not available in New York"] },
+  highlights:["Guaranteed fixed rate for full term — top-5 nationally competitive","Terms: 3, 5, or 7 years | Min premium: $20,000","10% annual penalty-free withdrawals after Year 1","Full access after guarantee period with no carrier penalties","Higher premiums ($100K+) unlock better rates — always ask about tiers","LUMP SUM FRIENDLY — single premium","Issue ages: 0-90 (qualified and non-qualified)","Not available in New York"] },
 
 // ═══════════════════════════════════════
 // ATHENE PRODUCTS
@@ -297,7 +297,7 @@ export const KB: KBItem[] =
   does:["Participation rates up to 335% on select strategies — captures more than 100% of index gain","Index options: BNP Paribas Multi-Asset, S&P 500, and others","0% floor — full principal protection from market losses","Optional premium bonus credited at issue (varies by term)","10% annual penalty-free withdrawals after Year 1","Bailout feature — full access for 30 days if cap rate falls below bailout threshold","RMD friendly — no charges on required minimum distributions","Nursing home and terminal illness waivers","Performance Elite Plus: adds optional Liquidity Rider for enhanced access + larger premium bonus (up to 20% for 10-year)"],
   agent:"Best for clients who want maximum long-term accumulation with no income rider fee drag. Participation rates vary by term and change at each anniversary — always illustrate current rates. Performance Elite Plus adds Liquidity Rider (optional fee) for enhanced annual access beyond standard 10% and a larger premium bonus.",
   client:"This grows your money linked to the stock market but with a safety net that means you can never lose money if the market drops. In good years you capture a large portion of the gains. In bad years you earn zero, not negative.",
-  highlights:["Participation rates up to 335% on select strategies","0% floor — market drops cannot touch principal","Terms: 7, 10, or 15 years | Min premium: $10,000","Optional premium bonus at issue","No income rider — pure accumulation, no fee drag","Performance Elite Plus: adds Liquidity Rider + larger premium bonus","LUMP SUM FRIENDLY","Not available in New York"] },
+  highlights:["Participation rates up to 335% on select strategies","0% floor — market drops cannot touch principal","Terms: 7, 10, or 15 years | Min premium: $10,000","Optional premium bonus at issue","No income rider — pure accumulation, no fee drag","Performance Elite Plus: adds Liquidity Rider + larger premium bonus","LUMP SUM FRIENDLY","Issue ages: 0-78 typical (varies by state and term — some states cap lower; always confirm on the current state approval)","Not available in New York"] },
 
 { cat:"athene", badge:"b-athene", label:"Athene", name:"Athene Agility", group:"annuity", type:"Athene — FIA / Income / Free Built-In Rider",
   tags:["agility","athene","income","free rider","built-in","no charge","rmd","flexible","income fia"],
@@ -305,7 +305,7 @@ export const KB: KBItem[] =
   does:["Built-in Income and Death Benefit Rider at NO additional charge — included automatically","Guaranteed lifetime income — activate whenever ready, not required at purchase","Index-linked growth with 0% floor while income is deferred","Enhanced Income Benefit Endorsement available for additional income boost","10% annual penalty-free withdrawals after Year 1","RMD friendly — required minimum distributions taken with no withdrawal charges or MVA","Bailout feature if cap rates fall below bailout threshold","Nursing home and terminal illness waivers"],
   agent:"The free built-in income rider is the key differentiator — most carriers charge 0.5-1% annually for this feature. Best for clients who want income eventually but are not ready to commit to a start date. Perfect for IRA rollovers due to RMD friendliness.",
   client:"This gives you a guaranteed income safety net built right into your policy at no extra cost. You do not have to start taking income right away — wait until you are ready. When you flip the switch, you have a paycheck for life.",
-  highlights:["Built-in Income and Death Benefit Rider — NO additional charge (most carriers charge 0.5-1% for this)","Activate income whenever ready — no commitment at purchase","RMD friendly — no charges on required minimum distributions","Terms: 7 or 10 years | Min premium: $10,000","LUMP SUM FRIENDLY","Not available in New York"] },
+  highlights:["Built-in Income and Death Benefit Rider — NO additional charge (most carriers charge 0.5-1% for this)","Activate income whenever ready — no commitment at purchase","RMD friendly — no charges on required minimum distributions","Terms: 7 or 10 years | Min premium: $10,000","LUMP SUM FRIENDLY","Issue ages: 40-80","Not available in New York"] },
 
 { cat:"athene", badge:"b-athene", label:"Athene", name:"Athene AccuMax", group:"annuity", type:"Athene — FIA / Flexible Term / Pure Accumulation",
   tags:["accumax","athene","1 year","flexible","short term","cd replacement","accumulation"],
@@ -321,7 +321,7 @@ export const KB: KBItem[] =
   does:["Guaranteed fixed interest rate locked for the full 3, 5, or 7-year term","Apollo-backed investment platform produces top-tier yields — consistently near top of comparison tables","Flexible allocation: Growth, Income, or combination","Tax-deferred growth — no annual tax on interest","10% annual penalty-free withdrawals after Year 1","Optional Return of Premium rider available","Nursing home and terminal illness waivers","Full access at end of term — renews annually after guarantee period"],
   agent:"Apollo-backed platform is the key differentiator — higher yields than traditional insurers. Always compare Athene MaxRate vs F&G Guarantee Platinum and pick the higher rate for the client. Growth vs Income allocation: Income option structured to maximize accessible distributions.",
   client:"Your money earns a guaranteed fixed rate — typically higher than most CDs — with no annual tax on the growth. Completely predictable.",
-  highlights:["Guaranteed fixed rate for full term — Apollo-backed, consistently top-tier nationally","Terms: 3, 5, or 7 years | Min premium: $5,000","Growth or Income allocation options","10% annual penalty-free withdrawals","Optional Return of Premium rider","LUMP SUM FRIENDLY","Not available in New York"] },
+  highlights:["Guaranteed fixed rate for full term — Apollo-backed, consistently top-tier nationally","Terms: 3, 5, or 7 years | Min premium: $5,000","Growth or Income allocation options","10% annual penalty-free withdrawals","Optional Return of Premium rider","LUMP SUM FRIENDLY","Issue ages: 0-85 (3-yr term) | 0-83 (5 & 7-yr terms) — confirm against the current rate card, as this shifts by rate-sheet date","Not available in New York"] },
 
 { cat:"athene", badge:"b-athene", label:"Athene", name:"Athene Activate SPIA", group:"annuity", type:"Athene — Single Premium Immediate Annuity",
   tags:["spia","athene","immediate income","pension","lump sum","income now","activate"],
@@ -372,7 +372,7 @@ export const KB: KBItem[] =
   does:["10% credit enhancement on indexed interest starting Year 6","Multiple no-lapse guarantee options","Tax-deferred growth with 0% floor","Care4Life accelerated death benefit rider available"],
   agent:"Best for affordable permanent protection with some accumulation upside. Focused on guaranteed death benefit duration over max cash value.",
   client:"This gives you permanent life insurance at an affordable price, with a bonus that boosts your growth starting in year 6.",
-  highlights:["10% credit enhancement starts Year 6","Multiple no-lapse guarantee configurations","Care4Life living benefits available","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
+  highlights:["10% credit enhancement starts Year 6","Multiple no-lapse guarantee configurations","Care4Life living benefits available","Issue ages: 0-85 (0-17 juvenile; 18-75 Preferred Plus NT; 18-80 Preferred NT/Select NT/Preferred Tobacco; 18-85 Standard NT/Tobacco)","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-ameritas", label:"Ameritas", name:"Ameritas Value Plus Survivor IUL", type:"Ameritas — IUL / Survivorship",
   tags:["ameritas","survivor","survivorship","second to die","estate planning","iul"],
@@ -380,7 +380,7 @@ export const KB: KBItem[] =
   does:["Covers two individuals under one policy — pays at second death","More lenient underwriting since based on two lives combined","Tax-deferred growth with 0% floor","More cost-efficient than two individual policies for estate needs"],
   agent:"Best for high-net-worth couples doing estate tax planning, or when one spouse may not individually qualify but joint underwriting works.",
   client:"This covers both of you under one policy, paying out when the second of you passes — a classic tool for passing wealth to the next generation efficiently.",
-  highlights:["One of only 4 IUL products in Ameritas lineup","Death benefit pays at second death","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
+  highlights:["One of only 4 IUL products in Ameritas lineup","Death benefit pays at second death","Issue ages: 18-85 for each insured (same risk-class tiering as Value Plus IUL); joint issue age cannot exceed 85","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
 
 { cat:"fg", group:"annuity", badge:"b-ameritas", label:"Ameritas", name:"Ameritas Accumulation 7 Index Annuity", type:"Ameritas — FIA / Accumulation",
   tags:["ameritas","accumulation 7","fia","index annuity","accumulation"],
@@ -388,7 +388,7 @@ export const KB: KBItem[] =
   does:["Flexible premium — can continue contributing","0% floor","Competitive rate banding at 4 accumulation levels","Enhanced Death Benefit Plus (EDBP) rider available — increases interest credit to 140% for death benefit","Accepts qualified and non-qualified money"],
   agent:"Best for clients wanting ongoing flexible contributions rather than a single lump sum, with an optional legacy enhancement.",
   client:"Your money grows tax-deferred and is protected from market downturns, with rates that actually improve as your balance grows.",
-  highlights:["Min premium: $10,000 | Max lifetime deposit: $2M","Enhanced Death Benefit Plus rider available","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P","Not available in New York"] },
+  highlights:["Min premium: $10,000 | Max lifetime deposit: $2M","Enhanced Death Benefit Plus rider available","Issue ages: not published in a full contract table — max issue age 85 confirmed for qualified/GLWB use; confirm the complete range with Ameritas before quoting","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P","Not available in New York"] },
 
 { cat:"fg", group:"annuity", badge:"b-ameritas", label:"Ameritas", name:"Ameritas Income 10 Index Annuity", type:"Ameritas — FIA / Income",
   tags:["ameritas","income 10","fia","index annuity","income","rmd"],
@@ -396,7 +396,7 @@ export const KB: KBItem[] =
   does:["0% floor","Income booster and protection features","Penalty-free withdrawal provisions for RMDs","Flexible premium — additional deposits accepted","Accepts qualified and non-qualified money"],
   agent:"Best for clients prioritizing guaranteed income over max accumulation, especially IRA/401k rollover clients needing RMD-friendly structuring.",
   client:"This is built to turn into guaranteed income in retirement, and it plays nicely with your required withdrawals if this is IRA money.",
-  highlights:["10-year surrender schedule | Min: $10,000 | Max lifetime: $2M","RMD-friendly structure","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P","Not available in New York"] },
+  highlights:["10-year surrender schedule | Min: $10,000 | Max lifetime: $2M","RMD-friendly structure","Issue ages: not published in a full contract table — max issue age 85 confirmed for qualified use; confirm the complete range with Ameritas before quoting","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P","Not available in New York"] },
 
 { cat:"fg", group:"annuity", badge:"b-ameritas", label:"Ameritas", name:"Ameritas FPDA (Fixed Period Deferred Annuity)", type:"Ameritas — MYGA / Guaranteed Fixed Rate",
   tags:["ameritas","fpda","myga","fixed rate","guaranteed","conservative"],
@@ -404,7 +404,7 @@ export const KB: KBItem[] =
   does:["Guaranteed minimum interest rate — no market exposure","10% annual penalty-free withdrawals after Year 1","Multiple commission options","Tax-deferred growth"],
   agent:"Best as the simplest possible guaranteed product for conservative clients or as a CD replacement.",
   client:"This is as simple as it gets — a guaranteed rate, tax-deferred growth, no market risk at all.",
-  highlights:["10% annual penalty-free withdrawals after Year 1","Guaranteed minimum interest rate locked at issue","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
+  highlights:["10% annual penalty-free withdrawals after Year 1","Guaranteed minimum interest rate locked at issue","Issue ages: not published anywhere found — confirm with Ameritas producer support (800-319-6903) before quoting","Carrier: Ameritas — A (Excellent) AM Best, A+ S&P"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-nw", label:"Nationwide", name:"Nationwide Indexed UL Accumulator III", type:"Nationwide — IUL / Accumulation",
   tags:["nationwide","accumulator","iul","uncapped","performance lock","nasdaq"],
@@ -412,7 +412,7 @@ export const KB: KBItem[] =
   does:["9+ index strategies including S&P 500, Nasdaq-100, Multi-Index Blend, BNP Paribas Global H-Factor","6 Uncapped indexed interest strategies — no ceiling","8% Enhanced DCA rate on new premium","Performance Lock Feature — lock in gains mid-segment","Tax-free death benefit + tax-deferred growth"],
   agent:"Best for clients who want broad index diversification and the ability to lock in gains via Performance Lock rather than risk giving them back before segment end.",
   client:"Your money can grow linked to several different market indexes, and this policy even lets us lock in gains along the way instead of waiting for the full year to end.",
-  highlights:["Newest generation Nationwide IUL — launched 2026","8% Enhanced DCA rate on new premium","Performance Lock Feature — unique gain-locking mechanism","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Newest generation Nationwide IUL — launched 2026","8% Enhanced DCA rate on new premium","Performance Lock Feature — unique gain-locking mechanism","Issue ages: 0-85","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-nw", label:"Nationwide", name:"Nationwide YourLife Indexed UL Protector", type:"Nationwide — IUL / Affordable Protection",
   tags:["nationwide","yourlife","iul protector","affordable","long term care"],
@@ -420,7 +420,7 @@ export const KB: KBItem[] =
   does:["Affordable permanent protection — good for replacing an expiring term policy or supplementing employer group coverage","Optional Extended No-Lapse Guarantee Rider available for a lifetime death benefit guarantee (added cost, not automatic)","Cash value growth linked to index performance with downside/market-loss protection","Long-Term Care Rider lets the death benefit be used to help pay for care","Separate Premium Waiver Rider credits monthly premiums during disability, after a 6-month elimination period"],
   agent:"Best for clients replacing an expiring term policy or supplementing employer group coverage, especially if LTC funding is a concern. Note the lifetime guarantee and the disability premium waiver are two separate optional riders, not one bundled feature — price them individually.",
   client:"This gives you affordable permanent coverage that can also help pay for long-term care if you ever need it.",
-  highlights:["Lower cost entry point in the Nationwide IUL lineup","Long-Term Care Rider lets the death benefit fund care costs","Premium Waiver Rider credits premiums after 6-month disability wait","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Lower cost entry point in the Nationwide IUL lineup","Long-Term Care Rider lets the death benefit fund care costs","Premium Waiver Rider credits premiums after 6-month disability wait","Issue ages: not separately published — don't assume it matches Protector II 2020's 0-85; confirm with Nationwide before quoting","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-nw", label:"Nationwide", name:"Nationwide Indexed UL Protector II 2020", type:"Nationwide — IUL / Affordable Protection + LTC",
   tags:["nationwide","protector ii","iul","long term care","chronic illness","rewards"],
@@ -428,7 +428,7 @@ export const KB: KBItem[] =
   does:["5 index strategy choices including Multi-Index Monthly Average, S&P 500 Annual Point-to-Point, and an Uncapped S&P 500 strategy — all with a 0% floor","LTC Rider II pays as cash indemnity — a flat monthly benefit with no receipts required, and can be paid to family caregivers, not just licensed agencies","Separate accelerated-benefit riders for Chronic Illness, Critical Illness, and Terminal Illness","Nationwide IUL Rewards Program can reduce cost-of-insurance charges starting policy year 21 if a premium test is met","Optional Extended No-Lapse Guarantee Rider available to stretch the death benefit guarantee toward lifetime coverage"],
   agent:"Best for clients who want affordable permanent protection with LTC/chronic illness access built in, rather than a pure cash-accumulation IUL. Confirm current index caps/spreads on a fresh illustration before quoting — Nationwide resets them periodically.",
   client:"This gives you affordable lifelong protection, and if you ever need long-term care, this policy can pay you directly each month — no bills or receipts required.",
-  highlights:["0% floor on all indexed strategies — no direct market loss","LTC Rider II pays cash indemnity, family caregivers allowed","Rewards Program can lower cost-of-insurance from year 21 on","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["0% floor on all indexed strategies — no direct market loss","LTC Rider II pays cash indemnity, family caregivers allowed","Rewards Program can lower cost-of-insurance from year 21 on","Issue ages: 0-85","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-nw", label:"Nationwide", name:"Nationwide Survivorship Indexed Universal Life 2020", type:"Nationwide — Survivorship IUL / Estate & Legacy Planning",
   tags:["nationwide","survivorship","second to die","iul","estate planning","joint"],
@@ -484,7 +484,7 @@ export const KB: KBItem[] =
   does:["Guaranteed death benefit and guaranteed, increasing cash value","Premiums stop after year 20 — policy is fully paid-up from then on","Riders available: Chronic Illness, Critical Illness, Terminal Illness, Accidental Death Benefit, Guaranteed Insurability Benefit, Owner's Waiver of Premium","Positioned by Nationwide for income replacement or final expense needs"],
   agent:"Best for clients who want permanent coverage but don't want premium obligations for life — e.g. someone who wants the policy fully funded before retirement.",
   client:"You pay premiums for 20 years, then you're done — the coverage and cash value continue for the rest of your life with nothing more to pay.",
-  highlights:["Premiums paid only 20 years, then policy is paid-up for life","Guaranteed cash value growth and guaranteed death benefit","Chronic/Critical/Terminal Illness riders available","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Premiums paid only 20 years, then policy is paid-up for life","Guaranteed cash value growth and guaranteed death benefit","Chronic/Critical/Terminal Illness riders available","Issue ages: 0-80","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide Heritage Single Premium Whole Life", type:"Nationwide — Whole Life / Single Premium Wealth Transfer",
   tags:["nationwide","heritage","single premium","whole life","wealth transfer","asset repositioning","simplified underwriting"],
@@ -492,7 +492,7 @@ export const KB: KBItem[] =
   does:["One-time premium — no ongoing payments required, ever","Simplified underwriting: just 3 application questions, instant decision, no medical exam or interview","100% refund of premium available on surrender (less any loans), at any time","Chronic Illness and Terminal Illness benefits included at no extra upfront cost, for early access to the death benefit on a qualifying diagnosis","Owner-directed settlement options control how and when beneficiaries receive the proceeds"],
   agent:"Best for retirees or pre-retirees sitting on idle assets (CDs, savings, an old annuity) who want to reposition that money into a larger, tax-free legacy without giving up access — the instant-decision underwriting makes this an easy conversation to close in one meeting.",
   client:"You make one payment, and it turns into a larger, tax-free amount for your family later — with no medical exam needed and a full refund available if you ever change your mind.",
-  highlights:["Single premium — no ongoing payments, ever","Instant decision, no medical exam — just 3 questions","100% premium refund available on surrender","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Single premium — no ongoing payments, ever","Instant decision, no medical exam — just 3 questions","100% premium refund available on surrender","Issue ages: 40-80","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide Whole Life 100", type:"Nationwide — Whole Life / Level Pay for Life",
   tags:["nationwide","whole life 100","traditional whole life","guaranteed","level premium"],
@@ -500,7 +500,7 @@ export const KB: KBItem[] =
   does:["Guaranteed death benefit for life","Guaranteed, increasing cash value","Fixed, level premiums for as long as the policy is in force","Riders available: Chronic Illness, Critical Illness, Terminal Illness, Accidental Death Benefit, Guaranteed Insurability Benefit, Owner's Waiver of Premium","Positioned by Nationwide for income replacement or final expense needs"],
   agent:"Best for clients wanting the most straightforward, guaranteed permanent coverage and who are comfortable paying premiums indefinitely — compare against the 20-Pay version for clients who'd rather have a fixed payment window.",
   client:"This is the simplest permanent policy Nationwide offers — a guaranteed death benefit and guaranteed cash value for life, with a level premium the whole way.",
-  highlights:["Guaranteed death benefit and cash value for life","Level premiums payable for life (vs. 20-Pay's fixed window)","Chronic/Critical/Terminal Illness riders available","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Guaranteed death benefit and cash value for life","Level premiums payable for life (vs. 20-Pay's fixed window)","Chronic/Critical/Terminal Illness riders available","Issue ages: 0-80","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide CareMatters II", type:"Nationwide — Linked Benefit Life/LTC (LB-LTC)",
   tags:["nationwide","carematters","long term care","ltc","linked benefit","hybrid","cash indemnity"],
@@ -508,7 +508,7 @@ export const KB: KBItem[] =
   does:["LTC benefits pay as cash indemnity — a flat monthly amount with no bills or receipts required once qualified","Can pay informal/family caregivers, not just licensed care agencies","90-day elimination period, satisfied once for the life of the policy","Client chooses the monthly LTC benefit amount and a benefit period (roughly 2–7 years) at application","Inflation protection options available (simple, compound, or CPI-linked)","Guaranteed residual death benefit (20% of the base specified amount) if LTC benefits are fully exhausted","Multiple premium options: single pay, 5-year, 10-year, pay-to-65, or pay-to-100"],
   agent:"Best for a client who wants a guaranteed LTC benefit pool plus a death benefit if care is never needed, and who values the cash-indemnity flexibility (no receipts, family caregivers allowed) over a reimbursement-style LTC product.",
   client:"If you ever need long-term care, this policy pays you directly each month — no bills to submit, and you can even pay a family member to help care for you. If you never need care, your family gets a death benefit instead.",
-  highlights:["Cash indemnity LTC payout — no receipts required","90-day elimination period, satisfied once for life","20% guaranteed residual death benefit if LTC is fully used","Carrier: Nationwide Life and Annuity Insurance Company"] },
+  highlights:["Cash indemnity LTC payout — no receipts required","90-day elimination period, satisfied once for life","20% guaranteed residual death benefit if LTC is fully used","Issue ages: 30-75 (max varies by pay option — pay-to-100 caps at 65, pay-to-65 caps at 54)","Carrier: Nationwide Life and Annuity Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide CareMatters Together", type:"Nationwide — Linked Benefit Life/LTC (LB-LTC) / Joint",
   tags:["nationwide","carematters together","long term care","ltc","linked benefit","hybrid","couples","joint"],
@@ -516,7 +516,7 @@ export const KB: KBItem[] =
   does:["One policy, two insureds, sharing one LTC benefit pool rather than two separate allocations","Same cash-indemnity structure as CareMatters II — flat monthly benefit, no receipts required once qualified, family caregivers allowed","90-day elimination period per insured, satisfied once for life; the first 90 days can be paid retroactively","Guaranteed residual death benefit of 10% of the specified amount if LTC benefits are fully exhausted (lower than CareMatters II's 20%, since the pool is shared)","Underwriting note: only one of the two insureds may be rated Standard risk class — a policy won't issue if both are Standard"],
   agent:"Best for couples who are unlikely to need long-term care at the same time — a shared pool is typically more capital-efficient than two separate CareMatters II policies. Double-check underwriting classes early since both insureds can't both be rated Standard.",
   client:"This is one policy for both of you, sharing a long-term care benefit pool — usually a more efficient way to cover a couple than buying two separate policies.",
-  highlights:["Shared LTC benefit pool for two insureds, not two separate pools","Cash indemnity payout, same as CareMatters II","10% guaranteed residual death benefit if LTC is fully used","Carrier: Nationwide Life and Annuity Insurance Company"] },
+  highlights:["Shared LTC benefit pool for two insureds, not two separate pools","Cash indemnity payout, same as CareMatters II","10% guaranteed residual death benefit if LTC is fully used","Issue ages: 30-70 (max varies to 65 for the pay-to-100 option)","Carrier: Nationwide Life and Annuity Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide No-Lapse Guarantee UL II", type:"Nationwide — UL / Guaranteed Death Benefit",
   tags:["nationwide","no lapse guarantee","ul","guaranteed death benefit","affordable protection"],
@@ -524,7 +524,7 @@ export const KB: KBItem[] =
   does:["Two guarantee options at issue: coverage guaranteed to age 70/retirement, or guaranteed for life (to age 120)","Optional Return of Premium rider — a window to recover some or all premiums paid if the client later decides they no longer want coverage","Can be paired with Nationwide's cash-indemnity Long-Term Care rider","Additional riders available: Chronic Illness, Critical Illness, Terminal Illness, Accidental Death Benefit, Waiver of Monthly Deductions","Prioritizes guaranteed protection over cash-value accumulation, which keeps cost down versus an accumulation-focused UL/IUL"],
   agent:"Best for clients whose priority is a guaranteed death benefit at the lowest sustainable cost — income replacement, estate liquidity, or final expenses — rather than cash accumulation. The Return of Premium rider is worth mentioning to clients hesitant about locking in long-term.",
   client:"This is a straightforward, guaranteed death benefit at a lower cost than a cash-growth policy — and there's an option to get some of your premiums back later if your needs change.",
-  highlights:["Guarantee options: to age 70, or lifetime to age 120","Optional Return of Premium rider available","Built for guaranteed protection, not cash accumulation","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Guarantee options: to age 70, or lifetime to age 120","Optional Return of Premium rider available","Built for guaranteed protection, not cash accumulation","Issue ages: 18-85 (Nontobacco/Tobacco Standard classes; 80 max for most other risk classes)","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide Survivorship VUL II", type:"Nationwide — Survivorship VUL / Estate & Legacy Planning",
   tags:["nationwide","survivorship","vul","variable universal life","second to die","estate planning","market risk"],
@@ -532,7 +532,7 @@ export const KB: KBItem[] =
   does:["Cash value allocated to actual investment subaccounts — value can go up or down with the market, including a possible loss","50+ subaccount options managed by outside fund managers, including simplified asset-allocation choices","Riders: survivorship Long-Term Care Rider (cash indemnity), Estate Protection Rider (boosts death benefit in the first four policy years), Policy Split Option, Overloan Lapse Protection II, Extended No-Lapse Guarantee","Extended No-Lapse Guarantee Rider can back a lifetime death benefit guarantee independent of how the subaccounts perform","VUL Rewards Program can reduce monthly insurance charges once a premium-funding requirement is met"],
   agent:"Best for couples doing estate-tax liquidity or legacy planning who are comfortable with real market risk and want more upside potential than a survivorship IUL — this is a securities product, so it requires your securities registration to sell. The Extended No-Lapse Guarantee is worth layering in for clients who want a guaranteed backstop regardless of market performance.",
   client:"This policy pays out after both of you have passed, invests your cash value directly in the market for more growth potential, and can include a guarantee so your coverage doesn't depend on how the market does.",
-  highlights:["Second-to-die — pays out only after both insureds have died","Real market risk — cash value in actual subaccounts, not indexed","50+ subaccount investment options","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Second-to-die — pays out only after both insureds have died","Real market risk — cash value in actual subaccounts, not indexed","50+ subaccount investment options","Issue ages: not published in any source found — confirm with Nationwide wholesaling desk before quoting","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide VUL Accumulator", type:"Nationwide — VUL / Accumulation & Retirement Income",
   tags:["nationwide","vul accumulator","variable universal life","accumulation","retirement income","market risk"],
@@ -540,7 +540,7 @@ export const KB: KBItem[] =
   does:["Cash value allocated to actual investment subaccounts — genuine market risk and upside, not indexed crediting","Marketed uses: death benefit protection, supplemental retirement income, business planning, legacy/estate planning","Riders available: Long-Term Care, Chronic Illness, Critical Illness, Terminal Illness (accelerated benefits), Premium Waiver, Waiver of Monthly Deductions, Accidental Death Benefit, Children's Term Insurance, Overloan Lapse Protection II","No guaranteed minimum return — growth depends entirely on subaccount performance, standard for VUL"],
   agent:"Best for a client comfortable with direct market risk who wants more upside potential than an IUL's capped/indexed crediting offers, and is building supplemental retirement income or funding a longer-term goal — you'll need your securities registration to sell this.",
   client:"This policy invests your cash value directly in the market for real growth potential — more upside than an indexed policy, but your value can also go down with the market.",
-  highlights:["Accumulation-focused — cash value invested directly in the market","Broad suite of accelerated-benefit (living benefit) riders available","No guaranteed minimum return — standard for VUL","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Accumulation-focused — cash value invested directly in the market","Broad suite of accelerated-benefit (living benefit) riders available","No guaranteed minimum return — standard for VUL","Issue ages: not published in any source found — confirm with Nationwide wholesaling desk before quoting","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"na", group:"life", badge:"b-nw", label:"Nationwide", name:"Nationwide VUL Protector II", type:"Nationwide — VUL / Affordable Protection with Guarantee",
   tags:["nationwide","vul protector","variable universal life","guaranteed","affordable protection","market risk"],
@@ -548,7 +548,7 @@ export const KB: KBItem[] =
   does:["Extended No-Lapse Guarantee Rider can extend the guaranteed death benefit to age 120","VUL Rewards Program can reduce cost-of-insurance rates starting policy year 21, if a premium-funding test is met","Named subaccount managers include American Funds, BlackRock, Dimensional Funds, and Fidelity, with automated rebalancing/dollar-cost-averaging options","Long-Term Care Rider II pays as cash indemnity — no receipts required once a claim is established","Accelerated benefit riders for terminal, critical, and chronic illness; cost-of-insurance rates are stated as never increasing on in-force policies"],
   agent:"Best for a client whose main goal is affordable, long-duration guaranteed protection who still wants some equity growth potential and LTC/living-benefit riders — less aggressive than VUL Accumulator, closer in spirit to YourLife Protector but on a variable chassis. Requires your securities registration to sell.",
   client:"This gives you a strong guarantee on your death benefit — potentially for life — while still investing your cash value in the market for growth potential, plus access to long-term care benefits if you need them.",
-  highlights:["Extended No-Lapse Guarantee can back coverage to age 120","LTC Rider II pays cash indemnity, no receipts required","Named fund managers: American Funds, BlackRock, Dimensional, Fidelity","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["Extended No-Lapse Guarantee can back coverage to age 120","LTC Rider II pays cash indemnity, no receipts required","Named fund managers: American Funds, BlackRock, Dimensional, Fidelity","Issue ages: not published in any source found — confirm with Nationwide wholesaling desk before quoting","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"fg", group:"annuity", badge:"b-nw", label:"Nationwide", name:"Nationwide Peak Series", type:"Nationwide — FIA / Health Waivers Included",
   tags:["nationwide","peak","fia","terminal illness","long term care","waiver","joint"],
@@ -556,7 +556,7 @@ export const KB: KBItem[] =
   does:["Terminal illness and LTC surrender waivers included at NO additional cost","Joint death benefit option to protect a spouse","Choice of fixed or indexed account","0% floor on indexed strategies"],
   agent:"Best for clients who want index-linked growth with no-cost built-in health protections, or who want to protect a surviving spouse's legacy.",
   client:"If you get seriously ill and need long-term care, you can access this money penalty-free — that protection is already included at no extra cost.",
-  highlights:["3 products in series | Min premium: $25,000","Terminal illness/LTC surrender waivers at NO extra cost","Single premium — lump sum only","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["3 products in series | Min premium: $25,000","Terminal illness/LTC surrender waivers at NO extra cost","Single premium — lump sum only","Issue ages: annuitant 0-90 single life / 0-85 joint life (varies by specific contract — e.g. Peak 10 is narrower at 50-85)","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"fg", group:"annuity", badge:"b-nw", label:"Nationwide", name:"Nationwide New Heights Series", type:"Nationwide — FIA / Flexible Living Benefit Options",
   tags:["nationwide","new heights","fia","select","return of premium","living benefit"],
@@ -564,7 +564,7 @@ export const KB: KBItem[] =
   does:["Free Return of Premium guarantee on all versions","Two optional enhanced death benefit riders","Two optional living benefit riders for guaranteed income (additional cost)","Index options include S&P 500, NYSE Zebra Edge II, SG Macro Compass","0% floor","10% annual free withdrawal"],
   agent:"Best for clients who want to customize between accumulation, death benefit, and income. Select 8 has the lowest minimum ($10,000) vs $25,000 for the others.",
   client:"You can customize this policy to focus on growth, on leaving more to your family, or on guaranteed income — and you only pay extra for the features you actually want.",
-  highlights:["4 products: Select 8 ($10K min), 9, 10, 12 ($25K min)","Surrender schedules: 8-12 years","Free Return of Premium guarantee","10% annual penalty-free withdrawals","Carrier: Nationwide Life and Annuity Insurance Company"] },
+  highlights:["4 products: Select 8 ($10K min), 9, 10, 12 ($25K min)","Surrender schedules: 8-12 years","Free Return of Premium guarantee","10% annual penalty-free withdrawals","Issue ages: annuitant max age 80 (owner may be any age); minimum not separately stated","Carrier: Nationwide Life and Annuity Insurance Company"] },
 
 { cat:"fg", group:"annuity", badge:"b-nw", label:"Nationwide", name:"Nationwide Summit", type:"Nationwide — FIA / Moderate Term with Health Waivers",
   tags:["nationwide","summit","fia","7 year","terminal illness","long term care"],
@@ -572,7 +572,7 @@ export const KB: KBItem[] =
   does:["7-year surrender schedule — shorter than New Heights series","Terminal illness and LTC surrender waivers at NO additional cost","0% floor on indexed strategies","Single premium structure"],
   agent:"Best for clients who want a moderate 7-year commitment with built-in health protections.",
   client:"This is a shorter commitment than most indexed annuities, and it still includes protection if you get seriously ill.",
-  highlights:["7-year surrender schedule | Min premium: $25,000","Terminal illness/LTC waivers at NO extra cost","Shortest surrender period in Nationwide indexed lineup","Carrier: Nationwide Life Insurance Company"] },
+  highlights:["7-year surrender schedule | Min premium: $25,000","Terminal illness/LTC waivers at NO extra cost","Shortest surrender period in Nationwide indexed lineup","Issue ages: annuitant max age 90; minimum not found in published sources","Carrier: Nationwide Life Insurance Company"] },
 
 { cat:"fg", group:"annuity", badge:"b-nw", label:"Nationwide", name:"Nationwide CareMatters Annuity", type:"Nationwide — Annuity-Based LTC Hybrid",
   tags:["nationwide","carematters annuity","long term care","ltc","annuity","1035 exchange","multiplier"],
@@ -580,7 +580,7 @@ export const KB: KBItem[] =
   does:["LTC benefit multiplier of 2x or 3x the contract value, client's choice — e.g. $100,000 becomes $200,000 or $300,000 of day-one LTC coverage","Fixed 3% guaranteed annual crediting rate, applied to both the contract value and the LTC benefit","Cash-indemnity payout — no bills or receipts required once qualified; family caregivers eligible","Any contract value not used for LTC passes to beneficiaries","Can be funded with cash or by 1035-exchanging an existing non-qualified annuity or life policy","Ages 70+ require a cognitive screening in addition to standard application questions"],
   agent:"Best for clients who are annuity-friendly (or already hold an annuity/life policy suited for a 1035 exchange), especially those who might not qualify medically for a life-insurance-based LTC hybrid like CareMatters II — underwriting here is generally lighter since it's annuity-chassis.",
   client:"You reposition a lump sum into this contract, and it multiplies into two or three times as much long-term care coverage — and if you never need care, whatever's left passes to your family.",
-  highlights:["Annuity chassis, not life insurance — lighter underwriting","LTC multiplier: 2x or 3x contract value, your choice","3% guaranteed fixed crediting rate","Carrier: Nationwide Life and Annuity Insurance Company"] },
+  highlights:["Annuity chassis, not life insurance — lighter underwriting","LTC multiplier: 2x or 3x contract value, your choice","3% guaranteed fixed crediting rate","Issue ages: 40-80 (Preferred/Standard 40-74, Select 75-80)","Carrier: Nationwide Life and Annuity Insurance Company"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Income Advantage IUL", type:"MOO — IUL / Accumulation & Retirement Income",
   tags:["mutual of omaha","moo","income advantage","iul","guaranteed refund","accumulation"],
@@ -596,15 +596,15 @@ export const KB: KBItem[] =
   does:["Focus on lifetime protection with guaranteed death benefit options","No-lapse guarantee protection options","Fixed-interest cash value component with 0% floor","Coverage can remain in force to age 90+ if not lapsed"],
   agent:"Best when protection — not accumulation — is the client's main goal. Better fit than Income Advantage for pure death benefit guarantee needs.",
   client:"This policy is built to guarantee your coverage stays in place for life, rather than maximizing your savings inside it.",
-  highlights:["Better than Income Advantage when protection is the priority","No-lapse guarantee options available","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
+  highlights:["Better than Income Advantage when protection is the priority","No-lapse guarantee options available","Issue ages: 0-85 (0-17 standard nontobacco only; 18-80 all risk classes; 81-85 standard NT/tobacco only)","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
 
 { cat:"na", group:"life", subgroup:"iul", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha IUL Express", type:"MOO — IUL / No Exam Simplified Issue",
   tags:["mutual of omaha","moo","iul express","no exam","simplified issue"],
   what:"A simplified issue version of MOO's IUL lineup. No medical exam required, coverage available between $25,000 and $300,000 depending on age.",
-  does:["No medical exam — simplified issue underwriting","Coverage from $25,000 to $300,000 depending on issue age","Same core IUL structure — index-linked growth with 0% floor","Faster issue than fully underwritten IUL products"],
+  does:["No medical exam — simplified issue underwriting","Coverage from $25,000 to $300,000 depending on issue age — tapers to $25,000-$150,000 at ages 61+","Same core IUL structure — index-linked growth with 0% floor","Faster issue than fully underwritten IUL products"],
   agent:"Best for clients who want permanent coverage with growth potential but don't want to schedule an exam, or for smaller face amount needs.",
   client:"This gets you permanent coverage with growth potential, fast, with no medical exam required.",
-  highlights:["No exam required | Coverage: $25,000-$300,000","Faster issue than Income Advantage or Life Protection Advantage","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
+  highlights:["No exam required | Coverage: $25,000-$300,000","Faster issue than Income Advantage or Life Protection Advantage","Issue ages: 18-75","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
 
 { cat:"na", group:"life", subgroup:"term", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Living Promise", type:"MOO — Whole Life / Final Expense, No Exam",
   tags:["mutual of omaha","moo","living promise","whole life","final expense","no exam","online","children"],
@@ -612,7 +612,7 @@ export const KB: KBItem[] =
   does:["Can be purchased online without a medical exam","Guaranteed level premiums that never increase","Permanent coverage for final expenses, funeral costs, small debts","Children's whole life available — locks in childhood rates permanently"],
   agent:"Best for seniors wanting simple guaranteed final expense coverage, or parents wanting to lock in permanent childhood coverage at the lowest rate.",
   client:"This covers your final expenses so your family doesn't have to worry, with a payment that never goes up — and you can even buy it online today.",
-  highlights:["Can be purchased ONLINE with no medical exam — unique among MOO permanent products","Children's whole life locks in childhood rates for life","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
+  highlights:["Can be purchased ONLINE with no medical exam — unique among MOO permanent products","Children's whole life locks in childhood rates for life","Issue ages: 45-85 (Level Benefit) | 45-80 (Graded Benefit) | Children's Whole Life: 14 days-17 years","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
 
 { cat:"fg", group:"annuity", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Ultra Advantage FIA", type:"MOO — FIA / First Fixed Index Annuity",
   tags:["mutual of omaha","moo","ultra advantage","fia","index annuity"],
@@ -620,7 +620,7 @@ export const KB: KBItem[] =
   does:["Flexible withdrawal options built into the design","Multiple surrender charge periods to choose from","0% floor — principal protected","Index crediting linked to S&P 500 and other indices","Optional GLWB-style riders for income planning"],
   agent:"Best for clients who want MOO's brand strength and stability in an indexed annuity, with the flexibility to choose their own surrender period.",
   client:"Your principal is protected from market losses, and you get to choose how long you want to commit your money for.",
-  highlights:["MOO's first-ever FIA — launched 2025","NOT available in California, New York, or the Virgin Islands","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
+  highlights:["MOO's first-ever FIA — launched 2025","NOT available in California, New York, or the Virgin Islands","Max issue age: 85 (7-yr term) / 80 (10-yr term) — minimum issue age not published, confirm current rate sheet before quoting","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
 
 { cat:"fg", group:"annuity", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Ultra-Premier MYGA", type:"MOO — MYGA / Guaranteed Fixed Rate, Broad Waivers",
   tags:["mutual of omaha","moo","ultra premier","myga","hardship waivers","fixed rate"],
@@ -628,7 +628,7 @@ export const KB: KBItem[] =
   does:["Guaranteed fixed rate locked for 5 or 7 years","10% annual free withdrawal provision","MVA provision applies to early surrenders outside free withdrawal","Broad hardship waivers: disability, terminal illness, LTC, unemployment, home damage over $50K, transplant surgery, death of spouse/dependent","No surrender charges at death"],
   agent:"Best for conservative clients who want a guaranteed rate PLUS unusually strong hardship protections most competitors don't offer.",
   client:"If life throws something unexpected at you — job loss, home damage, illness — this annuity has protections built in that most others simply don't have.",
-  highlights:["Terms: 5 or 7 years","Broadest hardship waiver list in the MYGA market — includes home damage and unemployment","MVA provision applies","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
+  highlights:["Terms: 5 or 7 years","Broadest hardship waiver list in the MYGA market — includes home damage and unemployment","MVA provision applies","Issue ages: 0-89 (5-yr term) / 0-88 (7-yr term)","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
 
 { cat:"fg", group:"annuity", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Ultra-Secure Plus MYGA", type:"MOO — MYGA / Tiered Rate, Low Minimum",
   tags:["mutual of omaha","moo","ultra secure plus","myga","tiered rate","low minimum"],
@@ -636,7 +636,7 @@ export const KB: KBItem[] =
   does:["Two-tier rate bands: higher above $50K, lower for $5K-$49.9K","Return of Premium feature included","Additional premiums allowed in Year 1","Same broad hardship waivers as Ultra-Premier","No surrender charges at death"],
   agent:"Best for clients depositing $50,000+ for the better rate tier, or clients wanting a lower entry point ($5,000 min) than typical FIAs.",
   client:"This gives you a guaranteed rate with a very low starting deposit, plus the same strong hardship protections as our larger annuity.",
-  highlights:["5-year term | Low entry: $5,000 minimum","Rate tier breakpoint at $50,000 — always confirm deposit amount before quoting","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
+  highlights:["5-year term | Low entry: $5,000 minimum","Rate tier breakpoint at $50,000 — always confirm deposit amount before quoting","Issue ages: 0-89 (5-yr term) / 0-88 (7-yr term)","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P"] },
 
 { cat:"fg", group:"annuity", badge:"b-moo", label:"Mutual of Omaha", name:"Mutual of Omaha Ultra-Income / DIA Family", type:"MOO — SPIA & DIA / Guaranteed Income",
   tags:["mutual of omaha","moo","ultra income","spia","dia","deferred income annuity","cola"],
@@ -644,7 +644,7 @@ export const KB: KBItem[] =
   does:["Multiple payment structure options","COLA option to offset inflation over time","Payment increase provision for certain qualifying medical conditions","Consistently top-3 SPIA payout rates, especially ages 65-80","DIA option to lock in future guaranteed income at today's rates"],
   agent:"Best for retirees converting a lump sum to guaranteed income, or pre-retirees who want to lock in future income now via DIA.",
   client:"This turns your savings into a guaranteed paycheck for life — and unlike most annuities, your payment can actually increase if your health changes.",
-  highlights:["Top-3 SPIA payout rates industry-wide, especially ages 65-80","Unique: payment increase option tied to qualifying medical conditions","DIA option available for locking in future income","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
+  highlights:["Top-3 SPIA payout rates industry-wide, especially ages 65-80","Unique: payment increase option tied to qualifying medical conditions","DIA option available for locking in future income","Issue ages: Ultra-Income SPIA 0-85 | DIA 40-75 (40-70 if qualified money) — confirm current figures with an agent guide before quoting","Carrier: Mutual of Omaha — A+ AM Best, A+ S&P, A1 Moody's"] },
 
 ];
 
