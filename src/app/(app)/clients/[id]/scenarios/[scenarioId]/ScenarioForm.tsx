@@ -323,11 +323,11 @@ function FinalExpenseOptionsEditor({
 
   function removeOption2() {
     setShowOption2(false);
-    setData({ ...data, deathBenefit2: "", levelPremium2: "" });
+    setData({ ...data, deathBenefit2: "", levelPremium2: "", productName2: "" });
   }
   function removeOption3() {
     setShowOption3(false);
-    setData({ ...data, deathBenefit3: "", levelPremium3: "" });
+    setData({ ...data, deathBenefit3: "", levelPremium3: "", productName3: "" });
   }
 
   return (
@@ -346,11 +346,26 @@ function FinalExpenseOptionsEditor({
       {showOption2 && (
         <div className="rounded-md border border-[#D9CFBA] p-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Budget Option 2</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+              {data.productName2?.trim() || "Option 2"}
+            </div>
             <button type="button" onClick={removeOption2} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
               Remove
             </button>
           </div>
+          <label className="mb-2 flex flex-col gap-1 text-xs text-[#666]">
+            Product name{" "}
+            <span className="font-normal normal-case text-[#8b8b8b]">
+              (optional — leave blank if it&rsquo;s just a bigger budget tier of the same product above; fill in
+              when this is a different product/carrier entirely)
+            </span>
+            <input
+              value={data.productName2 ?? ""}
+              onChange={(e) => setData({ ...data, productName2: e.target.value })}
+              placeholder="e.g. Mutual of Omaha Living Promise"
+              className={inputClass + " w-full"}
+            />
+          </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Guaranteed Death Benefit
@@ -375,11 +390,26 @@ function FinalExpenseOptionsEditor({
       {showOption3 && (
         <div className="rounded-md border border-[#D9CFBA] p-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Budget Option 3</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+              {data.productName3?.trim() || "Option 3"}
+            </div>
             <button type="button" onClick={removeOption3} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
               Remove
             </button>
           </div>
+          <label className="mb-2 flex flex-col gap-1 text-xs text-[#666]">
+            Product name{" "}
+            <span className="font-normal normal-case text-[#8b8b8b]">
+              (optional — leave blank if it&rsquo;s just a bigger budget tier of the same product above; fill in
+              when this is a different product/carrier entirely)
+            </span>
+            <input
+              value={data.productName3 ?? ""}
+              onChange={(e) => setData({ ...data, productName3: e.target.value })}
+              placeholder="e.g. Banner Life Final Expense"
+              className={inputClass + " w-full"}
+            />
+          </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Guaranteed Death Benefit
@@ -407,10 +437,10 @@ function FinalExpenseOptionsEditor({
           onClick={() => (!showOption2 ? setShowOption2(true) : setShowOption3(true))}
           className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
         >
-          + Add another budget option
+          + Add another option
         </button>
       ) : (
-        <p className="text-xs text-[#707070]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} budget options.</p>
+        <p className="text-xs text-[#707070]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} options.</p>
       )}
     </div>
   );
@@ -762,9 +792,10 @@ export default function ScenarioForm({
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
             <p className="mb-4 text-xs text-[#707070]">
               Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
-              life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here. Some clients have room to
-              spend more than the minimum — add up to 2 more face-value/premium options below so they can see what
-              a bigger budget buys.
+              life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here. Add up to 2 more
+              face-value/premium options below — either a bigger budget tier of this same product, or name a
+              different product/carrier entirely (e.g. comparing TruStage vs. Living Promise vs. Banner Life side
+              by side) so a client can glance at all of it at once.
             </p>
             <FinalExpenseOptionsEditor data={data} setData={setData} />
             <div className="mt-4">

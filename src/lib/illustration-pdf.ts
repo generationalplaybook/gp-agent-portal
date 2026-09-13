@@ -4,6 +4,36 @@ import { parseMoney, formatMoney } from "./illustration";
 
 type RGB = [number, number, number];
 
+// Truncates text to fit a max width at the doc's CURRENT font/size (call after setFont/setFontSize,
+// before doc.text) — added 9/13 for Final Expense's multi-product budget-option boxes, where a
+// typed-in product name (e.g. "Mutual of Omaha Living Promise") can easily be wider than the
+// narrow 3-across box that used to only ever hold a short "OPTION 2" label. jsPDF has no built-in
+// single-line ellipsis, so this chops a character at a time until "<text>…" fits.
+function fitLabel(doc: jsPDF, text: string, maxWidth: number): string {
+  if (doc.getTextWidth(text) <= maxWidth) return text;
+  let s = text;
+  while (s.length > 1 && doc.getTextWidth(s + "…") > maxWidth) {
+    s = s.slice(0, -1);
+  }
+  return s + "…";
+}
+
+// Bakes the carrier into the big bold header title for Final Expense — added 9/13 per Karina,
+// after a Banner Life example ("Final Expense Whole Life — Banner Life") she wanted matched:
+// "trustage should not be there in small text." The carrier already shows once, small, under the
+// client name on the right (productType/carrier line) — that's fine for every other product type,
+// but for Final Expense specifically Karina wants the carrier visible in the big title too, same
+// as Banner Life's product name already bakes it in via em-dash. Most Final Expense product names
+// already include the carrier this way (typed or picked straight from the KB, whose own canonical
+// names do this — "...— Banner Life", "...(TruStage)"), so this only appends it when it's not
+// already present in the name (case-insensitive substring check), and only for Final Expense —
+// other product types keep the carrier exclusively in the small line, unchanged.
+function headerTitle(productName: string, productType: string | null, carrier: string | null): string {
+  if (productType !== "Final Expense" || !carrier) return productName;
+  if (productName.toLowerCase().includes(carrier.toLowerCase())) return productName;
+  return `${productName} — ${carrier}`;
+}
+
 export interface AdvisorInfo {
   name?: string | null;
   phone?: string | null;
@@ -192,7 +222,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 26);
+  doc.text(headerTitle(input.productName, input.productType, input.carrier), M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -637,7 +667,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 26);
+  doc.text(headerTitle(input.productName, input.productType, input.carrier), M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -1075,11 +1105,20 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
       y += 96;
     } else {
+      // Karina, 9/13: "enter another product name and list out on multiple policies so its easy
+      // to glance at" — an option's label is its own product name when one was entered (a
+      // genuinely different product/carrier than the scenario's primary), falling back to the
+      // generic "Option 2"/"Option 3" when left blank (just a bigger budget tier of the primary
+      // product, named in the header above).
       const options: { label: string; db?: string; prem?: string }[] = [
-        { label: "Option 1", db: data.deathBenefit, prem: data.levelPremium },
+        { label: input.productName, db: data.deathBenefit, prem: data.levelPremium },
       ];
-      if (hasOption2) options.push({ label: "Option 2", db: data.deathBenefit2, prem: data.levelPremium2 });
-      if (hasOption3) options.push({ label: "Option 3", db: data.deathBenefit3, prem: data.levelPremium3 });
+      if (hasOption2) {
+        options.push({ label: data.productName2?.trim() || "Option 2", db: data.deathBenefit2, prem: data.levelPremium2 });
+      }
+      if (hasOption3) {
+        options.push({ label: data.productName3?.trim() || "Option 3", db: data.deathBenefit3, prem: data.levelPremium3 });
+      }
 
       const gap = 12;
       const boxW = (W - 2 * M - gap * (options.length - 1)) / options.length;
@@ -1090,7 +1129,10 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
         setText(GRAY);
-        doc.text(opt.label.toUpperCase(), x + 12, y + 16);
+        // fitLabel — a typed-in product name (e.g. "Mutual of Omaha Living Promise") can easily be
+        // wider than these narrow boxes ever needed to be for a bare "OPTION 2"; truncate rather
+        // than let it run into the next box or overflow off the page.
+        doc.text(fitLabel(doc, opt.label.toUpperCase(), boxW - 24), x + 12, y + 16);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         setText(OBSIDIAN);

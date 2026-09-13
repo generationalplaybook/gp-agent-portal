@@ -3851,6 +3851,47 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   `client_products`) hasn't been run in Supabase yet. Worth checking both before assuming something's
   broken — let me know if it's still missing once those are confirmed done.
 
+- **9/13, name a different product/carrier on Final Expense budget options — BUILT, no new SQL.**
+  Karina, looking at a Final Expense illustration scenario's budget options: "when we are doing
+  multiple final expense options can we have the option to enter another product name and list
+  out on multiple policies so its easy to glance at." Options 2 and 3 (Illustration Scenarios only
+  — the per-product Illustration Summary doesn't have this multi-option feature) previously only
+  ever meant "a bigger/smaller budget tier of the SAME product." Now each one optionally carries
+  its own product name too, so it can represent a genuinely different carrier entirely (e.g.
+  TruStage as the primary option, Living Promise as Option 2, Banner Life as Option 3), all on one
+  scenario/PDF:
+  1. Added `productName2`/`productName3` to `FinalExpenseIllustration` (stored inside the
+     scenario's existing `data` jsonb column — no schema change needed).
+  2. Each budget-option box on the Scenario editor now has its own "Product name" field, explicitly
+     labeled optional — leave it blank and that option still just reads as another budget tier of
+     the primary product above, exactly like before.
+  3. The PDF summary's option boxes now show the actual product name (truncated with an ellipsis
+     if it's too long for the box) instead of a bare "Option 2"/"Option 3" label whenever one was
+     entered — including Option 1, which now shows the scenario's own product name instead of a
+     bare "Option 1" for consistency once its siblings have real names.
+  4. Verified by generating a real 3-option PDF (TruStage / Mutual of Omaha Living Promise / Banner
+     Life) and rendering it to an image — all three product names display correctly, the long one
+     truncates cleanly instead of overflowing its box. Lint/build clean.
+
+- **9/13, carrier name shown big on Final Expense illustrations, not just small text — BUILT, no
+  SQL.** Karina sent a screenshot of a Banner Life Final Expense PDF (title "Final Expense Whole
+  Life — Banner Life") and said: "can it be like this also the final expense - trustage should
+  not be there in small text." Banner Life's title reads that way because the product name itself
+  was typed with the carrier baked in ("— Banner Life"); a TruStage product typed as just "Final
+  Expense Whole Life" only ever showed "TruStage" in the small productType/carrier line under the
+  client's name — never in the big bold title. Fixed at the PDF layer so it no longer depends on
+  how the product name happens to be typed:
+  1. Both PDF generators (the per-product Illustration Summary and the Illustration Scenarios
+     editor) now check, for Final Expense specifically: if the carrier isn't already part of the
+     product name, the big title gets it appended — "Final Expense Whole Life — TruStage" — same
+     em-dash style as the Banner Life example. If the carrier's already in the name (like Banner
+     Life's), nothing changes — no duplicate carrier text.
+  2. Only applies to Final Expense — every other product type (Term, IUL/Whole Life, Annuity)
+     keeps the carrier exclusively in the small line under the client name, unchanged.
+  3. Verified by generating real test PDFs: a TruStage-style product (name without the carrier)
+     now shows "Final Expense Whole Life — TruStage" as the big title; a Banner Life-style product
+     (carrier already in the name) renders exactly as before, no duplication. Lint/build clean.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

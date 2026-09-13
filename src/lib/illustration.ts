@@ -124,6 +124,15 @@ export interface FinalExpenseIllustration {
   levelPremium2?: string;
   deathBenefit3?: string;
   levelPremium3?: string;
+  // Product name for options 2/3 — added 9/13. Karina: "when we are doing multiple final expense
+  // options can we have the option to enter another product name and list out on multiple
+  // policies so its easy to glance at" — comparing entirely different carriers/products side by
+  // side (e.g. TruStage vs. Living Promise vs. Banner Life), not just bigger/smaller budget tiers
+  // of the one primary product. Left blank, an option still reads as just another budget tier of
+  // the scenario's own primary product (product_name, set when the scenario was created) — every
+  // existing Final Expense scenario is unaffected.
+  productName2?: string;
+  productName3?: string;
   riders: string[];
   notes: string;
 }
