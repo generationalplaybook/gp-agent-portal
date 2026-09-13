@@ -3803,6 +3803,20 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      field this form intentionally omits (DOB, height/weight, health, money type) stays omitted.
   4. Lint and build both clean.
 
+- **9/13, Monthly Budget actually enforced as required on the Client Analyzer — BUILT, no new
+  SQL.** Karina: "the monthly budget does not say optional but when left blank it still populates
+  options. budget should be required." Monthly Budget (shown when Funding Method is "Monthly
+  premiums" or "Both") never had an "optional" badge — unlike Annual Income/Total Debt right below
+  it — so it already looked required, it just wasn't actually checked before running a
+  recommendation. Added it to the same required-fields check as Gender/Height/Weight, but only
+  when it's actually on screen (Funding Method is "monthly" or "both") — same conditional-required
+  pattern as Spouse's Age on the Intake form. Trying to run a recommendation with it blank now
+  shows "Please fill in the required fields: Monthly Budget" instead of silently proceeding.
+  Lint/build clean.
+  **Flagging, not built:** Lump Sum Amount and Periodic Contribution Amount have the exact same
+  gap — no "optional" badge, but also nothing enforcing them today. Didn't touch those since you
+  only called out budget specifically — let me know if you want the same fix there.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

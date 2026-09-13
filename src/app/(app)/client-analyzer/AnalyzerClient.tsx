@@ -220,6 +220,14 @@ export default function AnalyzerClient({
     if (!inputs.gender) req.push("Gender");
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
+    // Karina, 9/13: "the monthly budget does not say optional but when left blank it still
+    // populates options. budget should be required." The field was already rendered without an
+    // "optional" badge (unlike Annual Income/Total Debt just below it), so it looked required —
+    // it just wasn't actually enforced. Only required when it's actually on screen, same as the
+    // Spouse's Age / Ages of Children pattern on the Intake form.
+    if ((inputs.funding === "monthly" || inputs.funding === "both") && !inputs.monthlyBudget?.trim()) {
+      req.push("Monthly Budget");
+    }
 
     if (req.length) {
       setMissing(req);
