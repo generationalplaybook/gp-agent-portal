@@ -113,8 +113,7 @@ export default function AgentRoleRow({
             {agent.email}
             {!isDisabled && inviteAccepted && (
               <>
-                {" "}
-                — last signed in{" "}
+                , last signed in{" "}
                 {new Date(lastSignInAt as string).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
               </>
             )}
@@ -171,7 +170,7 @@ export default function AgentRoleRow({
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[#D9A34A] bg-[#FBF3E3] p-2 text-xs text-[#8b6a00]">
           <span>
             Remove {agent.full_name || "this advisor"}&rsquo;s access? They&rsquo;ll be blocked from logging in and
-            their clients move to Unassigned Clients below for you to reassign — nothing is deleted.
+            their clients move to Unassigned Clients below for you to reassign. Nothing is deleted.
           </span>
           <button
             type="button"

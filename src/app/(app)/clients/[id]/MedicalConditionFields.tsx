@@ -91,7 +91,7 @@ export default function MedicalConditionFields({
         <input
           value={draft.current_status}
           onChange={(e) => set("current_status", e.target.value)}
-          placeholder="e.g. Controlled with medication, Resolved, Ongoing — moderate"
+          placeholder="e.g. Controlled with medication, Resolved, Ongoing, moderate"
           className={inputClass}
         />
       </label>

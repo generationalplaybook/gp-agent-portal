@@ -44,7 +44,7 @@ export default async function TeamPage({
         </Link>
       </div>
       <p className="mb-5 text-xs text-[#707070]">
-        Prospective and in-progress agents — not clients. No upline/downline here, and nothing tracks commission
+        Prospective and in-progress agents, not clients. No upline/downline here, and nothing tracks commission
         (that&rsquo;s the broker&rsquo;s job); this is just for keeping track of who&rsquo;s where and doing your
         follow-ups.
       </p>

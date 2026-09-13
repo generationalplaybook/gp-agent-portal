@@ -29,7 +29,7 @@ export async function notifyAdvisorOfReminder(
 
   await sendEmail({
     to: advisor.email,
-    subject: "New reminder — GP Advisor Portal",
+    subject: "New reminder: GP Advisor Portal",
     html: `
       <p>Hi ${advisor.full_name ?? "there"},</p>
       <p>${message}</p>

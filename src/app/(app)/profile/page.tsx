@@ -60,7 +60,7 @@ export default async function ProfilePage() {
         {profileError ? (
           <p className="rounded-md border border-[#E4BCAF] bg-[#F5E6E1] px-3 py-2 text-sm text-[#8B1A1A]">
             Couldn&rsquo;t load your saved info right now ({profileError.message}). Nothing shown here is safe to
-            save over — refresh the page and try again rather than filling this back in from scratch.
+            save over; refresh the page and try again rather than filling this back in from scratch.
           </p>
         ) : (
           <ProfileInfoForm profile={profileForForm} />

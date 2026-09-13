@@ -205,11 +205,11 @@ function buildSmallLumpSumOverride(lumpSumAmount: string): Omit<GoalRecommendati
       : null;
   const minStr = ANNUITY_MINIMUM_LUMP_SUM.toLocaleString("en-US");
   return {
-    primary: "North American Builder Plus IUL 4 — funded monthly from the lump sum",
-    secondary: "North American Smart Builder IUL 3 — if early policy access before 59½ turns out to be a firm need",
+    primary: "North American Builder Plus IUL 4: funded monthly from the lump sum",
+    secondary: "North American Smart Builder IUL 3, if early policy access before 59½ turns out to be a firm need",
     avoid: "Any annuity",
     reasons: [
-      `Most annuities require a minimum deposit around $${minStr} — this lump sum isn't enough to open one`,
+      `Most annuities require a minimum deposit around $${minStr}; this lump sum isn't enough to open one`,
       monthlyStr
         ? `Split the lump sum across the first 12 months of premiums (~$${monthlyStr}/mo) instead of paying it in all at once`
         : "Split the lump sum across the first 12 months of premiums instead of paying it in all at once",
@@ -217,8 +217,8 @@ function buildSmallLumpSumOverride(lumpSumAmount: string): Omit<GoalRecommendati
       "Living benefits (Critical, Chronic, Terminal Illness) are included at no extra cost, same as this engine's other IUL recommendations",
     ],
     talking: [
-      `An annuity isn't an option yet at this amount — most carriers need at least $${minStr} to open one`,
-      "Instead, let's put that money to work in a policy today — we'll spread it across your first year of premiums so you have time to build the habit of funding it monthly going forward",
+      `An annuity isn't an option yet at this amount; most carriers need at least $${minStr} to open one`,
+      "Instead, let's put that money to work in a policy today, we'll spread it across your first year of premiums so you have time to build the habit of funding it monthly going forward",
     ],
     avoidReasons: [`Insufficient lump sum for any annuity's minimum deposit (typically ~$${minStr}+)`],
     combo: "",
@@ -242,23 +242,23 @@ export function buildRolloverRec(ageGroup: "young" | "mid" | "preretiree" | "ret
   if (ageGroup === "young") {
     rProduct = "Athene Performance Elite or Athene Agility";
     rReasons = [
-      "Direct rollover from the old 401k/IRA — no tax event at transfer",
+      "Direct rollover from the old 401k/IRA, no tax event at transfer",
       "Performance Elite: participation rates up to 335%, pure accumulation",
       "Agility: built-in income rider at no charge if income may be needed later in life",
     ];
   } else if (ageGroup === "mid") {
     rProduct = "Athene Agility";
     rReasons = [
-      "Direct rollover — no tax event at transfer",
+      "Direct rollover, no tax event at transfer",
       "Built-in Income and Death Benefit Rider at no additional charge",
-      "Activate income whenever ready — not required now",
+      "Activate income whenever ready, not required now",
     ];
   } else {
     rProduct = "Athene Ascent Pro Bonus";
     rReasons = [
-      "Direct rollover — no tax event at transfer",
+      "Direct rollover, no tax event at transfer",
       "10% premium bonus + 20% income base bonus + guaranteed 10% roll-up for 10 years",
-      "Routinely the highest guaranteed income payout from any A+ carrier — ideal for consolidating an old 401k into guaranteed retirement income",
+      "Routinely the highest guaranteed income payout from any A+ carrier, ideal for consolidating an old 401k into guaranteed retirement income",
     ];
   }
   if (otherAmount) rReasons = ["Approximate rollover amount: " + otherAmount, ...rReasons];
@@ -329,17 +329,17 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   // already recommends the juvenile College Planning product specifically — no need to
   // duplicate that here, just don't short-circuit past it.
   if (isMinor && goal !== "college") {
-    primary = "North American Accumulation IUL — Max Cash Value Juvenile (via Ethos)";
+    primary = "North American Accumulation IUL: Max Cash Value Juvenile (via Ethos)";
     reasons = [
-      "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness) — before any future health issue could make coverage harder or costlier to get",
-      "Builds cash value for life — same tax-deferred growth and net-zero cost loans as an adult policy",
+      "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness), before any future health issue could make coverage harder or costlier to get",
+      "Builds cash value for life, same tax-deferred growth and net-zero cost loans as an adult policy",
       "Targets $1M+ in cash value by age 65 on a modest monthly contribution",
-      "Parent owns and controls the policy — ownership transfers to the child at age 18",
+      "Parent owns and controls the policy, ownership transfers to the child at age 18",
     ];
-    secondary = "North American Accumulation IUL — College Planning Juvenile — if college funding specifically is the priority";
+    secondary = "North American Accumulation IUL: College Planning Juvenile, if college funding specifically is the priority";
     talking = [
       "This locks in your child's ability to get life insurance for the rest of their life, no matter what health issues come up later",
-      "It also builds real cash value they can use as an adult — a first home, a business, or just extra savings",
+      "It also builds real cash value they can use as an adult; a first home, a business, or just extra savings",
       "The younger they start, the more time that cash value has to grow",
     ];
     return { primary, secondary, avoid, reasons, talking, avoidReasons, combo, comboReasons };
@@ -355,33 +355,33 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   if (goal === "final_expense") {
     const r = FINAL_EXPENSE_AGE_RANGES;
     talking = [
-      "This isn't about replacing your income — it's making sure your family never has to come up with money for funeral or burial costs",
+      "This isn't about replacing your income, it's making sure your family never has to come up with money for funeral or burial costs",
       "The payment is small and locked in for life, because the coverage amount is sized to the actual need, not overbuilt",
     ];
 
     if (insurable === "no") {
       const trustageFits = fitsAge(age, r.trustageGuaranteed);
       if (trustageFits) {
-        primary = "Ethos Final Expense Whole Life (TruStage) — Guaranteed Issue";
+        primary = "Ethos Final Expense Whole Life (TruStage): Guaranteed Issue";
         reasons = [
-          "Guaranteed acceptance — no health questions, no exam, no declines",
+          "Guaranteed acceptance; no health questions, no exam, no declines",
           "Permanent coverage with fixed premiums that never increase",
-          "Graded 2-year benefit applies to natural causes only — accidental death is covered in full from day one",
+          "Graded 2-year benefit applies to natural causes only, accidental death is covered in full from day one",
           age !== null ? `Client's age (${age}) fits TruStage Guaranteed Issue's published window (${r.trustageGuaranteed.min}-${r.trustageGuaranteed.max})` : "",
         ].filter(Boolean);
         secondary =
-          "Banner Life Final Expense (Guaranteed Issue, via Ethos) — worth it if Social Security Billing (premiums auto-deducted from their SS check) would help them keep the policy current; Banner Life's own issue-age window isn't confirmed in our records, so verify eligibility with Ethos before quoting";
+          "Banner Life Final Expense (Guaranteed Issue, via Ethos), worth it if Social Security Billing (premiums auto-deducted from their SS check) would help them keep the policy current; Banner Life's own issue-age window isn't confirmed in our records, so verify eligibility with Ethos before quoting";
       } else {
         // Age doesn't fit the one guaranteed-issue product we have a confirmed range for.
         primary = "No confirmed Guaranteed Issue final expense match on file";
         reasons = [
           `Client's age (${age}) falls outside TruStage Guaranteed Issue's published window (${r.trustageGuaranteed.min}-${r.trustageGuaranteed.max})`,
-          "Banner Life Final Expense (Guaranteed Issue) may still be an option, but its issue-age range isn't confirmed in our records — check directly with Ethos before ruling it out",
+          "Banner Life Final Expense (Guaranteed Issue) may still be an option, but its issue-age range isn't confirmed in our records; check directly with Ethos before ruling it out",
           age !== null && age < r.trustageGuaranteed.min
-            ? "Client is younger than every guaranteed-issue final expense product we have a confirmed range for — this age/health combination may need a different approach entirely (e.g. a simplified-issue term or graded life product) rather than final expense whole life"
-            : "Client is older than every guaranteed-issue final expense product we have a confirmed range for — worth a direct call to carriers for an over-85 guaranteed-issue option",
+            ? "Client is younger than every guaranteed-issue final expense product we have a confirmed range for; this age/health combination may need a different approach entirely (e.g. a simplified-issue term or graded life product) rather than final expense whole life"
+            : "Client is older than every guaranteed-issue final expense product we have a confirmed range for, worth a direct call to carriers for an over-85 guaranteed-issue option",
         ];
-        secondary = "Banner Life Final Expense (Guaranteed Issue, via Ethos) — confirm age eligibility directly, not filtered here";
+        secondary = "Banner Life Final Expense (Guaranteed Issue, via Ethos); confirm age eligibility directly, not filtered here";
         avoid = "";
       }
     } else {
@@ -394,16 +394,16 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
       const livingPromiseFits = fitsAge(age, livingPromiseRange);
 
       if (trustageFits) {
-        primary = "Ethos Final Expense Whole Life (TruStage) — Simplified Issue";
+        primary = "Ethos Final Expense Whole Life (TruStage): Simplified Issue";
         reasons = [
-          "Simplified issue — a handful of health questions, no medical exam",
+          "Simplified issue; a handful of health questions, no medical exam",
           "Permanent coverage with fixed premiums that never increase, plus guaranteed cash value growth",
-          "Sized for funeral, burial, and small final bills — not a large policy with a payment to match",
+          "Sized for funeral, burial, and small final bills, not a large policy with a payment to match",
           age !== null ? `Client's age (${age}) fits TruStage Simplified Issue's published window (${r.trustageSimplified.min}-${r.trustageSimplified.max})` : "",
         ].filter(Boolean);
         secondary = livingPromiseFits
-          ? `Mutual of Omaha Living Promise (${livingPromiseTierLabel}) — also no exam and purchasable online, if a well-known carrier name matters to the client; age fits its ${livingPromiseRange.min}-${livingPromiseRange.max} window`
-          : `Mutual of Omaha Living Promise doesn't fit — client's age (${age}) falls outside its ${livingPromiseTierLabel} window (${livingPromiseRange.min}-${livingPromiseRange.max})`;
+          ? `Mutual of Omaha Living Promise (${livingPromiseTierLabel}); also no exam and purchasable online, if a well-known carrier name matters to the client; age fits its ${livingPromiseRange.min}-${livingPromiseRange.max} window`
+          : `Mutual of Omaha Living Promise doesn't fit; client's age (${age}) falls outside its ${livingPromiseTierLabel} window (${livingPromiseRange.min}-${livingPromiseRange.max})`;
       } else if (livingPromiseFits) {
         // TruStage doesn't fit but Living Promise does — promote it to primary instead of
         // recommending a product the client's age rules out.
@@ -419,8 +419,8 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
         reasons = [
           `Client's age (${age}) falls outside both TruStage Simplified Issue (${r.trustageSimplified.min}-${r.trustageSimplified.max}) and Mutual of Omaha Living Promise ${livingPromiseTierLabel} (${livingPromiseRange.min}-${livingPromiseRange.max})`,
           age !== null && age < r.trustageSimplified.min
-            ? "Client is younger than every final expense whole life product we have a confirmed range for — final expense whole life usually isn't the right tool this young anyway; a term or IUL goal may fit the actual need better"
-            : "Client is older than every final expense whole life product we have a confirmed range for — worth a direct call to carriers for a higher-age option",
+            ? "Client is younger than every final expense whole life product we have a confirmed range for; final expense whole life usually isn't the right tool this young anyway; a term or IUL goal may fit the actual need better"
+            : "Client is older than every final expense whole life product we have a confirmed range for, worth a direct call to carriers for a higher-age option",
         ];
         secondary = "";
         avoid = "";
@@ -433,64 +433,64 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
     if (goal === "income_now") {
       primary = "Athene Activate SPIA";
       reasons = [
-        "No underwriting required — uninsurable clients fully qualify",
+        "No underwriting required, uninsurable clients fully qualify",
         "Income starts within 30 days",
-        "Payments guaranteed — Athene cannot reduce them",
+        "Payments guaranteed. Athene cannot reduce them",
       ];
-      secondary = "F&G Safe Income Advantage — if income can be deferred to grow first";
+      secondary = "F&G Safe Income Advantage, if income can be deferred to grow first";
     } else if (goal === "income" || ageGroup === "retiree" || ageGroup === "preretiree") {
       primary = "Athene Ascent Pro Bonus";
       reasons = [
-        "No underwriting required — annuity is the right tool for uninsurable clients",
+        "No underwriting required, annuity is the right tool for uninsurable clients",
         "10% premium bonus + 20% income base bonus at issue",
         "Guaranteed 10% simple interest roll-up for 10 years",
         "Routinely the highest guaranteed income payout from any A+ carrier",
       ];
-      secondary = "F&G Safe Income Advantage — 7.2% guaranteed roll-up with inflation-linked payout";
+      secondary = "F&G Safe Income Advantage: 7.2% guaranteed roll-up with inflation-linked payout";
     } else {
       primary = "Athene Performance Elite";
-      reasons = ["No underwriting required", "0% floor with participation rates up to 335%", "No income rider fee drag — pure accumulation"];
-      secondary = "Athene Agility — built-in income rider at no charge if income may be needed later";
+      reasons = ["No underwriting required", "0% floor with participation rates up to 335%", "No income rider fee drag, pure accumulation"];
+      secondary = "Athene Agility, built-in income rider at no charge if income may be needed later";
     }
     avoid = "Any IUL or Term product";
-    avoidReasons = ["Client cannot pass life insurance underwriting — annuities require none"];
+    avoidReasons = ["Client cannot pass life insurance underwriting, annuities require none"];
   } else if (money === "qualified" && goal !== "protection" && goal !== "legacy") {
     if (goal === "income_now") {
       primary = "Athene Activate SPIA";
       reasons = [
-        "Direct 401k/IRA rollover — no tax event at transfer",
+        "Direct 401k/IRA rollover, no tax event at transfer",
         "Income starts within 30 days",
         "Payments guaranteed once set",
       ];
-      secondary = "Athene Agility — if income can wait, built-in rider at no charge";
+      secondary = "Athene Agility, if income can wait, built-in rider at no charge";
     } else if (goal === "income" || ageGroup === "retiree" || ageGroup === "preretiree") {
       primary = "Athene Ascent Pro Bonus";
       reasons = [
-        "Qualified money rolls directly into an annuity — no tax event at transfer",
+        "Qualified money rolls directly into an annuity, no tax event at transfer",
         "10% premium bonus + 20% income base bonus + guaranteed 10% roll-up for 10 years",
         "Taxes deferred until income distributions begin",
       ];
-      secondary = "F&G Safe Income Advantage — 7.2% roll-up, inflation-linked payout option";
+      secondary = "F&G Safe Income Advantage: 7.2% roll-up, inflation-linked payout option";
     } else {
       primary = "Athene Performance Elite or Athene Agility";
       reasons = [
-        "Direct rollover — no tax event at transfer",
+        "Direct rollover, no tax event at transfer",
         "Performance Elite: participation up to 335%, pure accumulation",
         "Agility: built-in income rider at no charge if income may be needed later",
       ];
-      secondary = "F&G Safe Income Advantage — if guaranteed income is the end goal";
+      secondary = "F&G Safe Income Advantage, if guaranteed income is the end goal";
     }
     // Not a blanket "avoid IUL" — qualified money specifically can't fund one directly. If the
     // client has other, non-qualified money (income, savings, a second account), a separately
     // funded IUL alongside this annuity is still worth raising, not ruled out.
     combo = "Pair with a separately-funded IUL";
     comboReasons = [
-      "Qualified money can't fund an IUL directly — it would need to be distributed first, triggering taxes",
+      "Qualified money can't fund an IUL directly; it would need to be distributed first, triggering taxes",
       "If the client has other income or savings outside this qualified account, a separately-funded IUL alongside this annuity adds tax-free cash value growth and extra legacy protection",
     ];
     talking = [
       "Your 401k rolls directly into an annuity with zero taxes due today",
-      "The same 59 1/2 restriction already applies to your 401k — this does not make your timeline worse",
+      "The same 59 1/2 restriction already applies to your 401k, this does not make your timeline worse",
       "The annuity adds a 0% floor so market crashes cannot touch your balance",
     ];
   } else {
@@ -505,63 +505,63 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
       // priority because the Ethos can also be converted to an IUL at Ameritas." Both carriers'
       // term products convert to their own IUL, so conversion-to-North-American isn't actually a
       // real differentiator between the two — dropped that qualifier.
-      secondary = "Ethos Term With Living Benefits (Ameritas) — also convertible to an Ameritas IUL later";
+      secondary = "Ethos Term With Living Benefits (Ameritas), also convertible to an Ameritas IUL later";
       avoid = "IUL for pure protection";
-      avoidReasons = ["IUL cost of insurance is higher than term — for pure protection, term is more efficient"];
+      avoidReasons = ["IUL cost of insurance is higher than term; for pure protection, term is more efficient"];
     } else if (goal === "legacy") {
       if (horizon === "long" || horizon === "never" || !horizon) {
         primary = "North American Protection Builder IUL 2";
         reasons = [
           "Guaranteed death benefit to age 120 via Premium Guaranteed Rider",
-          "Premium Recovery Endorsement — 50% back at Year 15, 100% back at Year 20/25",
+          "Premium Recovery Endorsement; 50% back at Year 15, 100% back at Year 20/25",
           "Living benefits included at no extra cost",
         ];
-        secondary = "F&G Everlast IUL — maximizes death benefit with InstApproval";
+        secondary = "F&G Everlast IUL, maximizes death benefit with InstApproval";
       } else {
         primary = "ADDvantage Term (North American) with conversion plan";
         reasons = ["Lock in coverage now at lowest cost", "Convert to Protection Builder IUL 2 later when income supports higher premiums"];
-        secondary = "North American Protection Builder IUL 2 — if client can fund now";
+        secondary = "North American Protection Builder IUL 2, if client can fund now";
       }
     } else if (goal === "college") {
-      primary = "North American Accumulation IUL — College Planning Juvenile (via Ethos)";
+      primary = "North American Accumulation IUL: College Planning Juvenile (via Ethos)";
       reasons = [
-        "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness) — before any future health issue could make coverage harder or costlier to get",
-        "Cash value NOT counted as a FAFSA asset — unlike 529 plans",
+        "Locks in your child's insurability now, while they qualify for all three living benefits (Critical, Chronic, Terminal Illness), before any future health issue could make coverage harder or costlier to get",
+        "Cash value NOT counted as a FAFSA asset, unlike 529 plans",
         "Premiums are typically paid in until around age 17, then tax-free policy loan distributions for college begin at 18",
-        "A lump sum up front increases what's available later, but it's optional — monthly funding alone still works",
+        "A lump sum up front increases what's available later, but it's optional, monthly funding alone still works",
         "No restrictions on use",
       ];
-      secondary = "Accumulation IUL — Max Cash Value Juvenile — if maximum long-term growth is the priority";
+      secondary = "Accumulation IUL: Max Cash Value Juvenile, if maximum long-term growth is the priority";
       avoid = "529 Plan";
       avoidReasons = ["529 plans count against FAFSA financial aid. IUL cash value does not appear on FAFSA and has no use restrictions"];
       talking = [
         "This locks in your child's ability to get life insurance for the rest of their life, no matter what health issues come up later",
-        "You fund it while they're young, and starting around age 18 they can draw on it tax-free for college — or anything else, unlike a 529",
-        "Putting in more up front grows the total, but it's not required — the monthly amount alone still works, just for a smaller total",
+        "You fund it while they're young, and starting around age 18 they can draw on it tax-free for college; or anything else, unlike a 529",
+        "Putting in more up front grows the total, but it's not required; the monthly amount alone still works, just for a smaller total",
       ];
     } else if (goal === "income_now") {
       primary = "Athene Activate SPIA";
       reasons = ["Income starts within 30 days", "Payments guaranteed once set", "Life only, period certain, or joint life options available"];
-      secondary = "F&G Safe Income Advantage — if client can wait 1-2 years, roll-up produces more";
+      secondary = "F&G Safe Income Advantage; if client can wait 1-2 years, roll-up produces more";
       avoid = "IUL for immediate income";
-      avoidReasons = ["IUL requires years to build meaningful cash value — not suitable for immediate income"];
-      talking = ["You put in your lump sum and within 30 days your guaranteed paycheck begins", "It never stops — even if you live to 100"];
+      avoidReasons = ["IUL requires years to build meaningful cash value, not suitable for immediate income"];
+      talking = ["You put in your lump sum and within 30 days your guaranteed paycheck begins", "It never stops, even if you live to 100"];
     } else if (goal === "income") {
       if (ageGroup === "young" || horizon === "long") {
         primary = "North American Builder Plus IUL 4";
         reasons = [
           "At a younger age, IUL can provide more tax-free income over a longer retirement than an annuity",
-          "Net-zero cost loans — tax-free income with no restrictions",
+          "Net-zero cost loans, tax-free income with no restrictions",
           "Exclusive Fidelity index bonuses compound over 20+ years",
         ];
-        secondary = "Athene Agility FIA — if client also has qualified money needing rollover";
+        secondary = "Athene Agility FIA, if client also has qualified money needing rollover";
       } else {
         primary = "Athene Ascent Pro Bonus";
         reasons = [
           "10% premium bonus + 20% income base bonus + 10% roll-up = maximum guaranteed income",
           "Routinely the highest guaranteed income payout from any A+ carrier",
         ];
-        secondary = "North American Builder Plus IUL 4 — if client is under 55 and can defer 15+ years";
+        secondary = "North American Builder Plus IUL 4, if client is under 55 and can defer 15+ years";
         talking = [
           "This is the highest guaranteed income available from an A+ rated carrier",
           "Your income is locked in regardless of what markets do",
@@ -576,35 +576,35 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
       if (earlyAccess === "yes") {
         primary = "North American Smart Builder IUL 3";
         reasons = [
-          "0% premium load — 100% of every dollar goes to cash value from Day 1",
+          "0% premium load, 100% of every dollar goes to cash value from Day 1",
           "Waiver of Surrender Charge Rider = Day 1 access with no surrender penalties",
-          "Policy loans available at any age — no IRS age restriction",
+          "Policy loans available at any age, no IRS age restriction",
         ];
         if (funding === "lumpsum" || funding === "both" || funding === "periodic") {
-          reasons.push("LUMP SUM FRIENDLY — 0% load means 100% of every deposit goes to work immediately, whether it's one lump sum or a few a year");
+          reasons.push("LUMP SUM FRIENDLY, 0% load means 100% of every deposit goes to work immediately, whether it's one lump sum or a few a year");
         }
-        secondary = "North American Builder Plus IUL 4 — if time horizon is actually 15+ years";
+        secondary = "North American Builder Plus IUL 4, if time horizon is actually 15+ years";
         avoid = "Builder Plus IUL 4 for short-term goals";
-        avoidReasons = ["Builder Plus 4 is designed for 20+ year strategies — not optimized for early access"];
+        avoidReasons = ["Builder Plus 4 is designed for 20+ year strategies, not optimized for early access"];
       } else {
         primary = "North American Builder Plus IUL 4";
         reasons = [
-          "Exclusive Fidelity Multifactor Yield Index — not available at any other carrier",
+          "Exclusive Fidelity Multifactor Yield Index, not available at any other carrier",
           "Interest bonus: 1% Years 1-10, increases to 1.5% after Year 10",
-          "Net-zero cost loans — full balance earns even on loaned amount",
+          "Net-zero cost loans, full balance earns even on loaned amount",
         ];
         if (horizon === "short" || horizon === "mid" || earlyAccess === "both") {
-          secondary = "North American Smart Builder IUL 3 — if early access before 59½ turns out to be a firm need";
+          secondary = "North American Smart Builder IUL 3, if early access before 59½ turns out to be a firm need";
         } else {
-          secondary = "Ethos Protection IUL — 14-15% below national average pricing";
+          secondary = "Ethos Protection IUL: 14-15% below national average pricing";
         }
         if (funding === "lumpsum" || funding === "both" || funding === "periodic") {
-          reasons.push("Flexible premium — accepts lump sum deposits including 1035 exchanges, on whatever schedule works for the client");
+          reasons.push("Flexible premium; accepts lump sum deposits including 1035 exchanges, on whatever schedule works for the client");
         }
       }
       talking = [
-        "Your money grows linked to the market but can never go backwards — 0% floor",
-        "When ready to access it, you take a policy loan — no tax, no credit check, no monthly payment required",
+        "Your money grows linked to the market but can never go backwards, 0% floor",
+        "When ready to access it, you take a policy loan; no tax, no credit check, no monthly payment required",
         "Your full balance keeps compounding even while borrowing against it",
       ];
     }
@@ -618,11 +618,11 @@ function computeRecommendation(goal: Goal | undefined, ctx: RecommendationContex
   if (funding === "periodic" && primary) {
     if (primary.includes("IUL")) {
       reasons.push(
-        "Flexible-premium product — deposits a few times a year (bonus season, year-end tax planning, etc.) work fine, no fixed schedule required"
+        "Flexible-premium product; deposits a few times a year (bonus season, year-end tax planning, etc.) work fine, no fixed schedule required"
       );
     } else if (!primary.includes("Term")) {
       reasons.push(
-        "Confirm this specific annuity's purchase-payment window — most only accept additional deposits during an initial period (often the first several years), not indefinitely"
+        "Confirm this specific annuity's purchase-payment window, most only accept additional deposits during an initial period (often the first several years), not indefinitely"
       );
     }
   }

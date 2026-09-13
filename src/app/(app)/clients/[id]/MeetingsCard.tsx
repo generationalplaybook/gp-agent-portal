@@ -233,7 +233,7 @@ export default function MeetingsCard({
             >
               Download calendar invite
             </button>
-            <span className="text-[#707070]">— add it to your calendar, or forward the file to {clientName.split(" ")[0]}.</span>
+            <span className="text-[#707070]">, add it to your calendar, or forward the file to {clientName.split(" ")[0]}.</span>
           </div>
         )}
       </div>

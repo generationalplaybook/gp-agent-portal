@@ -24,8 +24,8 @@ export default function PreIntakeLinkCard({ siteUrl, advisorId, slug }: { siteUr
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Pre-Intake Link</h2>
       <p className="mb-3 text-xs text-[#707070]">
         Send this if the client isn&rsquo;t already aware these investment opportunities are through life
-        insurance/annuity products — e.g. they just booked a meeting after hearing &ldquo;financial and legacy
-        planning.&rdquo; Short and general on purpose — just contact info and what&rsquo;s on their mind, no health
+        insurance/annuity products, e.g. they just booked a meeting after hearing &ldquo;financial and legacy
+        planning.&rdquo; Short and general on purpose: just contact info and what&rsquo;s on their mind, no health
         or product questions. Once they know what this is about (after your first meeting, or if they already knew
         going in), use the Full Intake Link below instead.
       </p>

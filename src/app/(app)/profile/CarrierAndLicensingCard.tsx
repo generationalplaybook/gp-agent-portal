@@ -28,7 +28,7 @@ export default function CarrierAndLicensingCard({
     <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Carrier &amp; Licensing</h2>
       <p className="mb-4 text-xs text-[#707070]">
-        Your own broker portal logins and state licenses — visible only to you, sorted alphabetically so anything&rsquo;s
+        Your own broker portal logins and state licenses. Visible only to you, sorted alphabetically so anything&rsquo;s
         easy to find.
       </p>
 

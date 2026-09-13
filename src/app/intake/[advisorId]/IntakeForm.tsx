@@ -189,7 +189,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
         setSubmitError(res.error);
       }
     } catch {
-      setSubmitError("Something went wrong submitting this form — please try again.");
+      setSubmitError("Something went wrong submitting this form. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -314,7 +314,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
       <div className="mb-1 mt-6 text-xs font-semibold uppercase tracking-wide text-[#707070]">Family (optional)</div>
       <div className="mb-5 h-px bg-[#D9CFBA]" />
       <Field label="Household">
-        <div className="mb-1.5 text-xs text-[#707070]">Check anything that applies — just so we know who else might be part of the conversation.</div>
+        <div className="mb-1.5 text-xs text-[#707070]">Check anything that applies, just so we know who else might be part of the conversation.</div>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -560,7 +560,7 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
             { value: "short", label: "1–5 years" },
             { value: "mid", label: "5–15 years" },
             { value: "long", label: "15+ years / retirement" },
-            { value: "never", label: "Never — leaving to heirs" },
+            { value: "never", label: "Never, leaving to heirs" },
           ]}
         />
       </Field>
@@ -569,9 +569,9 @@ export default function IntakeForm({ advisorId, advisorName }: { advisorId: stri
           value={inputs.risk}
           onChange={(v) => set("risk", v)}
           options={[
-            { value: "guaranteed", label: "Fully guaranteed — no market exposure" },
-            { value: "protected", label: "Market-linked but protected — 0% floor" },
-            { value: "growth", label: "Growth focused — some risk okay" },
+            { value: "guaranteed", label: "Fully guaranteed, no market exposure" },
+            { value: "protected", label: "Market-linked but protected, 0% floor" },
+            { value: "growth", label: "Growth focused, some risk okay" },
           ]}
         />
       </Field>

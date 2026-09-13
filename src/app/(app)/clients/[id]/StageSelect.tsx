@@ -76,7 +76,7 @@ export default function StageSelect({
                   onChange={() => setChosenId(p.id)}
                 />
                 {p.product_name}
-                {p.carrier && ` — ${p.carrier}`}
+                {p.carrier && `: ${p.carrier}`}
                 {p.premium != null && ` · $${p.premium.toLocaleString()}`}
               </label>
             ))}

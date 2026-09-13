@@ -300,14 +300,14 @@ export default function AnalyzerClient({
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
         {prefillInputs && (
           <div className="mb-5 rounded-md border border-[#1B4F8A] bg-[#EEF3FA] px-3 py-2 text-xs text-[#1B4F8A]">
-            Starting from a previous analysis&rsquo;s answers — adjust anything below, then save. This
+            Starting from a previous analysis&rsquo;s answers. Adjust anything below, then save. This
             creates a brand-new analysis; the original one is untouched.
           </div>
         )}
         {!prefillInputs && prefillClient && (prefillClient.income || prefillClient.monthlyBudget) && (
           <div className="mb-5 rounded-md border border-[#1B4F8A] bg-[#EEF3FA] px-3 py-2 text-xs text-[#1B4F8A]">
             Income and budget below are pre-filled from {prefillClient.full_name}&rsquo;s completed Financial
-            Needs Analysis — Goal is still yours to pick. Adjust anything before running the analysis.
+            Needs Analysis. Goal is still yours to pick. Adjust anything before running the analysis.
           </div>
         )}
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#707070]">Client Info</div>
@@ -472,7 +472,7 @@ export default function AnalyzerClient({
             value={inputs.otherRetirement}
             onChange={(v) => set("otherRetirement", v)}
             options={[
-              { value: "yes", label: "Yes — has other retirement accounts" },
+              { value: "yes", label: "Yes, has other retirement accounts" },
               { value: "no", label: "No" },
               { value: "skip", label: "Unsure" },
             ]}
@@ -564,7 +564,7 @@ export default function AnalyzerClient({
 
         <Field label="Primary Goal(s)">
           <div className="mb-1.5 text-xs text-[#707070]">
-            Select one or more — we&rsquo;ll build a full recommendation for each goal chosen.
+            Select one or more. We&rsquo;ll build a full recommendation for each goal chosen.
           </div>
           <CheckboxGroup<Goal>
             value={inputs.goals ?? []}
@@ -580,7 +580,7 @@ export default function AnalyzerClient({
               { value: "short", label: "1–5 years" },
               { value: "mid", label: "5–15 years" },
               { value: "long", label: "15+ years / retirement" },
-              { value: "never", label: "Never — leaving to heirs" },
+              { value: "never", label: "Never, leaving to heirs" },
               { value: "skip", label: "Skip" },
             ]}
           />
@@ -590,9 +590,9 @@ export default function AnalyzerClient({
             value={inputs.risk}
             onChange={(v) => set("risk", v)}
             options={[
-              { value: "guaranteed", label: "Fully guaranteed — no market exposure" },
-              { value: "protected", label: "Market-linked but protected — 0% floor" },
-              { value: "growth", label: "Growth focused — some risk okay" },
+              { value: "guaranteed", label: "Fully guaranteed, no market exposure" },
+              { value: "protected", label: "Market-linked but protected, 0% floor" },
+              { value: "growth", label: "Growth focused, some risk okay" },
               { value: "skip", label: "Skip" },
             ]}
           />
@@ -602,8 +602,8 @@ export default function AnalyzerClient({
             value={inputs.earlyAccess}
             onChange={(v) => set("earlyAccess", v)}
             options={[
-              { value: "yes", label: "Yes — needs flexible access" },
-              { value: "no", label: "No — can wait until 59½+" },
+              { value: "yes", label: "Yes, needs flexible access" },
+              { value: "no", label: "No, can wait until 59½+" },
               { value: "both", label: "Mix of both" },
               { value: "skip", label: "Skip" },
             ]}
@@ -685,7 +685,7 @@ export default function AnalyzerClient({
             {result.hasRollover && result.rolloverProduct && (
               <div className="rounded-lg border-l-4 border-[#8B6A00] bg-[#FFFBF0] p-4">
                 <div className="mb-1 text-sm font-semibold text-[#8B6A00]">
-                  Also Recommended — Rollover Opportunity
+                  Also Recommended: Rollover Opportunity
                 </div>
                 <div className="mb-2 text-xs text-[#666]">
                   For the client&rsquo;s OTHER retirement account(s) mentioned separately from today&rsquo;s plan.
@@ -708,7 +708,7 @@ export default function AnalyzerClient({
                 )}
                 <div className="rounded-lg border-l-4 border-[#1E6B3C] bg-white p-4">
                   <div className="mb-1 text-sm font-semibold text-[#1E6B3C]">
-                    Primary Recommendation{result.hasRollover ? " — Today's New Plan" : ""}
+                    Primary Recommendation{result.hasRollover ? ": Today's New Plan" : ""}
                   </div>
                   <div className="mb-2 text-lg font-semibold text-[#1C1C1C]">{rec.primary}</div>
                   <ul className="list-disc space-y-1 pl-4 text-sm text-[#333]">
@@ -781,7 +781,7 @@ export default function AnalyzerClient({
                 // handleSubmit above). No "create a new client" or "pick a client" clutter here —
                 // Karina specifically didn't want that when the client is already known.
                 <div className="rounded-md border border-[#1C1C1C] bg-[#F5F0E8] p-3 text-xs text-[#666]">
-                  Automatically saved to <strong>{prefillClient.full_name}</strong>&rsquo;s profile — re-run
+                  Automatically saved to <strong>{prefillClient.full_name}</strong>&rsquo;s profile. Re-run
                   Get Recommendations any time to update it.
                 </div>
               ) : (

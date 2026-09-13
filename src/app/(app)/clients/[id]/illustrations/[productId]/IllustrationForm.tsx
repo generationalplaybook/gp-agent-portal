@@ -44,7 +44,7 @@ function CashValueMilestonesEditor({
             <input
               value={m.label}
               onChange={(e) => update(m.id, { label: e.target.value })}
-              placeholder={`Milestone ${i + 1} — e.g. Age 18`}
+              placeholder={`Milestone ${i + 1} (e.g. Age 18)`}
               className={inputClass + " flex-1"}
             />
             {milestones.length > 1 && (
@@ -59,11 +59,11 @@ function CashValueMilestonesEditor({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Cash Value — Guaranteed
+              Cash Value: Guaranteed
               <DollarInput value={m.cvGuaranteed} onChange={(v) => update(m.id, { cvGuaranteed: v })} className={inputClass + " w-full"} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Cash Value — Non-Guaranteed
+              Cash Value: Non-Guaranteed
               <DollarInput
                 value={m.cvNonGuaranteed}
                 onChange={(v) => update(m.id, { cvNonGuaranteed: v })}
@@ -71,11 +71,11 @@ function CashValueMilestonesEditor({
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Death Benefit — Guaranteed
+              Death Benefit: Guaranteed
               <DollarInput value={m.dbGuaranteed} onChange={(v) => update(m.id, { dbGuaranteed: v })} className={inputClass + " w-full"} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Death Benefit — Non-Guaranteed
+              Death Benefit: Non-Guaranteed
               <DollarInput
                 value={m.dbNonGuaranteed}
                 onChange={(v) => update(m.id, { dbNonGuaranteed: v })}
@@ -117,7 +117,7 @@ function AnnuityMilestonesEditor({
             <input
               value={m.label}
               onChange={(e) => update(m.id, { label: e.target.value })}
-              placeholder={`Milestone ${i + 1} — e.g. Year 10`}
+              placeholder={`Milestone ${i + 1} (e.g. Year 10)`}
               className={inputClass + " flex-1"}
             />
             {milestones.length > 1 && (
@@ -254,7 +254,7 @@ export default function IllustrationForm({
           <>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#707070]">
-              Enter cash value and death benefit at whichever ages matter for this case — pull the numbers straight
+              Enter cash value and death benefit at whichever ages matter for this case; pull the numbers straight
               from the carrier&rsquo;s illustration.
             </p>
             <CashValueMilestonesEditor
@@ -306,7 +306,7 @@ export default function IllustrationForm({
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
             <p className="mb-4 text-xs text-[#707070]">
-              Final expense is guaranteed- or simplified-issue — the death benefit and premium are both locked for
+              Final expense is guaranteed- or simplified-issue: the death benefit and premium are both locked for
               life, so there&rsquo;s no guaranteed vs. non-guaranteed split to enter here.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

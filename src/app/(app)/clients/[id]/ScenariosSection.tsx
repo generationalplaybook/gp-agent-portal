@@ -70,7 +70,7 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-[#707070]">
-        Run numbers for an option the client hasn&rsquo;t decided on yet — nothing here shows up as a Product until
+        Run numbers for an option the client hasn&rsquo;t decided on yet. Nothing here shows up as a Product until
         you convert it.
       </p>
 

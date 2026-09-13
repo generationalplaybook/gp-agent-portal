@@ -110,7 +110,7 @@ export default function TermOutreachRow({
         </div>
         <p className="mt-0.5 truncate text-xs text-[#707070]">
           {productName}
-          {(productType || carrier) && ` — ${[productType, carrier].filter(Boolean).join(" · ")}`}
+          {(productType || carrier) && `: ${[productType, carrier].filter(Boolean).join(" · ")}`}
         </p>
         {milestone ? (
           <p className="mt-0.5 text-xs text-[#666]">
@@ -118,7 +118,7 @@ export default function TermOutreachRow({
             {formatDateOnly(milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
           </p>
         ) : (
-          <p className="mt-0.5 text-xs text-[#999]">No date on file yet — edit this product to add one.</p>
+          <p className="mt-0.5 text-xs text-[#999]">No date on file yet. Edit this product to add one.</p>
         )}
         {error && <p className="mt-0.5 text-xs text-[#8B1A1A]">{error}</p>}
       </div>
@@ -195,7 +195,7 @@ export default function TermOutreachRow({
           className="shrink-0 rounded-md border border-[#1C1C1C] bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] disabled:opacity-60"
         >
           <option value="" disabled>
-            {busy ? "…" : "Mark Touched Base — what happened?"}
+            {busy ? "…" : "Mark Touched Base: what happened?"}
           </option>
           {(Object.keys(OUTREACH_OUTCOME_LABELS) as OutreachOutcome[]).map((outcome) => (
             <option key={outcome} value={outcome} className="bg-white text-[#1C1C1C]">

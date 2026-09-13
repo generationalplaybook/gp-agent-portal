@@ -159,7 +159,7 @@ export default function ReminderRow({
           {reminder.message || "Follow up"}
         </div>
         <div className={`text-xs ${completed ? "text-[#707070]" : overdue ? "font-semibold text-[#8B1A1A]" : "text-[#707070]"}`}>
-          {completed ? "Completed — " : overdue ? "Overdue — " : ""}
+          {completed ? "Completed: " : overdue ? "Overdue: " : ""}
           <LocalDateTime iso={reminder.remind_at} />
         </div>
         {error && <p className="mt-1 text-xs text-[#8B1A1A]">{error}</p>}

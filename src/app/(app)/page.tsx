@@ -229,7 +229,7 @@ export default async function HomePage() {
                 <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
                 <br />
                 <span className="text-[#666]">
-                  {p.productName} — {p.milestone.label}{" "}
+                  {p.productName}: {p.milestone.label}{" "}
                   {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </div>
@@ -238,7 +238,7 @@ export default async function HomePage() {
         )}
         {termProductsError && (
           <p className="mt-4 text-xs font-semibold text-[#8B1A1A]">
-            Couldn&rsquo;t load this — {termProductsError.message}
+            Couldn&rsquo;t load this: {termProductsError.message}
           </p>
         )}
         {!termProductsError && urgentTermProducts.length === 0 && (

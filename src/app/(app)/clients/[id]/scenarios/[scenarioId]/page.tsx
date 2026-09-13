@@ -48,7 +48,7 @@ export default async function ScenarioPage({
       <p className="mb-5 text-sm text-[#666]">
         {scenario.product_name}
         {scenario.carrier ? ` · ${scenario.carrier}` : ""}
-        {scenario.product_type ? ` · ${scenario.product_type}` : ""} — exploratory only; add it as a real Product on
+        {scenario.product_type ? ` · ${scenario.product_type}` : ""}: exploratory only; add it as a real Product on
         {client.full_name}&rsquo;s profile yourself once they decide.
       </p>
       <ScenarioForm

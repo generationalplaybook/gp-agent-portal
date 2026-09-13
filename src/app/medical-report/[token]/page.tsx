@@ -33,7 +33,7 @@ export default async function MedicalReportPage({ params }: { params: Promise<{ 
         <div className="mb-6 text-center">
           <h1 className="font-serif text-2xl text-[#1C1C1C]">Medical Condition Report</h1>
           <p className="mt-1 text-sm text-[#666]">
-            For {client.first_name ?? client.full_name} — a few questions about a health condition so{" "}
+            For {client.first_name ?? client.full_name}, a few questions about a health condition so{" "}
             {advisor?.full_name ?? "your advisor"} can check with insurance carriers on your behalf before you
             apply. Fill out as much as you know; you can leave anything blank.
           </p>

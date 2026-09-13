@@ -161,7 +161,7 @@ function pieLegend(
     doc.setFontSize(8);
     setText(CHARCOAL);
     const pct = total > 0 ? Math.round((slice.value / total) * 100) : 0;
-    doc.text(`${slice.label} — ${fmt(slice.value)} (${pct}%)`, x + 13, ly);
+    doc.text(`${slice.label}: ${fmt(slice.value)} (${pct}%)`, x + 13, ly);
     ly += 13;
   });
   return ly;
@@ -189,7 +189,7 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   setText(OBSIDIAN);
-  doc.text("Financial Needs Analysis — Client Report", M, 26);
+  doc.text("Financial Needs Analysis: Client Report", M, 26);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText(CHARCOAL);
@@ -403,7 +403,7 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7.5);
   setText(GRAY);
-  doc.text("Projection compounds the current balance only — does not assume future contributions.", M, y);
+  doc.text("Projection compounds the current balance only. Does not assume future contributions.", M, y);
   y += 18;
 
   // Education
@@ -430,7 +430,7 @@ function buildFAReportPDF(state: FAState, computed: FAComputed): jsPDF {
   doc.setFontSize(7.5);
   setText(GRAY);
   const estateCaveat = doc.splitTextToSize(
-    "Federal threshold only — state estate/inheritance taxes vary widely and are not reflected here. Confirm this household's specific state rules with an estate attorney/CPA.",
+    "Federal threshold only. State estate/inheritance taxes vary widely and are not reflected here. Confirm this household's specific state rules with an estate attorney/CPA.",
     W - 2 * M
   );
   doc.text(estateCaveat, M, y);

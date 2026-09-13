@@ -119,13 +119,13 @@ export default function ProductsSection({
     <div className="flex flex-col gap-3">
       {isMinor && ownerOptions.length === 0 && (
         <p className="rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
-          {clientName} is a minor with no family linked yet — link their parent or guardian in Family above so you
+          {clientName} is a minor with no family linked yet. Link their parent or guardian in Family above so you
           can set them as the owner on any policy below.
         </p>
       )}
       {isMinor && ownerOptions.length > 0 && products.length === 0 && !showAdd && (
         <p className="rounded-md bg-[#F5F0E8] px-3 py-2 text-xs text-[#666]">
-          {clientName} is a minor — when you add a policy, set &ldquo;Owned by&rdquo; to whichever parent or
+          {clientName} is a minor. When you add a policy, set &ldquo;Owned by&rdquo; to whichever parent or
           guardian actually owns it.
         </p>
       )}
@@ -244,12 +244,12 @@ export default function ProductsSection({
                 onChange={(e) => setFields((f) => ({ ...f, pending_approval: e.target.checked }))}
                 className="h-4 w-4 rounded border-[#D9CFBA]"
               />
-              Awaiting carrier approval — remind me to check in in 3 days
+              Awaiting carrier approval, remind me to check in in 3 days
             </label>
           )}
           {ownerOptions.length > 0 && (
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
+              Owned by (leave as {clientName} unless someone else, e.g. a parent, currently owns this)
               <select
                 value={fields.owner_client_id}
                 onChange={(e) => set("owner_client_id", e.target.value)}

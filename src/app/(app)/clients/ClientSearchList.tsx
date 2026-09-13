@@ -53,7 +53,7 @@ export default function ClientSearchList({
 
       {clients.length === 0 && (
         <div className="rounded-lg border border-dashed border-[#D9CFBA] bg-white/50 p-10 text-center text-sm text-[#707070]">
-          {needsReview ? "Nothing waiting on review — you're caught up." : "No clients yet. Add your first one to get started."}
+          {needsReview ? "Nothing waiting on review. You're caught up." : "No clients yet. Add your first one to get started."}
         </div>
       )}
 

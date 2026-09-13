@@ -18,20 +18,18 @@ function fitLabel(doc: jsPDF, text: string, maxWidth: number): string {
   return s + "…";
 }
 
-// Bakes the carrier into the big bold header title for Final Expense — added 9/13 per Karina,
-// after a Banner Life example ("Final Expense Whole Life — Banner Life") she wanted matched:
-// "trustage should not be there in small text." The carrier already shows once, small, under the
-// client name on the right (productType/carrier line) — that's fine for every other product type,
-// but for Final Expense specifically Karina wants the carrier visible in the big title too, same
-// as Banner Life's product name already bakes it in via em-dash. Most Final Expense product names
-// already include the carrier this way (typed or picked straight from the KB, whose own canonical
-// names do this — "...— Banner Life", "...(TruStage)"), so this only appends it when it's not
-// already present in the name (case-insensitive substring check), and only for Final Expense —
-// other product types keep the carrier exclusively in the small line, unchanged.
-function headerTitle(productName: string, productType: string | null, carrier: string | null): string {
-  if (productType !== "Final Expense" || !carrier) return productName;
-  if (productName.toLowerCase().includes(carrier.toLowerCase())) return productName;
-  return `${productName} — ${carrier}`;
+// Appends a scenario's carrier to a product name for display, when it isn't already part of the
+// name — added 9/13 per Karina, after the Final Expense multi-option rows shipped without it:
+// "shouldn't the first one say Banner Life as that's the product it is." The primary option's
+// label is just input.productName, with the carrier living separately in input.carrier — options
+// 2/3 usually read as carrier-inclusive already because the advisor typed the carrier straight
+// into those free-text fields (often picked from the KB, whose canonical names already do this,
+// e.g. "...(TruStage)"), so without this the primary row was the only one of the three that ever
+// looked "generic." Uses the same "(Carrier)" parenthetical the KB's own multi-carrier names
+// already use, not an em dash — Karina's asked for those removed everywhere.
+function withCarrier(name: string, carrier: string | null): string {
+  if (!carrier || name.toLowerCase().includes(carrier.toLowerCase())) return name;
+  return `${name} (${carrier})`;
 }
 
 export interface AdvisorInfo {
@@ -209,34 +207,31 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     }
   }
 
-  // Header — reworked 9/11 per Karina, after a client meeting: "gotta fix the colors... I don't
-  // like the big black block at the top and the way that the Generation Playbook is in the
-  // header. It needs to be at the bottom center of each page on a PDF." The wordmark ("GENERATIONAL
-  // PLAYBOOK") and "Policy Illustration Summary" subtitle that used to sit top-left are gone from
-  // here entirely — see the per-page footer loop further down, which now carries both, stacked
-  // above the GenerationalPlaybook.com line it already had. What's left up top is just the
-  // document-identifying content (product name, client name, product type/carrier) — no branding.
+  // Header — reworked 9/13 per Karina, after seeing a Final Expense scenario with 3 budget
+  // options across different carriers: baking the carrier into this title (a 9/13-earlier-today
+  // change) read as wrong once multiple carriers were being compared on the same page — "it
+  // needs to just show final expense whole life, and then the three different products." Title
+  // is now always the plain product name/type, unmodified, full stop; per-carrier detail lives on
+  // each option's own row below (see the final_expense block further down) where it's actually
+  // scoped to the right product. Also dropped the small productType/carrier line that used to sit
+  // under the client name on the right — Karina: "that text doesn't need to be there" — the
+  // client name now stands alone.
+  //
+  // (Earlier 9/11 history, still true: the wordmark and "Policy Illustration Summary" subtitle
+  // that used to sit top-left live in the per-page footer instead, per Karina's 9/11 request to
+  // move them to the bottom center of each page.)
   //
   // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
-  // with the client name opposite it; client name/product type/carrier sit inline, right-aligned.)
+  // with the client name opposite it, both inline and right-aligned.)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(headerTitle(input.productName, input.productType, input.carrier), M, 26);
+  doc.text(input.productName, M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
   doc.text(input.clientName, W - M, 26, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(CHARCOAL);
-  doc.text(
-    [input.productType, input.carrier].filter(Boolean).join("  ·  ") || "—",
-    W - M,
-    40,
-    { align: "right" }
-  );
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
@@ -411,10 +406,16 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     doc.setFontSize(9);
     setText(CHARCOAL);
     doc.text("Guaranteed Death Benefit", M + 14, y + 50);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    setText(OBSIDIAN);
-    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
+    if (data.levelPremium) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      setText(OBSIDIAN);
+      doc.text("$" + formatMoney(data.levelPremium) + "/mo", M + 280, y + 34);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      doc.text("Guaranteed Level for Life", M + 280, y + 50);
+    }
     y += 96;
 
     if (data.riders.length > 0) {
@@ -535,13 +536,13 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
           ? "Starts at age " + (data.incomeStartAge || "—")
           : "Starts immediately";
       const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
-      doc.text(timing + " — " + amount, M, y);
+      doc.text(timing + ": " + amount, M, y);
       y += 16;
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7.5);
       setText(CHARCOAL);
       const incomeNote = doc.splitTextToSize(
-        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
+        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit. Unlike a life insurance death benefit, though, this isn't automatically fully tax-free: only the return of principal passes tax-free, and any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
         W - 2 * M
       );
       doc.text(incomeNote, M, y);
@@ -584,7 +585,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   doc.setFontSize(7);
   setText(GRAY);
   doc.text(
-    "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
+    "Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration, not a formal projection. Actual premiums and underwriting results vary and aren't guaranteed. Neither the advisor nor Generational Playbook is liable for differences from the carrier's final offer.",
     M,
     758,
     { maxWidth: 612 - 2 * M }
@@ -654,34 +655,31 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
   }
 
-  // Header — reworked 9/11 per Karina, after a client meeting: "gotta fix the colors... I don't
-  // like the big black block at the top and the way that the Generation Playbook is in the
-  // header. It needs to be at the bottom center of each page on a PDF." The wordmark ("GENERATIONAL
-  // PLAYBOOK") and "Policy Illustration Summary" subtitle that used to sit top-left are gone from
-  // here entirely — see the per-page footer loop further down, which now carries both, stacked
-  // above the GenerationalPlaybook.com line it already had. What's left up top is just the
-  // document-identifying content (product name, client name, product type/carrier) — no branding.
+  // Header — reworked 9/13 per Karina, after seeing a Final Expense scenario with 3 budget
+  // options across different carriers: baking the carrier into this title (a 9/13-earlier-today
+  // change) read as wrong once multiple carriers were being compared on the same page — "it
+  // needs to just show final expense whole life, and then the three different products." Title
+  // is now always the plain product name/type, unmodified, full stop; per-carrier detail lives on
+  // each option's own row below (see the final_expense block further down) where it's actually
+  // scoped to the right product. Also dropped the small productType/carrier line that used to sit
+  // under the client name on the right — Karina: "that text doesn't need to be there" — the
+  // client name now stands alone.
+  //
+  // (Earlier 9/11 history, still true: the wordmark and "Policy Illustration Summary" subtitle
+  // that used to sit top-left live in the per-page footer instead, per Karina's 9/11 request to
+  // move them to the bottom center of each page.)
   //
   // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
-  // with the client name opposite it; client name/product type/carrier sit inline, right-aligned.)
+  // with the client name opposite it, both inline and right-aligned.)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(headerTitle(input.productName, input.productType, input.carrier), M, 26);
+  doc.text(input.productName, M, 26);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
   doc.text(input.clientName, W - M, 26, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(CHARCOAL);
-  doc.text(
-    [input.productType, input.carrier].filter(Boolean).join("  ·  ") || "—",
-    W - M,
-    40,
-    { align: "right" }
-  );
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
@@ -743,7 +741,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFontSize(7.5);
         setText(CHARCOAL);
         const nl = doc.splitTextToSize(
-          "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops — confirm the year-by-year schedule on the carrier's illustration.",
+          "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops. Confirm the year-by-year schedule on the carrier's illustration.",
           W - 2 * M
         );
         doc.text(nl, M, y);
@@ -819,7 +817,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(7.5);
       setText(CHARCOAL);
       doc.text(
-        "This can be changed at any time by calling the carrier — we recommend periodic policy reviews, which we schedule as part of our service.",
+        "This can be changed at any time by calling the carrier. We recommend periodic policy reviews, which we schedule as part of our service.",
         M + 12,
         y + 29
       );
@@ -1084,7 +1082,8 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // Budget options — added 9/2. Karina wants to show a client more than one face-value/premium
     // pairing on the same scenario. With just the one (original) option, keep the exact original
     // single big box — full backward compatibility for every existing Final Expense PDF. With 2
-    // or 3, switch to smaller boxes side by side so there's room for each pairing.
+    // or 3, stack one full-width row per option (see the else branch below) — same full-row width
+    // as the single-option box, not squeezed side by side.
     const hasOption2 = !!((data.deathBenefit2 && data.deathBenefit2.trim()) || (data.levelPremium2 && data.levelPremium2.trim()));
     const hasOption3 = !!((data.deathBenefit3 && data.deathBenefit3.trim()) || (data.levelPremium3 && data.levelPremium3.trim()));
 
@@ -1099,10 +1098,16 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       doc.text("Guaranteed Death Benefit", M + 14, y + 50);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      setText(OBSIDIAN);
-      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " — guaranteed level for life", M + 280, y + 26);
+      if (data.levelPremium) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        setText(OBSIDIAN);
+        doc.text("$" + formatMoney(data.levelPremium) + "/mo", M + 280, y + 34);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        setText(CHARCOAL);
+        doc.text("Guaranteed Level for Life", M + 280, y + 50);
+      }
       y += 96;
     } else {
       // Karina, 9/13: "enter another product name and list out on multiple policies so its easy
@@ -1111,7 +1116,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       // generic "Option 2"/"Option 3" when left blank (just a bigger budget tier of the primary
       // product, named in the header above).
       const options: { label: string; db?: string; prem?: string }[] = [
-        { label: input.productName, db: data.deathBenefit, prem: data.levelPremium },
+        { label: withCarrier(input.productName, input.carrier), db: data.deathBenefit, prem: data.levelPremium },
       ];
       if (hasOption2) {
         options.push({ label: data.productName2?.trim() || "Option 2", db: data.deathBenefit2, prem: data.levelPremium2 });
@@ -1120,38 +1125,46 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         options.push({ label: data.productName3?.trim() || "Option 3", db: data.deathBenefit3, prem: data.levelPremium3 });
       }
 
-      const gap = 12;
-      const boxW = (W - 2 * M - gap * (options.length - 1)) / options.length;
+      // Reworked 9/13, same day, per Karina after seeing the side-by-side version live: "the
+      // products get cut off because you put them into three little rectangles... they should
+      // take the whole page like they were previously, where it was taking the entire row." The
+      // 3-across boxes above (this replaced) had to ellipsis-truncate any real product name and
+      // still wrapped/clipped the premium line. Now one full-width row per option, stacked top to
+      // bottom — same width as the single-option box above, so the full product name, the
+      // guaranteed death benefit, and the monthly premium are all visible without truncating or
+      // wrapping anything.
+      const rowH = 78;
+      const rowGap = 14;
+      ensureSpace(options.length * rowH + (options.length - 1) * rowGap + 18);
       options.forEach((opt, i) => {
-        const x = M + i * (boxW + gap);
         setFill(NEUTRAL_FILL);
-        doc.roundedRect(x, y, boxW, 78, 4, 4, "F");
+        doc.roundedRect(M, y, W - 2 * M, rowH, 4, 4, "F");
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         setText(GRAY);
-        // fitLabel — a typed-in product name (e.g. "Mutual of Omaha Living Promise") can easily be
-        // wider than these narrow boxes ever needed to be for a bare "OPTION 2"; truncate rather
-        // than let it run into the next box or overflow off the page.
-        doc.text(fitLabel(doc, opt.label.toUpperCase(), boxW - 24), x + 12, y + 16);
+        // fitLabel is now mostly a safety net, not the load-bearing fix it was in the narrow
+        // 3-across boxes — a full-width row only truncates an exceptionally long typed name.
+        doc.text(fitLabel(doc, opt.label.toUpperCase(), W - 2 * M - 28), M + 14, y + 18);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
+        doc.setFontSize(18);
         setText(OBSIDIAN);
-        doc.text(opt.db ? "$" + formatMoney(opt.db) : "—", x + 12, y + 38);
+        doc.text(opt.db ? "$" + formatMoney(opt.db) : "—", M + 14, y + 44);
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         setText(CHARCOAL);
-        doc.text("Guaranteed Death Benefit", x + 12, y + 50);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9.5);
-        setText(OBSIDIAN);
-        // Deliberately just "$X/mo" here, not the fuller "— guaranteed for life" phrasing the
-        // single-option box above uses — bug caught while testing: that longer phrase wraps to a
-        // second line in these narrower 3-across boxes and spills below the box's fixed height.
-        // The intro paragraph above already establishes everything here is guaranteed/locked for
-        // life, so it isn't lost by shortening this line.
-        doc.text(opt.prem ? "$" + formatMoney(opt.prem) + "/mo" : "—", x + 12, y + 66, { maxWidth: boxW - 24 });
+        doc.text("Guaranteed Death Benefit", M + 14, y + 60);
+        if (opt.prem) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(18);
+          setText(OBSIDIAN);
+          doc.text("$" + formatMoney(opt.prem) + "/mo", M + 280, y + 44);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          setText(CHARCOAL);
+          doc.text("Guaranteed Level for Life", M + 280, y + 60);
+        }
+        y += rowH + (i < options.length - 1 ? rowGap : 18);
       });
-      y += 96;
     }
 
     if (data.riders.length > 0) {
@@ -1272,13 +1285,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
           ? "Starts at age " + (data.incomeStartAge || "—")
           : "Starts immediately";
       const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
-      doc.text(timing + " — " + amount, M, y);
+      doc.text(timing + ": " + amount, M, y);
       y += 16;
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7.5);
       setText(CHARCOAL);
       const incomeNote = doc.splitTextToSize(
-        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit — but unlike a life insurance death benefit, this isn't automatically fully tax-free. Only the return of principal passes tax-free; any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
+        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit. Unlike a life insurance death benefit, though, this isn't automatically fully tax-free: only the return of principal passes tax-free, and any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
         W - 2 * M
       );
       doc.text(incomeNote, M, y);
@@ -1337,7 +1350,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   doc.setFontSize(7);
   setText(GRAY);
   doc.text(
-    "For agent use only. Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration — not a formal projection. Non-guaranteed values are based on current assumptions and are not guaranteed to occur. See the full carrier illustration for complete terms.",
+    "Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration, not a formal projection. Actual premiums and underwriting results vary and aren't guaranteed. Neither the advisor nor Generational Playbook is liable for differences from the carrier's final offer.",
     M,
     Math.max(758, y + 14),
     { maxWidth: 612 - 2 * M }

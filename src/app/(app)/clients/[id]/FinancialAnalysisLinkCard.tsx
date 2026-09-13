@@ -23,7 +23,7 @@ export default function FinancialAnalysisLinkCard({ siteUrl, token }: { siteUrl:
   return (
     <div className="mt-4 border-t border-[#EDE8DF] pt-4">
       <p className="mb-2 text-xs text-[#707070]">
-        Send this to the client to fill out themselves, at their own pace. Their answers land right here — open
+        Send this to the client to fill out themselves, at their own pace. Their answers land right here. Open
         Analysis above to see them.
       </p>
       <div className="flex flex-wrap items-center gap-2">

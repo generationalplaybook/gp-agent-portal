@@ -90,7 +90,7 @@ export default function UnassignedClientsSection({
       </h2>
       <p className="mb-3 text-xs text-[#666]">
         These clients belonged to an advisor whose access was removed. Assign each one individually,
-        or select several and assign them together — a departing advisor&rsquo;s book can go to one
+        or select several and assign them together. A departing advisor&rsquo;s book can go to one
         person or be split across a few.
       </p>
 

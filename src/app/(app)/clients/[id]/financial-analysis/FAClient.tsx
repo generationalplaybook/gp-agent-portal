@@ -614,7 +614,7 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Net Worth Statement"
-            subtitle="Everything owned minus everything owed — the single number that tracks whether the plan is working year over year."
+            subtitle="Everything owned minus everything owed: the single number that tracks whether the plan is working year over year."
           />
           <div className="grid gap-5 md:grid-cols-2">
             <Panel label="Owned" title="Assets">
@@ -625,18 +625,18 @@ export default function FAClient({
                 <span className="font-semibold text-[#1C1C1C]">{fmt(state.retirement.currentRetirementAssets)}</span>
               </div>
               <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">
-                Pulled from the Retirement tab — read-only here so a balance is never entered twice. Update it on the Retirement pillar.
+                Pulled from the Retirement tab; read-only here so a balance is never entered twice. Update it on the Retirement pillar.
               </div>
               <div className="flex items-center justify-between py-1.5 text-xs text-[#555]">
                 <span>Cash & liquid reserves</span>
                 <span className="font-semibold text-[#1C1C1C]">{fmt(state.liquidity.currentLiquidSavings)}</span>
               </div>
               <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">
-                Pulled from the Liquidity tab — read-only here so a balance is never entered twice. Update it on the Liquidity pillar.
+                Pulled from the Liquidity tab; read-only here so a balance is never entered twice. Update it on the Liquidity pillar.
               </div>
               <NumberField label="Investments (non-retirement)" value={state.networth.investments} onChange={(v) => updateNetworth("investments", v)} />
               <NumberField label="Business interests" value={state.networth.business} onChange={(v) => updateNetworth("business", v)} />
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">Value of the client&rsquo;s ownership stake in a business they own or co-own — equity, not revenue.</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">Value of the client&rsquo;s ownership stake in a business they own or co-own: equity, not revenue.</div>
               <NumberField label="Other assets" value={state.networth.other} onChange={(v) => updateNetworth("other", v)} />
               <TotalRow label="Total assets" value={fmt(computed.networth.totalAssets)} />
             </Panel>
@@ -690,7 +690,7 @@ export default function FAClient({
                 <ResultRow label="Leverage debt (mortgage, auto, student)" value={fmt(computed.debt.goodDebt)} />
                 <ResultRow label="Consumer debt (cards, personal, other)" value={fmt(computed.debt.badDebt)} />
                 <ResultRow label="Consumer debt share of total" value={computed.debt.badShare.toFixed(1) + "%"} />
-                <ResultRow label="Est. annual interest cost — consumer debt" value={fmt(computed.debt.interestCost) + " / yr"} />
+                <ResultRow label="Est. annual interest cost on consumer debt" value={fmt(computed.debt.interestCost) + " / yr"} />
               </div>
               {computed.debt.priorityItems.length > 0 && (
                 <div className="mt-3 text-xs leading-relaxed text-[#555]">
@@ -698,7 +698,7 @@ export default function FAClient({
                   <br />
                   {computed.debt.priorityItems.map((it, i) => (
                     <div key={it.name}>
-                      {i + 1}. {it.name} — {fmt(it.bal)}
+                      {i + 1}. {it.name}: {fmt(it.bal)}
                     </div>
                   ))}
                 </div>
@@ -801,7 +801,7 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Emergency Fund Analysis"
-            subtitle="Could the household cover several months of essential expenses from savings alone if income stopped tomorrow — without touching retirement accounts or going into debt?"
+            subtitle="Could the household cover several months of essential expenses from savings alone if income stopped tomorrow, without touching retirement accounts or going into debt?"
             pillarScore={computed.liquidity.pillarScore}
           />
           <div className="grid gap-5 md:grid-cols-2">
@@ -812,7 +812,7 @@ export default function FAClient({
                 onChange={(v) => updateLiquidity("currentLiquidSavings", v)}
               />
               <p className="mt-3 text-[11px] text-[#707070]">
-                Included in Net Worth&rsquo;s total assets automatically — don&rsquo;t also count this balance under
+                Included in Net Worth&rsquo;s total assets automatically. Don&rsquo;t also count this balance under
                 Investments/Other on the Net Worth tab.
               </p>
             </Panel>
@@ -838,7 +838,7 @@ export default function FAClient({
               </div>
               <p className="mt-3 text-[11px] text-[#707070]">
                 Standard planning guidance is 3-6 months of essential expenses; the default here is 6 (the more
-                conservative end) — adjust as appropriate for this household.
+                conservative end); adjust as appropriate for this household.
               </p>
             </Panel>
           </div>
@@ -880,7 +880,7 @@ export default function FAClient({
                 <ResultRow label="Projected assets at retirement" value={fmt(computed.retirement.projectedAssetsAtRetirement)} />
               </div>
               <p className="mt-3 text-[11px] text-[#707070]">
-                Projection compounds the CURRENT balance only — it does not assume any future contributions, so
+                Projection compounds the CURRENT balance only. It does not assume any future contributions, so
                 treat this as a floor estimate, not a full projection.
               </p>
             </Panel>
@@ -904,7 +904,7 @@ export default function FAClient({
               <p className="mt-1 text-[11px] text-[#707070]">
                 The 4% rule is a common retirement-planning guideline: a portfolio can typically support
                 withdrawing about 4% of its value per year without running out. Working backwards, that means
-                the portfolio needed is about 25× (1 ÷ 4%) the annual income gap above — the amount Social
+                the portfolio needed is about 25× (1 ÷ 4%) the annual income gap above: the amount Social
                 Security doesn&rsquo;t cover of the desired retirement income.
               </p>
               <div className="mt-2 flex items-center justify-between rounded-md border-[1.5px] border-[#D9CFBA] px-3 py-2 text-sm font-semibold">
@@ -930,7 +930,7 @@ export default function FAClient({
           <div className="grid gap-5 md:grid-cols-2">
             <Panel label="Current" title="Education savings on hand">
               <NumberField
-                label="Current education savings (529s, UTMAs, etc. — combined)"
+                label="Current education savings, combined (529s, UTMAs, etc.)"
                 value={state.education.currentEducationSavings}
                 onChange={(v) => updateEducation("currentEducationSavings", v)}
               />
@@ -952,7 +952,7 @@ export default function FAClient({
                 </span>
               </div>
               <p className="mt-3 text-[11px] text-[#707070]">
-                Distinct from Protection&rsquo;s education line — that&rsquo;s the insurance death-benefit need; this
+                Distinct from Protection&rsquo;s education line: that&rsquo;s the insurance death-benefit need; this
                 is funding progress already in place.
               </p>
             </Panel>
@@ -980,7 +980,7 @@ export default function FAClient({
             <Panel label="Exposure" title="Federal exemption check">
               <p className="mb-3 text-[11px] text-[#707070]">
                 The federal government only taxes an estate on the amount ABOVE a set threshold (the
-                &ldquo;exemption&rdquo;) — most households never come close to it. This checks the household&rsquo;s net
+                &ldquo;exemption&rdquo;); most households never come close to it. This checks the household&rsquo;s net
                 worth against that threshold so you know whether federal estate tax is even a real
                 consideration here.
               </p>
@@ -997,7 +997,7 @@ export default function FAClient({
                 </span>
               </div>
               <p className="mt-3 text-[11px] text-[#707070]">
-                Federal threshold only. State estate/inheritance taxes vary widely — some states apply their own
+                Federal threshold only. State estate/inheritance taxes vary widely; some states apply their own
                 tax as low as ~$1M, far below the federal number. Confirm this household&rsquo;s specific state rules
                 with an estate attorney/CPA.
               </p>
@@ -1010,11 +1010,11 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Action Plan"
-            subtitle="Every number in this analysis exists to serve a goal — this is where the gaps across every pillar turn into a prioritized next-steps list."
+            subtitle="Every number in this analysis exists to serve a goal: this is where the gaps across every pillar turn into a prioritized next-steps list."
           />
           {computed.actionPlan.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[#D9CFBA] p-8 text-center text-sm text-[#707070]">
-              No gaps flagged — every pillar entered so far looks on track.
+              No gaps flagged. Every pillar entered so far looks on track.
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -1035,7 +1035,7 @@ export default function FAClient({
         <div>
           <SectionHeader
             title="Client Report"
-            subtitle="A view of the full analysis on screen — the downloadable PDF below matches this same data, in the same light, minimal style as the Illustrations and Client Analyzer PDFs."
+            subtitle="A view of the full analysis on screen. The downloadable PDF below matches this same data, in the same light, minimal style as the Illustrations and Client Analyzer PDFs."
           />
 
           <div className="mb-5 flex flex-col items-center gap-3 rounded-lg border border-[#D9CFBA] bg-white p-6 text-center">

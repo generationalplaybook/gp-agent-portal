@@ -18,7 +18,7 @@ export default function OnboardingBanner({ doneCount, totalCount }: { doneCount:
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#D9CFBA] bg-[#F5F0E8] px-5 py-3.5">
       <div>
         <p className="text-sm font-semibold text-[#1C1C1C]">Finish setting up your account</p>
-        <p className="text-xs text-[#666]">{doneCount} of {totalCount} done — profile, custom link, calendar.</p>
+        <p className="text-xs text-[#666]">{doneCount} of {totalCount} done: profile, custom link, calendar.</p>
       </div>
       <div className="flex items-center gap-2">
         <Link

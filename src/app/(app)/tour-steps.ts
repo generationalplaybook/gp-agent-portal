@@ -44,7 +44,7 @@ export const TOUR_STEPS: TourStep[] = [
     page: "/profile",
     selector: '[data-tour="full-link"]',
     title: "Set Your Custom Link",
-    body: "By default your link uses a long random ID. Type a short handle here instead — like your name — so it's easy to say out loud or text to someone.",
+    body: "By default your link uses a long random ID. Type a short handle here instead, like your name, so it's easy to say out loud or text to someone.",
     placement: "top",
   },
   {
@@ -76,7 +76,7 @@ export const TOUR_STEPS: TourStep[] = [
     page: "/profile",
     selector: '[data-tour="carrier-licensing"]',
     title: "Track Your Carriers & Licensing",
-    body: "Keep every carrier portal username, password, agent code, and login link here — and your state licenses — so you're never digging through email or a spreadsheet to find one.",
+    body: "Keep every carrier portal username, password, agent code, and login link here, and your state licenses, so you're never digging through email or a spreadsheet to find one.",
     placement: "top",
   },
 ];

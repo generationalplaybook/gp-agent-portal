@@ -61,7 +61,7 @@ export default function ChangeEmailField({ currentEmail }: { currentEmail: strin
       {editing && (
         <div className="mt-1 flex flex-col gap-1.5 rounded-md border border-[#D9CFBA] p-2.5">
           <span className="text-[11px] text-[#707070]">
-            We&rsquo;ll send a confirmation link to the new address before it takes effect — your login
+            We&rsquo;ll send a confirmation link to the new address before it takes effect. Your login
             email won&rsquo;t change until you click it.
           </span>
           <div className="flex flex-wrap items-center gap-2">
@@ -98,7 +98,7 @@ export default function ChangeEmailField({ currentEmail }: { currentEmail: strin
 
       {sentTo && (
         <p className="mt-0.5 text-[11px] font-semibold text-[#1E6B3C]">
-          Confirmation sent to {sentTo} — check that inbox and click the link to finish the change.
+          Confirmation sent to {sentTo}. Check that inbox and click the link to finish the change.
         </p>
       )}
     </label>

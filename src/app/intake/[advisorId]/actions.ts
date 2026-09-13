@@ -139,7 +139,7 @@ export async function submitIntake(
       .single();
 
     if (clientError || !client) {
-      return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+      return { ok: false, error: clientError?.message || "Could not submit. Please try again." };
     }
     clientId = client.id;
   }
@@ -170,7 +170,7 @@ export async function submitIntake(
     const clientName = [firstName, middleName, lastName].filter(Boolean).join(" ");
     await sendEmail({
       to: advisor.email,
-      subject: `New intake form submitted — ${clientName}`,
+      subject: `New intake form submitted: ${clientName}`,
       html: `
         <p>Hi ${advisor.full_name ?? "there"},</p>
         <p><strong>${clientName}</strong> just completed the full Intake form.</p>

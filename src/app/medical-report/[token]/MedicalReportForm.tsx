@@ -28,7 +28,7 @@ export default function MedicalReportForm({ token }: { token: string }) {
         setError(res.error);
       }
     } catch {
-      setError("Something went wrong submitting this — please try again.");
+      setError("Something went wrong submitting this. Please try again.");
     } finally {
       setSubmitting(false);
     }

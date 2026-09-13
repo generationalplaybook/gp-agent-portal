@@ -245,7 +245,7 @@ export async function updateIntakeSlug(
 
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: `"${raw}" is already taken — try another.` };
+      return { ok: false, error: `"${raw}" is already taken. Try another.` };
     }
     return { ok: false, error: error.message };
   }
@@ -297,7 +297,7 @@ export async function connectCalCom(
       }),
     });
   } catch {
-    return { ok: false, error: "Could not reach Cal.com — check your connection and try again." };
+    return { ok: false, error: "Could not reach Cal.com. Check your connection and try again." };
   }
 
   if (!res.ok) {

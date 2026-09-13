@@ -64,7 +64,7 @@ export function getProductStatus(
     if (finalConversionDeadline) {
       const final = parseDateOnly(finalConversionDeadline);
       if (today <= final) {
-        return { label: `No-exam window declined — exam required to convert until ${fmtDate(finalConversionDeadline)}`, tone: "warn" };
+        return { label: `No-exam window declined: exam required to convert until ${fmtDate(finalConversionDeadline)}`, tone: "warn" };
       }
       return { label: "Conversion window closed", tone: "bad" };
     }
@@ -81,17 +81,17 @@ export function getProductStatus(
     if (finalConversionDeadline) {
       const final = parseDateOnly(finalConversionDeadline);
       if (today <= final) {
-        return { label: `Convertible — exam now required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
+        return { label: `Convertible: exam now required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
       }
       return { label: "Conversion window closed", tone: "bad" };
     }
-    return { label: "Convertible — exam now required", tone: "warn" };
+    return { label: "Convertible: exam now required", tone: "warn" };
   }
 
   if (finalConversionDeadline) {
     const final = parseDateOnly(finalConversionDeadline);
     if (today <= final) {
-      return { label: `Convertible — exam required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
+      return { label: `Convertible: exam required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
     }
     return { label: "Conversion window closed", tone: "bad" };
   }
@@ -195,7 +195,7 @@ export type OutreachOutcome = "shopping" | "renewing" | "keeping" | "declining" 
 
 export const OUTREACH_OUTCOME_LABELS: Record<OutreachOutcome, string> = {
   shopping: "Shopping for new coverage",
-  renewing: "Renewing — new policy",
+  renewing: "Renewing: new policy",
   keeping: "Keeping current coverage as-is",
   declining: "Declining / letting it lapse",
   unreachable: "Couldn't reach them yet",

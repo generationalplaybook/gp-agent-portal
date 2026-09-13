@@ -20,7 +20,7 @@ export default function CalSyncCard({ connected }: { connected: boolean }) {
     formData.set("cal_api_key", apiKey);
     const res = await connectCalCom(formData);
     if (res.ok) {
-      setStatus({ ok: true, message: "Connected ✓ — bookings will start syncing automatically." });
+      setStatus({ ok: true, message: "Connected. Bookings will start syncing automatically." });
       setApiKey("");
     } else {
       setStatus({ ok: false, message: res.error });
@@ -40,7 +40,7 @@ export default function CalSyncCard({ connected }: { connected: boolean }) {
     <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Cal.com Auto-Sync</h2>
       <p className="mb-4 text-xs text-[#707070]">
-        Only for Cal.com — connect your account and a booking made through your scheduling link will
+        Only for Cal.com: connect your account and a booking made through your scheduling link will
         automatically show up as a meeting on the right client&rsquo;s profile, no manual entry needed. Find
         your key in Cal.com under Settings → Developer → API Keys.
       </p>

@@ -144,7 +144,7 @@ export default async function ClientsPage({
   const outreachSections: { key: OutreachSectionKey; label: string; items: typeof needsOutreach }[] = [
     { key: "needs", label: "Needs Outreach", items: needsOutreach },
     ...contactedByOutcome.map(({ outcome, items }) => ({ key: outcome as OutreachSectionKey, label: OUTREACH_OUTCOME_LABELS[outcome], items })),
-    ...(contactedLegacy.length > 0 ? [{ key: "legacy" as OutreachSectionKey, label: "Touched Base — No Outcome Recorded", items: contactedLegacy }] : []),
+    ...(contactedLegacy.length > 0 ? [{ key: "legacy" as OutreachSectionKey, label: "Touched Base: No Outcome Recorded", items: contactedLegacy }] : []),
   ];
   const activeSection = section ? outreachSections.find((s) => s.key === section) ?? null : null;
   // Karina, 9/8, right after the thumbnail grid went in: "show a few, maybe three to five, above
@@ -243,7 +243,7 @@ export default async function ClientsPage({
         <div className="flex flex-col gap-6">
           {termProductsError && (
             <div className="rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-4 text-sm font-semibold text-[#8B1A1A]">
-              Couldn&rsquo;t load the outreach list — {termProductsError.message}
+              Couldn&rsquo;t load the outreach list: {termProductsError.message}
             </div>
           )}
 
@@ -369,7 +369,7 @@ export default async function ClientsPage({
                       {preview.map((p) => (
                         <div key={p.id} className="truncate py-1 text-xs">
                           <span className="font-semibold text-[#1C1C1C]">{p.clientName}</span>
-                          <span className="text-[#707070]"> — {p.product_name}</span>
+                          <span className="text-[#707070]">: {p.product_name}</span>
                         </div>
                       ))}
                       {s.items.length > preview.length && (

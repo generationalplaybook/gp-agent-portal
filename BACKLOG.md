@@ -3924,6 +3924,80 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   the app's hover rows (FamilySection, ClientPicker, etc.) already had horizontal padding, so they
   weren't affected by this bug.
 
+- **9/13, Final Expense scenario PDF — header title, small print, and the 3-option layout all
+  fixed, BUILT.** Karina sent a screenshot of a 3-budget-option Final Expense scenario PDF and
+  was, fairly, pretty unhappy with it — three separate issues in one file (`illustration-pdf.ts`):
+  1. **Header title.** Earlier the same day, baking the carrier into the big header title
+     ("Final Expense Whole Life — Banner Life") was built per her own request — but once a
+     scenario compares options across different carriers (Banner Life, TruStage...), a single
+     carrier baked into the page title is just wrong. Reverted: the title is always the plain
+     product name now, nothing appended. (Removed the `headerTitle()` helper entirely — it's back
+     to what it was before that change.)
+  2. **Small print under the client name.** The `productType · carrier` line under "Johnnie
+     Hills" — Karina: "that text doesn't need to be there." Removed from both PDF generators
+     (`generateIllustrationPDF` and `generateScenarioIllustrationPDF` share this header layout).
+  3. **The layout itself.** The three budget-option boxes were squeezed side by side, so real
+     product names ("Final Expense Whole Life (TruStage)") had to be ellipsis-truncated to fit —
+     unreadable. Karina: "they should take the whole page like they were previously, where it was
+     taking the entire row... I should be able to see all three of them rows on top of each
+     other with the full product name, the guaranteed death benefit, and the monthly payment."
+     Replaced the 3-across boxes with one full-width row per option, stacked top to bottom — same
+     full page width the single-option box already used, so nothing needs truncating anymore.
+     Also added a page-break check (`ensureSpace`) before this block, since 3 stacked full-width
+     rows use more vertical room than 3 side-by-side ones did.
+  Verified by generating a real test PDF with her exact numbers (Johnnie Hills, $15k/$304.14,
+  $20k/$408.60, $25k/$489.75) — title, missing small print, and full-width rows all confirmed
+  visually; lint and `tsc --noEmit` both clean.
+  **Note on "where's the header branding":** the GP wordmark and GenerationalPlaybook.com line
+  are still there, just small and at the very bottom of the page — that's exactly where Karina
+  asked to have them moved on 9/11 ("I don't like the big black block at the top... needs to be
+  at the bottom center of each page"). I didn't touch that placement since it was her own recent,
+  explicit call and reversing it without asking felt like a worse mistake than leaving it — but
+  if it should also (or instead) be more prominent up top now, say the word and I'll build it.
+
+- **9/13, "clean this up before advisors touch it" pass — dash cleanup platform-wide, PDF premium
+  formatting, disclaimer rewrite, and a real Pending-reminder bug fixed, BUILT.** Karina, after
+  the header/layout PDF fixes above: "I feel like I have told you this before... the dashes that
+  AI uses, I want that removed from everywhere on the platform... it looks AI generated." Plus
+  three more specific asks in the same message. All four:
+  1. **Em-dash sweep, whole portal.** Removed every em-dash used as an AI-style "clause — clause"
+     sentence joiner from user-facing text — buttons, headings, card copy, toasts/errors, emails,
+     tooltips, placeholders, PDFs — across 55 files (~860+ instances, two files alone —
+     `kb-data.ts` and `analyzer.ts` — accounted for most of it). Left alone on purpose: every code
+     comment (the dated "Karina, 9/x: ..." developer notes are full of them and are not
+     user-facing), the `"—"` empty-value placeholder glyph (`value || "—"`, used all over for "no
+     data entered"), and "— " as a bullet-list marker in PDF rider lists (a real, intentional
+     bullet convention, not a sentence join). Lint and `tsc --noEmit` both clean.
+  2. **PDF premium line.** Specifically in the Final Expense boxes: "$304.14 — guaranteed level
+     for life" was exactly the pattern she meant. Changed to match how the death benefit already
+     reads: big bold "$304.14/mo", with "Guaranteed Level for Life" underneath in the same lighter
+     caption style as "Guaranteed Death Benefit" — same treatment, just the other column. Applied
+     everywhere this box appears (single-option box in both PDF generators, plus the new
+     full-width multi-option rows).
+  3. **Disclaimer rewritten.** She'd asked before not to use "agent" as a word, and questioned
+     whether "for advisor use only" even belongs on something meant to be handed to a client.
+     Dropped the "for [agent/advisor] use only" framing entirely (these get shown to clients, so
+     gatekeeping language about who's "allowed" to see it didn't make sense anyway) and replaced
+     it with a plain liability disclaimer: figures are illustrative, actual premiums vary with
+     underwriting, and neither the advisor nor Generational Playbook is liable for the difference
+     between this and the carrier's final offer. No "agent," no em-dash, fits the same ~2 lines
+     the old one did.
+  4. **Pending-stage reminder bug, actually fixed.** Karina: "I undid a client's pipeline from
+     pending to quoted and then put it back to pending, and still no reminder has been set. Why is
+     this not working?" Found it in `clients/actions.ts`'s `updateStage`: the "already Pending,
+     don't stack a second reminder" shortcut checked only the CURRENT stage, never the stage being
+     moved TO — so a client already sitting in Pending WITH a reminder, moved OUT to any other
+     stage, still read as "already pending with a reminder" and skipped clearing that reminder's
+     link, even though the stage really did change away from Pending. Added `stage === "pending"`
+     to the condition so the shortcut only fires on a genuine no-op (pending → pending); any real
+     transition, either direction, now always goes through the proper create-reminder or
+     clear-reminder path. **This is a real code fix, not just a guess** — but I can't see your
+     live Supabase data from here, so if that specific client still shows no reminder after you
+     pull this update, tell me which client and I'll help trace it further; it may need a one-time
+     manual fix on that one row if it got left in a bad state before this fix went in.
+  Whole project build (`npm run build`) also run clean end to end, on top of lint/tsc, since this
+  is the "ready to ship to advisors" pass.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

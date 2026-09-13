@@ -44,7 +44,7 @@ export default async function GettingStartedPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="font-serif text-2xl text-[#1C1C1C]">Getting Started</h1>
       <p className="mt-1 text-sm text-[#555]">
-        A guided walkthrough of your profile setup — it highlights exactly what to click and where to type, right on
+        A guided walkthrough of your profile setup. It highlights exactly what to click and where to type, right on
         the real page. Come back here any time, from your account menu, for a refresher.
       </p>
 
@@ -67,7 +67,7 @@ export default async function GettingStartedPage() {
         </ol>
 
         <p className="mt-4 border-t border-[#EDE8DF] pt-4 text-xs text-[#707070]">
-          This covers your profile — the part everything else depends on. Adding clients, booking meetings, sending
+          This covers your profile: the part everything else depends on. Adding clients, booking meetings, sending
           Pre-Intake/Intake links, and building illustrations are covered in team training instead.
         </p>
       </div>
@@ -89,7 +89,7 @@ export default async function GettingStartedPage() {
           ))}
         </ul>
         <p className="mt-3 text-xs text-[#707070]">
-          These reflect your account right now — they update the moment you actually fill something in, nothing to
+          These reflect your account right now. They update the moment you actually fill something in, nothing to
           reset or lose.
         </p>
       </div>

@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
       dateStyle: "medium",
     });
 
-    const message = `${product.product_name} (${client.full_name}) can only convert to permanent coverage without a medical exam until ${deadlineLabel} — 90 days out.`;
+    const message = `${product.product_name} (${client.full_name}) can only convert to permanent coverage without a medical exam until ${deadlineLabel} (90 days out).`;
 
     await supabase.from("reminders").insert({
       client_id: product.client_id,
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       dateStyle: "medium",
     });
 
-    const finalMessage = `${product.product_name} (${client.full_name}) reaches its final conversion deadline (exam required) on ${deadlineLabel} — 90 days out.`;
+    const finalMessage = `${product.product_name} (${client.full_name}) reaches its final conversion deadline (exam required) on ${deadlineLabel} (90 days out).`;
 
     await supabase.from("reminders").insert({
       client_id: product.client_id,

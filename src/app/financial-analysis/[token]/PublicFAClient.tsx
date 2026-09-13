@@ -252,13 +252,13 @@ export default function PublicFAClient({
     try {
       const res = await savePublicFinancialAnalysis(token, state);
       if (res.ok) {
-        setSaveMsg("Saved — thank you!");
+        setSaveMsg("Saved, thank you!");
         setTimeout(() => setSaveMsg(""), 4000);
       } else {
         setSaveError(res.error);
       }
     } catch {
-      setSaveError("Something went wrong saving this — please try again.");
+      setSaveError("Something went wrong saving this. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -269,7 +269,7 @@ export default function PublicFAClient({
       <div className="mb-6 text-center">
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Financial Needs Analysis</h1>
         <p className="mx-auto mt-1 max-w-xl text-sm text-[#666]">
-          For {clientName} — prepared with {advisorName ?? "your advisor"}. Work through each section below at your
+          For {clientName}, prepared with {advisorName ?? "your advisor"}. Work through each section below at your
           own pace; you can save partway through and come back anytime using this same link.
         </p>
       </div>
@@ -336,7 +336,7 @@ export default function PublicFAClient({
                 {advisorEmail && <p className="mt-1 text-xs text-[#707070]">{advisorEmail}</p>}
                 {advisorPhone && <p className="mt-1 text-xs text-[#707070]">{advisorPhone}</p>}
                 <p className="mt-3 text-[11px] text-[#707070]">
-                  Questions about anything below? Reach out anytime — nothing here is final until you talk it
+                  Questions about anything below? Reach out anytime. Nothing here is final until you talk it
                   through together.
                 </p>
               </Panel>
@@ -440,7 +440,7 @@ export default function PublicFAClient({
               <NumberField label="Vehicles" value={state.networth.vehicles} onChange={(v) => updateNetworth("vehicles", v)} />
               <NumberField label="Investments (non-retirement)" value={state.networth.investments} onChange={(v) => updateNetworth("investments", v)} />
               <NumberField label="Business interests" value={state.networth.business} onChange={(v) => updateNetworth("business", v)} />
-              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">The value of your ownership stake in a business you own or co-own — equity, not revenue.</div>
+              <div className="-mt-1 mb-1 text-[10px] italic text-[#707070]">The value of your ownership stake in a business you own or co-own: equity, not revenue.</div>
               <NumberField label="Other assets" value={state.networth.other} onChange={(v) => updateNetworth("other", v)} />
               <TotalRow label="Total assets" value={fmt(computed.networth.totalAssets)} />
             </Panel>
@@ -464,7 +464,7 @@ export default function PublicFAClient({
         <div>
           <SectionHeader
             title="Debt"
-            subtitle="Not all debt is equal — mortgage and student loans build equity or earning power at low cost, while credit cards and personal loans cost more with no upside."
+            subtitle="Not all debt is equal: mortgage and student loans build equity or earning power at low cost, while credit cards and personal loans cost more with no upside."
             pillarScore={computed.debt.pillarScore}
           />
           <div className="grid gap-5 md:grid-cols-2">

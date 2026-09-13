@@ -122,7 +122,7 @@ export async function submitPreIntake(
       .single();
 
     if (clientError || !client) {
-      return { ok: false, error: clientError?.message || "Could not submit — please try again." };
+      return { ok: false, error: clientError?.message || "Could not submit. Please try again." };
     }
     clientId = client.id;
   }
@@ -134,7 +134,7 @@ export async function submitPreIntake(
   const amount = inputs.amount.trim();
   const timelineLabel = inputs.timeline ? TIMELINE_LABELS[inputs.timeline] : null;
   const bodyLines = [
-    "Submitted via Pre-Intake link — they haven't been told yet that this is about life insurance/annuities.",
+    "Submitted via Pre-Intake link; they haven't been told yet that this is about life insurance/annuities.",
     `What they're looking for: ${goals}`,
   ];
   if (amount) bodyLines.push(`Approximate amount they're thinking of investing: ${amount}`);
@@ -155,7 +155,7 @@ export async function submitPreIntake(
     const clientName = [firstName, middleName, lastName].filter(Boolean).join(" ");
     await sendEmail({
       to: advisor.email,
-      subject: `New pre-intake submitted — ${clientName}`,
+      subject: `New pre-intake submitted: ${clientName}`,
       html: `
         <p>Hi ${advisor.full_name ?? "there"},</p>
         <p><strong>${clientName}</strong> just completed the Pre-Intake form.</p>

@@ -251,7 +251,7 @@ export default function ProductRow({
         </label>
         {ownerOptions.length > 0 && (
           <label className="flex flex-col gap-1 text-xs text-[#666]">
-            Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
+            Owned by (leave as {clientName} unless someone else, e.g. a parent, currently owns this)
             <select
               value={fields.owner_client_id}
               onChange={(e) => set("owner_client_id", e.target.value)}
@@ -600,7 +600,7 @@ export default function ProductRow({
       <div className="flex flex-wrap gap-1.5">
         {product.is_quote && (
           <span className="self-start rounded-full bg-[#FFF6E5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b6a00]">
-            Quote — not yet issued
+            Quote: not yet issued
           </span>
         )}
         {isPending && (
@@ -651,7 +651,7 @@ export default function ProductRow({
       {isPending && product.conversion_pending_at && (
         <p className="text-xs font-semibold text-[#8b6a00]">
           Conversion pending since{" "}
-          {new Date(product.conversion_pending_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — check in
+          {new Date(product.conversion_pending_at).toLocaleDateString(undefined, { dateStyle: "medium" })}. Check in
           with the client until the new policy is issued.
         </p>
       )}
@@ -659,7 +659,7 @@ export default function ProductRow({
       {isPendingApproval && product.pending_approval_at && (
         <p className="text-xs font-semibold text-[#8b6a00]">
           Pending approval since{" "}
-          {new Date(product.pending_approval_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — a check-in
+          {new Date(product.pending_approval_at).toLocaleDateString(undefined, { dateStyle: "medium" })}. A check-in
           reminder has been added to Reminders.
         </p>
       )}
@@ -668,7 +668,7 @@ export default function ProductRow({
         <p className="text-xs text-[#8b6a00]">
           No-exam window declined by client on {formatDateOnly(product.no_exam_declined_at)}
           {product.final_conversion_deadline &&
-            ` — exam required to convert until ${formatDateOnly(product.final_conversion_deadline)}`}
+            ` (exam required to convert until ${formatDateOnly(product.final_conversion_deadline)})`}
         </p>
       )}
 
@@ -681,7 +681,7 @@ export default function ProductRow({
       {product.term_contacted_at && (
         <p className="text-xs text-[#707070]">
           {product.outreach_outcome
-            ? `Outreach: ${OUTREACH_OUTCOME_LABELS[product.outreach_outcome as OutreachOutcome]} — `
+            ? `Outreach: ${OUTREACH_OUTCOME_LABELS[product.outreach_outcome as OutreachOutcome]} on `
             : "Touched base "}
           {new Date(product.term_contacted_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
         </p>

@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     const productCount = ownedByOther?.length ?? 0;
     const message =
       productCount > 0
-        ? `${client.full_name} turned 18 today — ownership of ${productCount} product${productCount === 1 ? "" : "s"} (${ownedByOther!
+        ? `${client.full_name} turned 18 today. Ownership of ${productCount} product${productCount === 1 ? "" : "s"} (${ownedByOther!
             .map((p) => p.product_name)
             .join(", ")}) transferred to them. Time for the "you're 18 now" conversation.`
         : `${client.full_name} turned 18 today. Time for the "you're 18 now" conversation.`;
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       for (const client of turning59HalfToday) {
         if (!annuityClientIds.has(client.id)) continue;
 
-        const halfMessage = `${client.full_name} turns 59 1/2 today — the IRS's 10% early-withdrawal penalty no longer applies to their annuity.`;
+        const halfMessage = `${client.full_name} turns 59 1/2 today. The IRS's 10% early-withdrawal penalty no longer applies to their annuity.`;
 
         await supabase.from("reminders").insert({
           client_id: client.id,

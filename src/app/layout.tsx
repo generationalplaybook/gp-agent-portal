@@ -6,7 +6,7 @@ import "./globals.css";
 // apple-* tags below; Android/Chrome reads manifest.json (in /public).
 export const metadata: Metadata = {
   title: "GP Advisor Portal",
-  description: "Advisor CRM — client pipeline, follow-ups, and reminders.",
+  description: "Advisor CRM: client pipeline, follow-ups, and reminders.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

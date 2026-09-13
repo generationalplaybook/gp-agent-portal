@@ -116,7 +116,7 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
         setSubmitError(res.error);
       }
     } catch {
-      setSubmitError("Something went wrong submitting this form — please try again.");
+      setSubmitError("Something went wrong submitting this form. Please try again.");
     } finally {
       setSubmitting(false);
     }

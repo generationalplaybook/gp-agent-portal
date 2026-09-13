@@ -130,10 +130,25 @@ export async function updateStage(clientId: string, stage: ClientStage) {
     .eq("id", clientId)
     .single();
 
-  // Already Pending with a live reminder — don't stack a second one on top of it (the Stage
-  // dropdown only fires on an actual change, so this mainly guards against this action being
-  // called some other way). Everything else about the row is untouched either way.
-  const alreadyPendingWithReminder = current?.stage === "pending" && !!current?.pending_checkin_reminder_id;
+  // Already Pending with a live reminder AND staying in Pending — don't stack a second reminder
+  // on top of it (the Stage dropdown only fires on an actual change, so this mainly guards
+  // against this action being called some other way). Everything else about the row is untouched
+  // either way.
+  //
+  // Bug fixed 9/13 — Karina: "I undid a client's pipeline from pending to quoted and then put it
+  // back to pending, and still no reminder has been set." Root cause: this check only looked at
+  // the CURRENT stage/reminder, never the stage being moved TO. So a client that was already
+  // sitting in Pending with a reminder, moved OUT to any other stage (Quoted here), still read as
+  // "already pending with reminder" — patch stayed `{}`, which meant clearPendingCheckin never
+  // ran and pending_checkin_reminder_id was never cleared even though the client's stage really
+  // did change away from Pending. Moving it back to Pending afterward then saw current.stage as
+  // whatever it had actually become (not "pending"), so it DID try to create a fresh reminder —
+  // but the stale reminder id/orphaned row from the missed cleanup could leave things in a
+  // confusing, inconsistent state depending on exactly when/how the DB was read. Added `stage ===
+  // "pending"` to the check so this shortcut only ever fires when the target stage is ALSO
+  // Pending (i.e. a redundant pending→pending call) — any real transition, in or out of Pending,
+  // now always goes through the create-reminder or clear-reminder branch as intended.
+  const alreadyPendingWithReminder = stage === "pending" && current?.stage === "pending" && !!current?.pending_checkin_reminder_id;
 
   let patch: { stage_entered_pending_at: string | null; pending_checkin_reminder_id: string | null } | Record<string, never>;
   if (alreadyPendingWithReminder) {
@@ -144,7 +159,7 @@ export async function updateStage(clientId: string, stage: ClientStage) {
     const reminderId = await addReminder(
       { clientId },
       remindAt.toISOString(),
-      `Check in — ${current?.full_name ?? "client"} is in Pending`
+      `Check in: ${current?.full_name ?? "client"} is in Pending`
     );
     patch = { stage_entered_pending_at: new Date().toISOString(), pending_checkin_reminder_id: reminderId };
   } else {
@@ -871,7 +886,7 @@ export async function markPendingApproval(productId: string, clientId: string, p
   // Reuses the Reminders feature's own action (same reasoning as markOutreachOutcome above) so
   // this stays in sync with whatever that table/validation looks like later, rather than inserting
   // into `reminders` directly.
-  const reminderId = await addReminder({ clientId }, remindAt.toISOString(), `Check in — ${productName} pending carrier approval`);
+  const reminderId = await addReminder({ clientId }, remindAt.toISOString(), `Check in: ${productName} pending carrier approval`);
 
   const { error } = await supabase
     .from("client_products")
@@ -952,15 +967,15 @@ export async function markOutreachOutcome(
     remindAt.setDate(remindAt.getDate() + daysOut);
     const message =
       outcome === "unreachable"
-        ? `Try again — couldn't reach about ${productName}`
-        : `Check in on new coverage shopping — ${productName}`;
+        ? `Try again: couldn't reach about ${productName}`
+        : `Check in on new coverage shopping: ${productName}`;
     // Reuses the Reminders feature's own action rather than inserting into `reminders` directly,
     // so this stays in sync with whatever that table/validation looks like later.
     reminderId = await addReminder({ clientId }, remindAt.toISOString(), message);
   } else if (outcome === "keeping" && followUpAt) {
-    reminderId = await addReminder({ clientId }, followUpAt, `Renewal check-in due — ${productName}`);
+    reminderId = await addReminder({ clientId }, followUpAt, `Renewal check-in due: ${productName}`);
   } else if (outcome === "declining" && followUpAt) {
-    reminderId = await addReminder({ clientId }, followUpAt, `Check back in — lapsed coverage, ${productName}`);
+    reminderId = await addReminder({ clientId }, followUpAt, `Check back in: lapsed coverage, ${productName}`);
   }
 
   const { error } = await supabase

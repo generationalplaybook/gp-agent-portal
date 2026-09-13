@@ -466,7 +466,7 @@ export function computeFA(state: FAState): FAComputed {
   const gap = totalNeed - totalCoverage;
 
   const warnings: string[] = [];
-  if (pr.disability !== "yes") warnings.push("No confirmed disability insurance — income is unprotected if the client can't work.");
+  if (pr.disability !== "yes") warnings.push("No confirmed disability insurance. Income is unprotected if the client can't work.");
   if (pr.ltc !== "yes") warnings.push("No confirmed long-term care coverage.");
 
   const coverageRatio = totalNeed > 0 ? Math.min(totalCoverage / totalNeed, 1) : 1;
@@ -566,12 +566,12 @@ export function computeFA(state: FAState): FAComputed {
   // goal" (Karina's own words on the Goals tab) — this is where the numbers turn into next steps.
   const actionPlan: FAActionItem[] = [];
   if (cashflow.negative) {
-    actionPlan.push({ pillar: "Cash Flow", message: "Spending exceeds income — address the shortfall before funding new goals.", priority: 0 });
+    actionPlan.push({ pillar: "Cash Flow", message: "Spending exceeds income. Address the shortfall before funding new goals.", priority: 0 });
   }
   if (liquidityGap > 0) {
     actionPlan.push({
       pillar: "Liquidity",
-      message: `Build emergency reserves — ${fmt(liquidityGap)} short of a ${liq.targetMonths}-month cushion.`,
+      message: `Build emergency reserves: ${fmt(liquidityGap)} short of a ${liq.targetMonths}-month cushion.`,
       priority: 1,
     });
   }
@@ -581,7 +581,7 @@ export function computeFA(state: FAState): FAComputed {
   if (debt.badDebt > 0 && debt.badShare > 20) {
     actionPlan.push({
       pillar: "Debt",
-      message: `High-cost consumer debt is ${debt.badShare.toFixed(0)}% of total balances — prioritize payoff.`,
+      message: `High-cost consumer debt is ${debt.badShare.toFixed(0)}% of total balances. Prioritize payoff.`,
       priority: 2,
     });
   }
@@ -598,7 +598,7 @@ export function computeFA(state: FAState): FAComputed {
   if (estateExposure > 0) {
     actionPlan.push({
       pillar: "Estate",
-      message: `Taxable estate exceeds the federal exemption by ${fmt(estateExposure)} — coordinate with an estate attorney/CPA.`,
+      message: `Taxable estate exceeds the federal exemption by ${fmt(estateExposure)}. Coordinate with an estate attorney/CPA.`,
       priority: 1,
     });
   }
