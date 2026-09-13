@@ -1445,8 +1445,36 @@ alter table public.clients add column if not exists pending_checkin_reminder_sen
 --                                  outreach_reminder_id (section 46), so resolving the product
 --                                  deletes that exact reminder instead of leaving a stale "check on
 --                                  this" nudge behind for a product that isn't pending anymore.
--- Section 50's client-level columns and cron are left in place but retired (no longer written to
--- by updateStage) — harmless unused columns/route, not worth a destructive migration to remove.
+-- Correction, 9/13: the line above originally claimed Section 50's cron/columns were "no longer
+-- written to by updateStage" — that was wrong, updateStage kept writing stage_entered_pending_at
+-- the whole time and the daily cron was still live. See section 52 below, where this actually
+-- gets retired for real.
 -- ─────────────────────────────────────────────────────────────
 alter table public.client_products add column if not exists pending_approval_at timestamptz;
 alter table public.client_products add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 52. Pipeline-stage "Pending" check-in reminder, made immediate (added 9/13) — Karina, after
+-- finding that moving a client's Stage dropdown to Pending wasn't producing any visible reminder:
+-- turned out Section 50's cron (3-day-delayed, once-a-day, silent until it fires) was still fully
+-- live the whole time — my 9/12 note above claiming it had been retired was simply wrong. She
+-- confirmed she still wants moving a client's Stage to Pending to create a check-in reminder —
+-- "if the client is in a pending state, like the drop down on the client profile, set a reminder
+-- as well. Because even if they have a policy enforced, if they're doing another policy, I would,
+-- in theory, change their profile to pending" — just not the invisible-for-3-days version. This
+-- retires check-pending-checkins (route + vercel.json entry both removed) and replaces it with the
+-- same immediate-creation approach as client_products.pending_approval_at (section 51): the
+-- reminder is created the moment updateStage sets stage to "pending", not by a later cron run.
+--   pending_checkin_reminder_id (on clients) — the auto-created reminder's id, same
+--                                                cleanup-on-resolve pattern as
+--                                                client_products.pending_checkin_reminder_id:
+--                                                deleted the moment the client leaves Pending via
+--                                                ANY path (the Stage dropdown, resolveQuotesOnIssue,
+--                                                or an Outreach outcome — see clearPendingCheckin in
+--                                                clients/actions.ts), not just the Stage dropdown.
+-- stage_entered_pending_at (section 50) is kept and still set/cleared the same way — still useful
+-- as a plain "when did this start" record. pending_checkin_reminder_sent (section 50) is now
+-- unused now that there's no cron to consult it — left in place, harmless, not worth a destructive
+-- migration to drop.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;

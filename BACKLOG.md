@@ -3817,6 +3817,40 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   gap — no "optional" badge, but also nothing enforcing them today. Didn't touch those since you
   only called out budget specifically — let me know if you want the same fix there.
 
+- **9/13, Pending-stage check-in reminder made immediate, and a stale cron actually retired —
+  BUILT, SQL REQUIRED (see below).** Karina: "why aren't pending pipeline [not] triggering
+  reminders" — moving a client's Stage dropdown to Pending wasn't producing any visible reminder.
+  Root cause: the ORIGINAL 9/11 build of this (a daily cron, `check-pending-checkins`, that only
+  fires once a client has sat in Pending 3+ days) was still fully live — a schema.sql comment from
+  yesterday's per-product pending-approval work had incorrectly claimed it was already retired. It
+  wasn't; `updateStage` was still writing to it. She confirmed she still wants the Stage dropdown to
+  trigger a check-in reminder — "even if they have a policy enforced, if they're doing another
+  policy, I would, in theory, change their profile to pending" — just not the invisible-for-3-days
+  version.
+  1. The old cron is actually gone now: deleted `src/app/api/cron/check-pending-checkins/route.ts`
+     and its `vercel.json` entry.
+  2. Moving a client's Stage dropdown to "Pending" now creates a check-in reminder IMMEDIATELY —
+     dated 3 days out, same as yesterday's per-product mechanism — so it shows up right away in the
+     Reminders list and on the client's own profile, not 3 days later via a background job.
+  3. Whatever moves the client back OFF Pending cleans that reminder up automatically — the Stage
+     dropdown itself, resolving a quote onto Issue, or an Outreach outcome (all three routed through
+     one shared `clearPendingCheckin` helper) — so nothing gets left behind pointing at a client who
+     isn't Pending anymore.
+  4. `stage_entered_pending_at` (from 9/11) is kept and still set the same way. Its old partner flag
+     `pending_checkin_reminder_sent` is now unused (no cron left to check it) — left in place,
+     harmless, not worth a destructive migration.
+  5. Lint/build clean.
+  **SQL REQUIRED** — one new column on `clients` (safe to run more than once):
+  ```sql
+  alter table public.clients add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;
+  ```
+  **Still open — the other half of what you asked:** you also said "there's no product pending
+  option" on an actual client's profile. That checkbox/button was built yesterday (9/12, delivery
+  `gp_crm_2026-09-12_pending-approval-reminder.zip`) — if it's not showing up, the most likely
+  explanation is that zip hasn't been applied via GitHub Desktop yet, or its SQL (two columns on
+  `client_products`) hasn't been run in Supabase yet. Worth checking both before assuming something's
+  broken — let me know if it's still missing once those are confirmed done.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

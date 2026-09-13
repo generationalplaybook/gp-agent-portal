@@ -88,22 +88,76 @@ export async function createClientRecord(formData: FormData) {
 
 // 9/11 — Karina, moving a client to Pending: "once a client is pending, can we set an automatic
 // nudge maybe for three or four days out where it goes into an automatic reminder to check on the
-// pending ones?" stage_entered_pending_at/pending_checkin_reminder_sent (schema.sql section 50)
-// track when a client entered Pending and whether the cron's already reminded about it — set here
-// on the way in, cleared on the way out, so re-entering Pending later starts a fresh cycle instead
-// of silently never firing again.
+// pending ones?"
+// 9/13 — she found that moving a client's Stage to Pending wasn't producing any visible reminder.
+// Turned out the original build of this (a daily cron, check-pending-checkins, that only fired
+// once stage_entered_pending_at had aged 3+ days) was still fully live the whole time — a 9/12
+// schema.sql comment had incorrectly claimed it was retired. She confirmed she still wants the
+// Stage dropdown to trigger a check-in reminder — "even if they have a policy enforced, if they're
+// doing another policy, I would, in theory, change their profile to pending" — just not the
+// invisible-for-3-days version. This creates the reminder IMMEDIATELY instead, the same pattern as
+// client_products.pending_approval_at's markPendingApproval (schema.sql section 51): dated 3 days
+// out, so it shows up right away in the Reminders list and this client's own Reminders card,
+// rather than waiting on a later cron run. The old cron (route + vercel.json entry) is deleted.
+const PENDING_STAGE_CHECKIN_DAYS = 3;
+
+// Deletes the check-in reminder created when a client entered Pending (if any) and returns the
+// field values to clear on the client row. Called from every path that can move a client OUT of
+// Pending — not just the Stage dropdown below, but also resolveQuotesOnIssue and
+// markOutreachOutcome further down — so a client leaving Pending via any of them doesn't leave an
+// orphaned "check on this" reminder behind.
+async function clearPendingCheckin(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  clientId: string
+): Promise<{ stage_entered_pending_at: null; pending_checkin_reminder_id: null }> {
+  const { data: current } = await supabase
+    .from("clients")
+    .select("pending_checkin_reminder_id")
+    .eq("id", clientId)
+    .single();
+  if (current?.pending_checkin_reminder_id) {
+    await supabase.from("reminders").delete().eq("id", current.pending_checkin_reminder_id);
+  }
+  return { stage_entered_pending_at: null, pending_checkin_reminder_id: null };
+}
+
 export async function updateStage(clientId: string, stage: ClientStage) {
   const { supabase } = await requireUser();
+
+  const { data: current } = await supabase
+    .from("clients")
+    .select("stage, pending_checkin_reminder_id, full_name")
+    .eq("id", clientId)
+    .single();
+
+  // Already Pending with a live reminder — don't stack a second one on top of it (the Stage
+  // dropdown only fires on an actual change, so this mainly guards against this action being
+  // called some other way). Everything else about the row is untouched either way.
+  const alreadyPendingWithReminder = current?.stage === "pending" && !!current?.pending_checkin_reminder_id;
+
+  let patch: { stage_entered_pending_at: string | null; pending_checkin_reminder_id: string | null } | Record<string, never>;
+  if (alreadyPendingWithReminder) {
+    patch = {};
+  } else if (stage === "pending") {
+    const remindAt = new Date();
+    remindAt.setDate(remindAt.getDate() + PENDING_STAGE_CHECKIN_DAYS);
+    const reminderId = await addReminder(
+      { clientId },
+      remindAt.toISOString(),
+      `Check in — ${current?.full_name ?? "client"} is in Pending`
+    );
+    patch = { stage_entered_pending_at: new Date().toISOString(), pending_checkin_reminder_id: reminderId };
+  } else {
+    patch = await clearPendingCheckin(supabase, clientId);
+  }
+
   await supabase
     .from("clients")
-    .update(
-      stage === "pending"
-        ? { stage, stage_entered_pending_at: new Date().toISOString(), pending_checkin_reminder_sent: false }
-        : { stage, stage_entered_pending_at: null }
-    )
+    .update({ stage, ...patch })
     .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
+  revalidatePath("/reminders");
 }
 
 // Moves a client to Issued once the advisor has said which tracked quote actually won —
@@ -115,7 +169,10 @@ export async function resolveQuotesOnIssue(
   allQuoteProductIds: string[]
 ): Promise<void> {
   const { supabase } = await requireUser();
-  await supabase.from("clients").update({ stage: "issued", stage_entered_pending_at: null }).eq("id", clientId);
+  // 9/13 — routed through clearPendingCheckin (not a bare stage_entered_pending_at: null) so a
+  // client resolved onto Issue while still sitting in Pending doesn't leave that Pending check-in
+  // reminder behind — same cleanup the Stage dropdown itself now does (see updateStage above).
+  await supabase.from("clients").update({ stage: "issued", ...(await clearPendingCheckin(supabase, clientId)) }).eq("id", clientId);
   await supabase.from("client_products").update({ is_quote: false }).eq("id", chosenProductId);
   const toDelete = allQuoteProductIds.filter((id) => id !== chosenProductId);
   if (toDelete.length > 0) {
@@ -929,22 +986,26 @@ export async function markOutreachOutcome(
   // already further along, this can move that stage backward or forward too, since `stage` is one
   // field per client, not per policy. Deliberate per her description, but worth knowing.
   // Only "Couldn't reach them" leaves stage untouched.
+  // 9/13 — each of these three routed through clearPendingCheckin (not a bare
+  // stage_entered_pending_at: null) so a client moved off Pending by an Outreach outcome doesn't
+  // leave that Pending check-in reminder behind — same cleanup the Stage dropdown itself now does
+  // (see updateStage above).
   if (outcome === "shopping" || outcome === "renewing") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "lead", stage_entered_pending_at: null })
+      .update({ stage: "lead", ...(await clearPendingCheckin(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "keeping") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "issued", stage_entered_pending_at: null })
+      .update({ stage: "issued", ...(await clearPendingCheckin(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "declining") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "declined", stage_entered_pending_at: null })
+      .update({ stage: "declined", ...(await clearPendingCheckin(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   }
