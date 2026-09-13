@@ -215,6 +215,9 @@ export default function AnalyzerClient({
     // neither, and mid-call an advisor often doesn't have a prospect's contact info yet but
     // still wants talking points from a real recommendation. Both still save to the client
     // record when present (see actions.ts), just never block getting a result.
+    // Gender made required 9/13 — Karina: "gender needs to be not optional on the intake forms,"
+    // same call already made on the public Intake form (IntakeForm.tsx, 9/9).
+    if (!inputs.gender) req.push("Gender");
     if (!inputs.heightFt) req.push("Height");
     if (!inputs.weight) req.push("Weight");
 
@@ -331,7 +334,7 @@ export default function AnalyzerClient({
           />
         </Field>
 
-        <Field label="Gender" optional>
+        <Field label="Gender">
           <select value={inputs.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inputClass}>
             <option value="">Select…</option>
             {GENDER_OPTIONS.map((g) => (

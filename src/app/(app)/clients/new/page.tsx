@@ -71,13 +71,16 @@ export default async function NewClientPage({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
-            Gender
+            Gender *
             <select
               name="gender"
               defaultValue=""
+              required
               className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
             >
-              <option value="">Select…</option>
+              <option value="" disabled>
+                Select…
+              </option>
               {GENDER_OPTIONS.map((g) => (
                 <option key={g} value={g}>
                   {g}

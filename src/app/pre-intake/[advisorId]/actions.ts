@@ -19,6 +19,10 @@ export interface PreIntakeContact {
   lastName: string;
   phone: string;
   email: string;
+  // Added 9/13 — Karina: "gender needs to be not optional on the intake forms." The one field
+  // this deliberately-light form asks beyond plain contact info, for the same reason it's now
+  // required everywhere else that feeds a client record.
+  gender: string;
   // Added 9/11 — Karina: "we should also ask for the city and state on the pre intake form."
   city: string;
   state: string;
@@ -54,6 +58,7 @@ export async function submitPreIntake(
   const middleName = contact.middleName.trim() || null;
   const phone = contact.phone.trim();
   const email = contact.email.trim();
+  const gender = contact.gender.trim();
   const city = contact.city.trim() || null;
   const state = contact.state.trim() || null;
   const goals = inputs.goals.trim();
@@ -61,6 +66,7 @@ export async function submitPreIntake(
   if (!firstName || !lastName) return { ok: false, error: "First and last name are required." };
   if (!phone) return { ok: false, error: "Phone number is required." };
   if (!email) return { ok: false, error: "Email is required." };
+  if (!gender) return { ok: false, error: "Gender is required." };
   if (!goals) return { ok: false, error: "Please tell us a bit about what you're looking for." };
 
   const { data: advisor } = await admin
@@ -84,6 +90,7 @@ export async function submitPreIntake(
       .update({
         phone,
         email,
+        gender,
         ...(city ? { city } : {}),
         ...(state ? { state } : {}),
         intake_pending_review: true,
@@ -104,6 +111,7 @@ export async function submitPreIntake(
         last_name: lastName,
         phone,
         email,
+        gender,
         city,
         state,
         stage: "lead",

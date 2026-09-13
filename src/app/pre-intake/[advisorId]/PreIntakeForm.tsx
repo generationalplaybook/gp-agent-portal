@@ -3,15 +3,18 @@
 import { useState } from "react";
 import PhoneInput from "../../(app)/clients/PhoneInput";
 import CurrencyInput from "../../(app)/client-analyzer/CurrencyInput";
+import { GENDER_OPTIONS } from "@/lib/types";
 import { submitPreIntake, type PreIntakeTimeline } from "./actions";
 
 // Deliberately a small, separate field set from the full Intake form (IntakeForm.tsx) — no DOB,
-// gender, height/weight, health questions, money type, or funding details. Every one of those
-// either only makes sense once someone already knows this is a life insurance/annuity
-// conversation, or exists to feed the recommendation engine this form never runs. Karina, 9/9:
-// "somebody that is booking a meeting based on us saying... we do financial and legacy planning,
-// but we haven't exactly told them that it's life insurance and annuities... What are you
-// thinking? How much are you trying to invest?"
+// height/weight, health questions, money type, or funding details. Every one of those either only
+// makes sense once someone already knows this is a life insurance/annuity conversation, or exists
+// to feed the recommendation engine this form never runs. Karina, 9/9: "somebody that is booking
+// a meeting based on us saying... we do financial and legacy planning, but we haven't exactly told
+// them that it's life insurance and annuities... What are you thinking? How much are you trying to
+// invest?" Gender is the one exception — added 9/13, required, per Karina: "gender needs to be not
+// optional on the intake forms" (a call already made on the full Intake form and the Client
+// Analyzer at the same time).
 function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
   return (
     <div className="mb-5">
@@ -71,6 +74,7 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [gender, setGender] = useState("");
   // Added 9/11 — Karina: "we should also ask for the city and state on the pre intake form."
   // clients.city/clients.state already exist (added 9/3 for the Contact Info card).
   const [city, setCity] = useState("");
@@ -90,6 +94,7 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
     if (!lastName.trim()) req.push("Last Name");
     if (!phone.trim()) req.push("Phone Number");
     if (!email.trim()) req.push("Email");
+    if (!gender) req.push("Gender");
     if (!goals.trim()) req.push("What You're Looking For");
 
     if (req.length) {
@@ -102,7 +107,7 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
     try {
       const res = await submitPreIntake(
         advisorId,
-        { firstName, middleName, lastName, phone, email, city, state },
+        { firstName, middleName, lastName, phone, email, gender, city, state },
         { goals, amount, timeline }
       );
       if (res.ok) {
@@ -159,6 +164,17 @@ export default function PreIntakeForm({ advisorId, advisorName }: { advisorId: s
           />
         </Field>
       </div>
+
+      <Field label="Gender">
+        <select value={gender} onChange={(e) => setGender(e.target.value)} className={inputClass}>
+          <option value="">Select…</option>
+          {GENDER_OPTIONS.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="City" optional>

@@ -46,8 +46,13 @@ export async function createClientRecord(formData: FormData) {
   const state = String(formData.get("state") || "").trim() || null;
   const timezone = String(formData.get("timezone") || "").trim() || null;
 
+  // Gender made required 9/13 — Karina: "gender needs to be not optional on the intake forms."
+  // The form's own `required` attribute already blocks a normal submit; this is the same
+  // belt-and-suspenders check first/last name already got, in case this action is ever hit
+  // directly.
   if (!first_name || !last_name)
     redirect("/clients/new?error=" + encodeURIComponent("First and last name are required."));
+  if (!gender) redirect("/clients/new?error=" + encodeURIComponent("Gender is required."));
 
   // full_name is computed by a DB trigger from first/middle/last — don't set it here.
   const { data, error } = await supabase

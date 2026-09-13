@@ -3780,6 +3780,29 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   alter table public.client_products add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;
   ```
 
+- **9/13, Gender required across all client-input forms — BUILT, no new SQL.** Karina: "gender
+  needs to be not optional on the intaake forms." The public Intake form (`/intake/[advisorId]`)
+  already made Gender required back on 9/9 — this closes the same gap on every other place a
+  client's Gender gets entered:
+  1. **Add New Client** (the internal form advisors use to add a client by hand): Gender select
+     now has `required` (with its placeholder option disabled, so an empty selection can't slip
+     past the browser's own validation) and is marked with a `*` like First/Last Name. Also added
+     a matching server-side check in `createClientRecord` — same belt-and-suspenders treatment
+     first/last name already had — in case the form is ever submitted some other way.
+  2. **Client Analyzer** (`/client-analyzer`): Gender's "optional" badge is gone, and it's now in
+     the same required-fields check as Client Name/Date of Birth/Height/Weight — trying to run a
+     recommendation without it now shows "Please fill in the required fields: Gender" instead of
+     letting it through silently. Phone and Email are still deliberately not required there (a
+     child on a family analysis usually has neither) — untouched.
+  3. **Pre-Intake** (the short client-facing `/pre-intake/[advisorId]` link): this one didn't have
+     a Gender field at all before today — it was deliberately left out on 9/9 as one of several
+     fields that only make sense once someone already knows this is a life-insurance conversation.
+     Gender is the one exception now — added as a required field, right after Email, and wired
+     through `submitPreIntake` into the client record the same way Phone/Email already are (for
+     both a brand-new client and one that matches an existing record by phone/email). Every other
+     field this form intentionally omits (DOB, height/weight, health, money type) stays omitted.
+  4. Lint and build both clean.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
