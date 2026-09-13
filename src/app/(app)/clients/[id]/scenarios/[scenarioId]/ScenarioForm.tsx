@@ -15,6 +15,7 @@ import {
   type FinalExpenseIllustration,
 } from "@/lib/illustration";
 import { generateScenarioIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
+import { KB_PRODUCTS } from "@/lib/kb-data";
 
 const MAX_CASH_VALUE_MILESTONES = 5;
 // Death Benefit Milestones (the quick "hits $X at age Y" highlight, distinct from the detailed
@@ -37,6 +38,16 @@ interface Scenario {
 }
 
 const inputClass = "rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]";
+
+// Suggestions for the Final Expense Option 2/3 "Product name" fields — added 9/13 per Karina,
+// after seeing the field was a bare free-text input with no connection to the Knowledge Base
+// ("this should auto populate the products so if its in the portal KB we can select it"). Same
+// native <datalist> pattern already used for product_name elsewhere (ProductsSection.tsx's "Add
+// Product" field, ScenariosSection.tsx's "+ Add Illustration" picker) — still just a plain text
+// input underneath, so an advisor can type a carrier that isn't in the KB, but one that IS shows
+// up as a pick. Narrowed to Final Expense products specifically (unlike those other two, which
+// suggest the whole KB) since that's the only illustration kind these two fields ever appear on.
+const FINAL_EXPENSE_PRODUCT_SUGGESTIONS = KB_PRODUCTS.filter((p) => p.productType === "Final Expense").map((p) => p.name);
 
 // Duplicated from illustrations/[productId]/IllustrationForm.tsx rather than shared — same
 // pattern used elsewhere in this app (e.g. the two MeetingRow components) so the existing,
@@ -362,6 +373,7 @@ function FinalExpenseOptionsEditor({
             <input
               value={data.productName2 ?? ""}
               onChange={(e) => setData({ ...data, productName2: e.target.value })}
+              list="fe-option-product-suggestions"
               placeholder="e.g. Mutual of Omaha Living Promise"
               className={inputClass + " w-full"}
             />
@@ -406,6 +418,7 @@ function FinalExpenseOptionsEditor({
             <input
               value={data.productName3 ?? ""}
               onChange={(e) => setData({ ...data, productName3: e.target.value })}
+              list="fe-option-product-suggestions"
               placeholder="e.g. Banner Life Final Expense"
               className={inputClass + " w-full"}
             />
@@ -442,6 +455,12 @@ function FinalExpenseOptionsEditor({
       ) : (
         <p className="text-xs text-[#707070]">Maximum of {MAX_FINAL_EXPENSE_OPTIONS} options.</p>
       )}
+
+      <datalist id="fe-option-product-suggestions">
+        {FINAL_EXPENSE_PRODUCT_SUGGESTIONS.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
     </div>
   );
 }
@@ -460,6 +479,19 @@ export default function ScenarioForm({
   const router = useRouter();
   const [productName, setProductName] = useState(scenario.product_name);
   const [carrier, setCarrier] = useState(scenario.carrier ?? "");
+
+  // Same KB datalist convenience as the Final Expense Option 2/3 fields below (see the comment
+  // on FINAL_EXPENSE_PRODUCT_SUGGESTIONS) — added 9/13 per Karina, extended here too since this
+  // is the scenario's own primary product name and had the same gap: a bare free-text field with
+  // no link to the Knowledge Base. Unfiltered (every KB product, not just Final Expense) since a
+  // scenario can be any product type. Picking a known name auto-fills Carrier, same convenience
+  // ProductsSection.tsx's "Add Product" field already has — Product Type isn't touched since it's
+  // fixed at scenario creation and read-only here.
+  function handleProductNameChange(value: string) {
+    setProductName(value);
+    const match = KB_PRODUCTS.find((p) => p.name === value);
+    if (match) setCarrier(match.carrier);
+  }
   const [data, setData] = useState<IllustrationData>(scenario.data);
   const [notes, setNotes] = useState(scenario.notes ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -601,13 +633,23 @@ export default function ScenarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Product name
-            <input value={productName} onChange={(e) => setProductName(e.target.value)} className={inputClass} />
+            <input
+              value={productName}
+              onChange={(e) => handleProductNameChange(e.target.value)}
+              list="scenario-product-suggestions"
+              className={inputClass}
+            />
           </label>
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Carrier
             <input value={carrier} onChange={(e) => setCarrier(e.target.value)} className={inputClass} />
           </label>
         </div>
+        <datalist id="scenario-product-suggestions">
+          {KB_PRODUCTS.map((p) => (
+            <option key={p.name} value={p.name} />
+          ))}
+        </datalist>
       </div>
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">

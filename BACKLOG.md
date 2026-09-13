@@ -3892,6 +3892,26 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      now shows "Final Expense Whole Life — TruStage" as the big title; a Banner Life-style product
      (carrier already in the name) renders exactly as before, no duplication. Lint/build clean.
 
+- **9/13, Final Expense scenario "Product name" fields now suggest real KB products — BUILT, no
+  SQL.** Karina sent a screenshot of the Option 2 box on a Final Expense scenario showing "TRUE"
+  as its header (she'd typed "true" into the plain free-text Product name field) and said: "this
+  should auto populate the products so if its in the portal KB we can select it." That field, and
+  its Option 3 twin, were bare free-text inputs with no connection to the Knowledge Base at all.
+  Fixed using the same native-`<datalist>` pattern already proven in two other places in this app
+  (ProductsSection.tsx's "Add Product" field, ScenariosSection.tsx's "+ Add Illustration" picker):
+  1. Option 2 and Option 3's Product name fields now suggest the KB's real Final Expense products
+     as you type (currently: Banner Life, TruStage, and Mutual of Omaha Living Promise) — pick one
+     or keep typing anything else; it's still a free-text field underneath, so a carrier you don't
+     sell still works fine.
+  2. Also extended to the scenario's own primary "Product name" field in the Scenario Details
+     card above it, which had the identical gap — picking a KB match there also auto-fills
+     Carrier, the same convenience the "Add Product" field already has (Product Type isn't
+     touched — it's fixed at scenario creation and read-only here).
+  3. Lint/build clean.
+  **Note:** the "true" text itself is just what got typed into that live scenario — I can't reach
+  your database from here to clear it. Open that scenario, clear the Option 2 product name field
+  (or pick the right product from the new suggestions), and it'll autosave over it.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
