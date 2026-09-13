@@ -31,6 +31,13 @@ function revalidateForOwner(owner: ReminderOwner) {
     revalidatePath("/team");
   }
   revalidatePath("/reminders");
+  // Bug fixed 9/13, same family as the one in clients/actions.ts's updateStage — every one of
+  // this function's callers (addReminder, updateReminder, deleteReminder, markReminderSent) can
+  // change what the home page's Reminders Due card should show (a client-owned reminder added,
+  // edited, deleted, or completed), but "/" was never in this revalidation list, so the home
+  // page could keep showing a stale count/preview until something unrelated happened to refresh
+  // it.
+  revalidatePath("/");
 }
 
 // Returns the new reminder's id — added 9/8 so callers that auto-create a reminder on the

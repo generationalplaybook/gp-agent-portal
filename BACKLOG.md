@@ -3998,6 +3998,28 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   Whole project build (`npm run build`) also run clean end to end, on top of lint/tsc, since this
   is the "ready to ship to advisors" pass.
 
+- **9/13, Pending reminder showing on the client's profile but not on the home page or the
+  Reminders tab — real cache-invalidation bug found and fixed, BUILT.** Karina: "the automatic
+  reminder is being generated when a client goes into pending status, but it's only on their
+  profile. It doesn't show up in the home page reminders due... and when I go into the reminders
+  tab, there's also nothing there pending." Confirmed this wasn't a data problem — the reminder
+  row itself is created correctly (that's why the profile shows it) — it was a missing
+  cache-invalidation call. Next.js only refreshes a page's data when something explicitly tells it
+  to (`revalidatePath`) after a change. `updateStage` (the Stage dropdown's action) was only
+  telling Next to refresh the client's own profile, `/clients`, and `/reminders` — "/" (the home
+  page, where the Reminders Due card lives) was never in that list, so the home page could keep
+  showing stale data indefinitely. Went through every place in the app that creates, clears, or
+  deletes a Pending check-in reminder and made sure all of them refresh both "/reminders" and "/":
+  `updateStage`, `resolveQuotesOnIssue`, `markOutreachOutcome` (all three outcomes that can clear
+  a Pending reminder), and `reminders/actions.ts`'s shared `revalidateForOwner` (used by every
+  manually-added/edited/deleted/completed reminder too, so this same gap would have eventually hit
+  any reminder, not just the automatic Pending ones). Lint, `tsc --noEmit`, and a full `npm run
+  build` all clean.
+  **If it's still not showing after you pull this update:** make sure you're testing against this
+  new deploy, not the previous one — and if it's still stale after that, a hard refresh
+  (Cmd/Ctrl+Shift+R) on the home page and Reminders tab will tell us whether it's this same class
+  of caching issue or something new; let me know what you see either way.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

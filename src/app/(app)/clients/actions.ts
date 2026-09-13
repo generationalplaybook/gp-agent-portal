@@ -173,6 +173,16 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
   revalidatePath("/reminders");
+  // Bug fixed 9/13 — Karina: "the automatic reminder is being generated... but it's only on
+  // their profile. It doesn't show up in the home page reminders due... and when I go into the
+  // reminders tab, there's also nothing there pending." The Reminders tab itself (/reminders,
+  // just above) was already being revalidated — but the Reminders Due card on the home page reads
+  // the exact same reminders table and this route was never in this function's revalidatePath
+  // list at all, so it kept serving Next's cached version of "/" from before the reminder existed
+  // until something else happened to revalidate it. Every other reminder-creating path in this
+  // file (markPendingApproval, markOutreachOutcome) already revalidates "/" — this one just never
+  // did.
+  revalidatePath("/");
 }
 
 // Moves a client to Issued once the advisor has said which tracked quote actually won —
@@ -195,6 +205,11 @@ export async function resolveQuotesOnIssue(
   }
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
+  // Same gap as updateStage above (fixed 9/13) — this can delete a live Pending check-in
+  // reminder via clearPendingCheckin, so the Reminders tab and the home page's Reminders Due
+  // card both need to hear about it too, not just the client's own profile.
+  revalidatePath("/reminders");
+  revalidatePath("/");
 }
 
 // Clears the "needs review" flag set when a client came in through an advisor's Intake Link.
@@ -1027,6 +1042,9 @@ export async function markOutreachOutcome(
 
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
+  // Same clearPendingCheckin gap as updateStage/resolveQuotesOnIssue above — this can also
+  // delete a live Pending check-in reminder, so the Reminders tab needs to hear about it too.
+  revalidatePath("/reminders");
   revalidatePath("/");
 }
 
