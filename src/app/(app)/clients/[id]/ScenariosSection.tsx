@@ -82,7 +82,7 @@ export default function ScenariosSection({ clientId, scenarios }: { clientId: st
             <Link
               key={s.id}
               href={`/clients/${clientId}/scenarios/${s.id}`}
-              className="flex items-center justify-between gap-3 py-2.5 hover:bg-[#F5F0E8]"
+              className="-mx-3 flex items-center justify-between gap-3 rounded-md px-3 py-2.5 hover:bg-[#F5F0E8]"
             >
               <div>
                 <div className="text-sm text-[#1C1C1C]">{s.product_name}</div>

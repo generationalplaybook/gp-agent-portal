@@ -3912,6 +3912,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   your database from here to clear it. Open that scenario, clear the Option 2 product name field
   (or pick the right product from the new suggestions), and it'll autosave over it.
 
+- **9/13, Illustrations row hover highlight — breathing room fixed, BUILT.** Karina sent
+  screenshots of the Illustrations card's row list: on hover, the highlighted background ran
+  edge-to-edge with no side padding, so the product name and the "Edit →" arrow touched the
+  highlight's left/right edges (the top/bottom breathing room was already fine, just not the
+  sides). `ScenariosSection.tsx`'s row `<Link>` had `py-2.5` but no horizontal padding at all —
+  fixed with the standard pad-then-cancel-with-negative-margin pattern (`-mx-3 ... px-3
+  rounded-md`), so the hover rectangle now has side padding matching the vertical padding, while
+  the row's text still lines up with the card's other content (the intro paragraph, the "+ Add
+  Illustration" button) exactly as before. Lint clean. Scoped to just this one row — the rest of
+  the app's hover rows (FamilySection, ClientPicker, etc.) already had horizontal padding, so they
+  weren't affected by this bug.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
