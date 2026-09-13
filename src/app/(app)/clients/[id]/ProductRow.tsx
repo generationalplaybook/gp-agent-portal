@@ -1,0 +1,768 @@
+"use client";
+
+import { useState } from "react";
+import {
+  updateProduct,
+  deleteProduct,
+  markConversionPending,
+  undoConversionPending,
+  markConverted,
+  undoConverted,
+  markPendingApproval,
+  undoPendingApproval,
+  type ProductFields,
+} from "../actions";
+import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
+import { getProductStatus, getTermUrgency, OUTREACH_OUTCOME_LABELS, type OutreachOutcome } from "@/lib/products";
+import { formatDateOnly } from "@/lib/dates";
+
+// Ongoing-contribution frequency values map to these plain-English labels wherever they're
+// displayed on an annuity's read-only card.
+const CONTRIBUTION_FREQUENCY_LABELS: Record<string, string> = {
+  monthly: "monthly",
+  quarterly: "quarterly",
+  semi_annual: "every 6 months",
+  annual: "annually",
+};
+import RidersField from "./RidersField";
+import DollarInput from "./DollarInput";
+
+const STATUS_STYLES: Record<"good" | "warn" | "bad", string> = {
+  good: "bg-[#00693C] text-white",
+  warn: "bg-[#8b6a00] text-white",
+  bad: "bg-[#8B1A1A] text-white",
+};
+
+// Same hover-to-copy pattern used for carrier login numbers on My Profile (CarrierLoginsTab.tsx) —
+// a policy number is exactly the kind of thing you're reading off a screen while on the phone
+// with a carrier, so one click to copy beats retyping it.
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard API unavailable or permission denied — nothing else to fall back to.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 text-[#707070] opacity-0 transition-opacity hover:text-[#1C1C1C] focus-visible:opacity-100 group-hover/policy:opacity-100"
+      title={copied ? "Copied!" : "Copy"}
+    >
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+export type OwnerOption = { id: string; full_name: string };
+
+function toFieldValues(p: ClientProduct): ProductFields {
+  return {
+    product_name: p.product_name,
+    product_type: p.product_type ?? "",
+    carrier: p.carrier ?? "",
+    policy_number: p.policy_number ?? "",
+    issue_date: p.issue_date ?? "",
+    expiration_date: p.expiration_date ?? "",
+    is_convertible: p.is_convertible,
+    conversion_deadline: p.conversion_deadline ?? "",
+    final_conversion_deadline: p.final_conversion_deadline ?? "",
+    no_exam_declined_at: p.no_exam_declined_at ?? "",
+    // Fall back to the (now-hidden, for term policies) expiration_date if term_end_date hasn't
+    // been filled in yet — see the 9/4 note in products.ts. Only relevant for term policies.
+    term_end_date: p.term_end_date ?? (p.is_convertible ? p.expiration_date ?? "" : ""),
+    conversion_notes: p.conversion_notes ?? "",
+    face_amount: p.face_amount != null ? String(p.face_amount) : "",
+    premium: p.premium != null ? String(p.premium) : "",
+    notes: p.notes ?? "",
+    owner_client_id: p.owner_client_id ?? "",
+    riders: p.riders ?? [],
+    minimum_premium: p.minimum_premium != null ? String(p.minimum_premium) : "",
+    annuity_contribution_amount: p.annuity_contribution_amount != null ? String(p.annuity_contribution_amount) : "",
+    annuity_contribution_frequency: p.annuity_contribution_frequency ?? "",
+    contract_value: p.contract_value != null ? String(p.contract_value) : "",
+    annuity_surrender_end_date: p.annuity_surrender_end_date ?? "",
+    annuity_contract_end_date: p.annuity_contract_end_date ?? "",
+  };
+}
+
+export default function ProductRow({
+  product,
+  clientId,
+  clientName,
+  ownerOptions,
+}: {
+  product: ClientProduct;
+  clientId: string;
+  clientName: string;
+  ownerOptions: OwnerOption[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [fields, setFields] = useState<ProductFields>(toFieldValues(product));
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  function set<K extends keyof ProductFields>(key: K, value: string) {
+    setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  const isConverted = !!product.converted_at;
+  const isPending = !!product.conversion_pending_at && !isConverted;
+  const isPendingApproval = !!product.pending_approval_at;
+  const isAnnuity = fields.product_type === "Annuity";
+  const isPermanent = PERMANENT_PRODUCT_TYPES.includes(fields.product_type ?? "");
+
+  async function runWorkflowAction(action: (productId: string, clientId: string) => Promise<void>) {
+    setWorkflowBusy(true);
+    setError("");
+    try {
+      await action(product.id, clientId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not update conversion status.");
+    } finally {
+      setWorkflowBusy(false);
+    }
+  }
+
+  // markPendingApproval takes a 3rd arg (the product name, for the reminder's message text) —
+  // doesn't fit runWorkflowAction's 2-arg shape above, so it gets its own thin wrapper sharing the
+  // same busy/error state.
+  async function handleMarkPendingApproval() {
+    setWorkflowBusy(true);
+    setError("");
+    try {
+      await markPendingApproval(product.id, clientId, product.product_name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not mark pending approval.");
+    } finally {
+      setWorkflowBusy(false);
+    }
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      await updateProduct(product.id, clientId, fields);
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save product.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await deleteProduct(product.id, clientId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete product.");
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
+        <input
+          value={fields.product_name}
+          onChange={(e) => set("product_name", e.target.value)}
+          list="product-name-suggestions"
+          placeholder="Product name *"
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <select
+            value={fields.product_type}
+            onChange={(e) => {
+              const value = e.target.value;
+              // An annuity can't also be "this is a term policy" in this system's model — see
+              // ProductFields.is_convertible.
+              setFields((f) => ({ ...f, product_type: value, is_convertible: value === "Annuity" ? false : f.is_convertible }));
+            }}
+            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+          >
+            <option value="">Type…</option>
+            {PRODUCT_TYPE_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <input
+            value={fields.carrier}
+            onChange={(e) => set("carrier", e.target.value)}
+            placeholder="Carrier"
+            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Issue date
+            <input
+              type="date"
+              value={fields.issue_date}
+              onChange={(e) => set("issue_date", e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+          {!fields.is_convertible && !isAnnuity && !isPermanent && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Expiration date
+              <input
+                type="date"
+                value={fields.expiration_date}
+                onChange={(e) => set("expiration_date", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          )}
+        </div>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Policy number (once issued)
+          <input
+            value={fields.policy_number}
+            onChange={(e) => set("policy_number", e.target.value)}
+            placeholder="e.g. NA-9284710"
+            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+          />
+        </label>
+        {ownerOptions.length > 0 && (
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Owned by (leave as {clientName} unless someone else — e.g. a parent — currently owns this)
+            <select
+              value={fields.owner_client_id}
+              onChange={(e) => set("owner_client_id", e.target.value)}
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            >
+              <option value="">{clientName} (this client)</option>
+              {ownerOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.full_name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {!isAnnuity && (
+        <label className="flex items-center gap-2 text-xs font-medium text-[#2E2E2E]">
+          <input
+            type="checkbox"
+            checked={fields.is_convertible ?? false}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setFields((f) => ({
+                ...f,
+                is_convertible: checked,
+                // Carry over whatever was already typed into Expiration date, which is about to
+                // be hidden — a term policy has one real end date, this is it either way.
+                term_end_date: checked && !f.term_end_date ? f.expiration_date : f.term_end_date,
+              }));
+            }}
+            className="h-4 w-4 rounded border-[#D9CFBA]"
+          />
+          This is a term policy (convertible or not)
+        </label>
+        )}
+        {fields.is_convertible && !isAnnuity && (
+          <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Term expiration date
+              <input
+                type="date"
+                value={fields.term_end_date}
+                onChange={(e) => set("term_end_date", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Convertible without medical exam until
+              <input
+                type="date"
+                value={fields.conversion_deadline}
+                onChange={(e) => set("conversion_deadline", e.target.value)}
+                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Final conversion deadline (exam required, e.g. up to age 75)
+                <input
+                  type="date"
+                  value={fields.final_conversion_deadline}
+                  onChange={(e) => set("final_conversion_deadline", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                No-exam window declined by client
+                <input
+                  type="date"
+                  value={fields.no_exam_declined_at}
+                  onChange={(e) => set("no_exam_declined_at", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
+            <input
+              value={fields.conversion_notes}
+              onChange={(e) => set("conversion_notes", e.target.value)}
+              placeholder="Conversion notes (e.g. converts to any Ameritas IUL)"
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {!isAnnuity && (
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Face amount
+              <DollarInput
+                value={fields.face_amount ?? ""}
+                onChange={(v) => set("face_amount", v)}
+                placeholder="e.g. 250,000"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            {isAnnuity ? "Initial premium / contribution" : "Premium"}
+            <DollarInput
+              value={fields.premium ?? ""}
+              onChange={(v) => set("premium", v)}
+              placeholder="e.g. 89.50"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        </div>
+        {!isAnnuity && (
+          <label className="flex flex-col gap-1 text-xs text-[#666]">
+            Minimum to avoid lapse (monthly)
+            <DollarInput
+              value={fields.minimum_premium ?? ""}
+              onChange={(v) => set("minimum_premium", v)}
+              placeholder="e.g. 67"
+              className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+          </label>
+        )}
+        {isAnnuity && (
+          <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Ongoing contribution (if flexible-premium)
+                <DollarInput
+                  value={fields.annuity_contribution_amount ?? ""}
+                  onChange={(v) => set("annuity_contribution_amount", v)}
+                  placeholder="e.g. 500"
+                  className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Contribution frequency
+                <select
+                  value={fields.annuity_contribution_frequency}
+                  onChange={(e) => set("annuity_contribution_frequency", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                >
+                  <option value="">—</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
+              </label>
+            </div>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Current contract value
+              <DollarInput
+                value={fields.contract_value ?? ""}
+                onChange={(v) => set("contract_value", v)}
+                placeholder="e.g. 105,000"
+                className="w-full rounded-md border border-[#D9CFBA] py-1.5 pr-3 text-sm outline-none focus:border-[#1C1C1C]"
+              />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Surrender charge period ends
+                <input
+                  type="date"
+                  value={fields.annuity_surrender_end_date}
+                  onChange={(e) => set("annuity_surrender_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Annuity contract end date
+                <input
+                  type="date"
+                  value={fields.annuity_contract_end_date}
+                  onChange={(e) => set("annuity_contract_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+        <textarea
+          value={fields.notes}
+          onChange={(e) => set("notes", e.target.value)}
+          rows={2}
+          placeholder="Other notes"
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        />
+        <RidersField
+          value={fields.riders ?? []}
+          onChange={(riders) => setFields((f) => ({ ...f, riders }))}
+          commonOptions={isAnnuity ? ANNUITY_RIDER_OPTIONS : undefined}
+        />
+        {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E] disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFields(toFieldValues(product));
+              setEditing(false);
+              setError("");
+            }}
+            className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // A term policy's real end date is term_end_date, falling back to the legacy expiration_date
+  // field for anything not yet re-saved through the new field — see products.ts, 9/4.
+  const effectiveTermEnd = product.is_convertible ? product.term_end_date ?? product.expiration_date : null;
+  const status = getProductStatus(
+    product.expiration_date,
+    product.conversion_deadline,
+    product.final_conversion_deadline,
+    product.no_exam_declined_at,
+    effectiveTermEnd
+  );
+  // For non-term products, fall back to the plain expiration_date field as before — except a
+  // permanent product type, which never shows an expiration at all (Karina, 9/4).
+  const displayExpiration = isPermanent ? null : effectiveTermEnd ?? product.expiration_date;
+  const owner = product.owner_client_id ? ownerOptions.find((o) => o.id === product.owner_client_id) : null;
+  // A heads-up cue as the surrender period / contract end approaches — same 90/30-day language as
+  // the Outreach view (both dates are now wired into that queue too — see lib/products.ts).
+  const surrenderUrgency = product.annuity_surrender_end_date ? getTermUrgency(product.annuity_surrender_end_date) : null;
+  const contractEndUrgency = product.annuity_contract_end_date ? getTermUrgency(product.annuity_contract_end_date) : null;
+  const SURRENDER_TONE: Record<string, string> = {
+    overdue: "text-[#707070]",
+    critical: "text-[#8B1A1A] font-semibold",
+    soon: "text-[#8b6a00] font-semibold",
+    later: "text-[#707070]",
+  };
+
+  return (
+    <div
+      className={`flex flex-col gap-1.5 rounded-md border p-3 ${
+        isPending || isPendingApproval
+          ? "border-[#8b6a00] bg-[#FFFBF0]"
+          : isConverted
+            ? "border-[#D9CFBA] bg-[#F5F0E8] opacity-80"
+            : "border-[#D9CFBA]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-[#1C1C1C]">{product.product_name}</p>
+          <p className="text-xs text-[#707070]">
+            {[product.product_type, product.carrier].filter(Boolean).join(" · ") || "—"}
+          </p>
+        </div>
+        {!confirmingDelete && (
+          <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-3">
+            <a
+              href={`/clients/${clientId}/illustrations/${product.id}`}
+              className="text-xs text-[#1C1C1C] underline hover:text-[#2E2E2E]"
+            >
+              Illustration Summary
+            </a>
+            <button type="button" onClick={() => setEditing(true)} className="text-xs text-[#666] underline hover:text-[#1C1C1C]">
+              Edit
+            </button>
+            {/* Deliberately styled the same neutral gray as Edit/Undo, not the gold accent used
+                elsewhere for conversion status — Karina, 9/4: this can be clicked any time (a
+                client can ask to convert well ahead of a deadline), but it shouldn't visually
+                compete with Edit/Delete on every convertible product's card regardless of how
+                far off any deadline is. */}
+            {product.is_convertible && !isPending && !isConverted && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(markConversionPending)}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Mark Conversion Pending
+              </button>
+            )}
+            {isPending && (
+              <>
+                <button
+                  type="button"
+                  disabled={workflowBusy}
+                  onClick={() => runWorkflowAction(markConverted)}
+                  className="text-xs text-[#00693C] underline hover:text-[#004d2b] disabled:opacity-60"
+                >
+                  Mark Converted
+                </button>
+                <button
+                  type="button"
+                  disabled={workflowBusy}
+                  onClick={() => runWorkflowAction(undoConversionPending)}
+                  className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+                >
+                  Undo
+                </button>
+              </>
+            )}
+            {/* Karina, 9/12: a product entered while still awaiting carrier approval should get a
+                visible 3-day check-in reminder — this is the manual trigger for an existing
+                product (addProduct's own "Awaiting carrier approval" checkbox covers the moment
+                it's first added). Hidden once a policy number is on file — that's already-issued,
+                not pending. */}
+            {!isPendingApproval && !isConverted && !product.policy_number && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={handleMarkPendingApproval}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Mark Pending Approval
+              </button>
+            )}
+            {isPendingApproval && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(undoPendingApproval)}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Undo
+              </button>
+            )}
+            {isConverted && (
+              <button
+                type="button"
+                disabled={workflowBusy}
+                onClick={() => runWorkflowAction(undoConverted)}
+                className="text-xs text-[#707070] underline hover:text-[#1C1C1C] disabled:opacity-60"
+              >
+                Undo
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {product.is_quote && (
+          <span className="self-start rounded-full bg-[#FFF6E5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b6a00]">
+            Quote — not yet issued
+          </span>
+        )}
+        {isPending && (
+          <span className="self-start rounded-full bg-[#8b6a00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Conversion Pending
+          </span>
+        )}
+        {isPendingApproval && (
+          <span className="self-start rounded-full bg-[#8b6a00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Pending Approval
+          </span>
+        )}
+        {isConverted && (
+          <span className="self-start rounded-full bg-[#707070] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Converted{" "}
+            {new Date(product.converted_at!).toLocaleDateString(undefined, { dateStyle: "medium" })}
+          </span>
+        )}
+        {!isPending && !isConverted && status && (
+          <span
+            className={`self-start rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}
+          >
+            {status.label}
+          </span>
+        )}
+        {owner && (
+          <span className="self-start rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#555]">
+            Owned by {owner.full_name}
+          </span>
+        )}
+      </div>
+
+      {product.policy_number && (
+        <p className="group/policy flex items-center gap-1.5 text-xs text-[#707070]">
+          Policy # {product.policy_number}
+          <CopyButton value={product.policy_number} />
+        </p>
+      )}
+
+      {(product.issue_date || displayExpiration) && (
+        <p className="text-xs text-[#707070]">
+          {product.issue_date && `Issued ${formatDateOnly(product.issue_date)}`}
+          {product.issue_date && displayExpiration && " · "}
+          {displayExpiration && `Expires ${formatDateOnly(displayExpiration)}`}
+        </p>
+      )}
+
+      {isPending && product.conversion_pending_at && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Conversion pending since{" "}
+          {new Date(product.conversion_pending_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — check in
+          with the client until the new policy is issued.
+        </p>
+      )}
+
+      {isPendingApproval && product.pending_approval_at && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Pending approval since{" "}
+          {new Date(product.pending_approval_at).toLocaleDateString(undefined, { dateStyle: "medium" })} — a check-in
+          reminder has been added to Reminders.
+        </p>
+      )}
+
+      {product.no_exam_declined_at && (
+        <p className="text-xs text-[#8b6a00]">
+          No-exam window declined by client on {formatDateOnly(product.no_exam_declined_at)}
+          {product.final_conversion_deadline &&
+            ` — exam required to convert until ${formatDateOnly(product.final_conversion_deadline)}`}
+        </p>
+      )}
+
+      {/* Karina, 9/8: "the profile should record that on this date they said they wanna keep
+          coverage as is" (and the same for declining) — this was already being recorded
+          (term_contacted_at + outreach_outcome, set together via markOutreachOutcome), just never
+          shown anywhere outside the Outreach page. This is that record, on the product itself. A
+          row can still be marked touched-base with no outcome (from before that feature existed),
+          hence the fallback line. */}
+      {product.term_contacted_at && (
+        <p className="text-xs text-[#707070]">
+          {product.outreach_outcome
+            ? `Outreach: ${OUTREACH_OUTCOME_LABELS[product.outreach_outcome as OutreachOutcome]} — `
+            : "Touched base "}
+          {new Date(product.term_contacted_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+        </p>
+      )}
+
+      {product.conversion_notes && <p className="text-xs text-[#666]">{product.conversion_notes}</p>}
+
+      {product.riders && product.riders.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {product.riders.map((rider) => (
+            <span key={rider} className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] text-[#666]">
+              {rider}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {(product.face_amount || product.premium) && (
+        <p className="text-xs text-[#707070]">
+          {!isAnnuity && product.face_amount != null && `Face: $${product.face_amount.toLocaleString()}`}
+          {!isAnnuity && product.face_amount != null && product.premium != null && " · "}
+          {product.premium != null && `${isAnnuity ? "Initial premium" : "Premium"}: $${product.premium.toLocaleString()}`}
+        </p>
+      )}
+
+      {isAnnuity &&
+        (product.contract_value != null ||
+          product.annuity_contribution_amount != null ||
+          product.annuity_surrender_end_date ||
+          product.annuity_contract_end_date) && (
+        <div className="flex flex-col gap-0.5 text-xs text-[#707070]">
+          {product.contract_value != null && <p>Contract value: ${product.contract_value.toLocaleString()}</p>}
+          {product.annuity_contribution_amount != null && (
+            <p>
+              Ongoing contribution: ${product.annuity_contribution_amount.toLocaleString()}
+              {product.annuity_contribution_frequency &&
+                ` (${CONTRIBUTION_FREQUENCY_LABELS[product.annuity_contribution_frequency] ?? product.annuity_contribution_frequency})`}
+            </p>
+          )}
+          {product.annuity_surrender_end_date && (
+            <p className={surrenderUrgency ? SURRENDER_TONE[surrenderUrgency] : undefined}>
+              Surrender charge period ends {formatDateOnly(product.annuity_surrender_end_date)}
+            </p>
+          )}
+          {product.annuity_contract_end_date && (
+            <p className={contractEndUrgency ? SURRENDER_TONE[contractEndUrgency] : undefined}>
+              Contract ends {formatDateOnly(product.annuity_contract_end_date)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isAnnuity && product.minimum_premium != null && (
+        <p className="text-xs font-semibold text-[#8b6a00]">
+          Minimum to avoid lapse: ${product.minimum_premium.toLocaleString()}/mo
+        </p>
+      )}
+
+      {product.notes && <p className="whitespace-pre-wrap text-xs text-[#666]">{product.notes}</p>}
+
+      {confirmingDelete && (
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-xs text-[#8B1A1A]">Delete this product?</span>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={handleDelete}
+            className="rounded-md bg-[#8B1A1A] px-2 py-1 text-xs font-semibold text-white hover:bg-[#6b1414] disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Yes, delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(false)}
+            className="rounded-md border border-[#D9CFBA] px-2 py-1 text-xs text-[#2E2E2E] hover:bg-[#EDE8DF]"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
+    </div>
+  );
+}

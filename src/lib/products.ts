@@ -1,0 +1,255 @@
+// Computes the at-a-glance conversion/expiration status for a client's existing product —
+// e.g. a term policy that's convertible to a permanent product with no medical exam only
+// within a set window, and requires one after that (but before the policy expires).
+//
+// 9/3: extended for the "final conversion deadline" + "no-exam window declined" fields Karina
+// asked for — after the no-exam window closes, conversion is often still possible up to a later,
+// absolute cutoff (her example: "5 years no exam and convert until age 75"), but now requires a
+// medical exam. And separately, an advisor can record that the no-exam window was specifically
+// missed/declined (no_exam_declined_at) rather than just letting the date quietly pass.
+//
+// 9/4: extended again for term_end_date — the is_convertible checkbox now covers both cases: a
+// term policy that converts, and one that doesn't, and either way it has exactly one real "term
+// expiration date." Also added getNextTermMilestone/getTermUrgency, which power the new "Term"
+// outreach view on the Clients page — a proactive "shop new coverage before this ends" queue,
+// separate from this file's reactive conversion-status badge.
+//
+// 9/4 (later same day): Karina flagged that the generic "Expiration date" field (present on
+// every product) and the term-specific "Term end date" field were asking the same question
+// twice for a term policy. Resolved by treating term_end_date as the one source of truth going
+// forward for term products, but falling back to expiration_date wherever term_end_date hasn't
+// been filled in yet — so any term policy that already had an expiration date on file before
+// this feature existed lights up immediately, with nothing to re-enter.
+
+import { parseDateOnly } from "./dates";
+
+export interface ProductStatus {
+  label: string;
+  tone: "good" | "warn" | "bad";
+}
+
+// All of expirationDate/conversionDeadline/finalConversionDeadline/termEndDate/etc. below are
+// plain `date` columns — parsed via parseDateOnly (see lib/dates.ts) rather than `new Date(...)`
+// directly, since this file is imported from both server and client components and the latter
+// would otherwise display/compute one day early for any advisor west of UTC.
+function fmtDate(dateStr: string): string {
+  return parseDateOnly(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = parseDateOnly(dateStr);
+  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function getProductStatus(
+  expirationDate: string | null,
+  conversionDeadline: string | null,
+  finalConversionDeadline?: string | null,
+  noExamDeclinedAt?: string | null,
+  termEndDate?: string | null
+): ProductStatus | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (expirationDate) {
+    const exp = parseDateOnly(expirationDate);
+    if (today > exp) return { label: "Expired", tone: "bad" };
+  }
+
+  // No-exam window was specifically declined/missed (advisor-recorded), rather than just having
+  // quietly passed — still show whether an exam-required conversion is still possible.
+  if (noExamDeclinedAt) {
+    if (finalConversionDeadline) {
+      const final = parseDateOnly(finalConversionDeadline);
+      if (today <= final) {
+        return { label: `No-exam window declined — exam required to convert until ${fmtDate(finalConversionDeadline)}`, tone: "warn" };
+      }
+      return { label: "Conversion window closed", tone: "bad" };
+    }
+    return { label: "No-exam conversion declined", tone: "warn" };
+  }
+
+  if (conversionDeadline) {
+    const deadline = parseDateOnly(conversionDeadline);
+    if (today <= deadline) {
+      return { label: `Convertible, no exam until ${fmtDate(conversionDeadline)}`, tone: "good" };
+    }
+    // No-exam window has passed (but wasn't explicitly declared declined) — exam-required
+    // conversion may still be open up to the final deadline, if one was recorded.
+    if (finalConversionDeadline) {
+      const final = parseDateOnly(finalConversionDeadline);
+      if (today <= final) {
+        return { label: `Convertible — exam now required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
+      }
+      return { label: "Conversion window closed", tone: "bad" };
+    }
+    return { label: "Convertible — exam now required", tone: "warn" };
+  }
+
+  if (finalConversionDeadline) {
+    const final = parseDateOnly(finalConversionDeadline);
+    if (today <= final) {
+      return { label: `Convertible — exam required (until ${fmtDate(finalConversionDeadline)})`, tone: "warn" };
+    }
+    return { label: "Conversion window closed", tone: "bad" };
+  }
+
+  // Straight, non-convertible term — the only date on file is when the term itself ends.
+  if (termEndDate) {
+    const days = daysUntil(termEndDate);
+    if (days < 0) return { label: "Term ended", tone: "bad" };
+    if (days <= 30) return { label: `Term ends ${fmtDate(termEndDate)}`, tone: "bad" };
+    if (days <= 60) return { label: `Term ends ${fmtDate(termEndDate)}`, tone: "warn" };
+    return { label: `Term ends ${fmtDate(termEndDate)}`, tone: "good" };
+  }
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Outreach — powers the "Outreach" view on the Clients page and the "Time-Sensitive" banner on
+// the home page (Karina, 9/4: "it needs to just go to the term tab in order of what's expiring
+// first so the adviser can go in and start looking at them"). Originally term-only, gated behind
+// the is_convertible ("this is a term policy") checkbox — broadened 9/7 per Karina: "this also
+// shouldn't be just term policies. It should be for anything that has an end date that an adviser
+// would need to touch base with the client for." So this no longer depends on is_convertible at
+// all — any product with a relevant date on file (term or annuity) is a candidate; a product with
+// none of these fields set (permanent life, a quote with nothing filled in yet, etc.) simply
+// yields no milestone and drops out of the queue on its own.
+// ─────────────────────────────────────────────────────────────
+
+export interface TermMilestone {
+  date: string;
+  label: string;
+}
+
+export interface OutreachMilestoneSource {
+  conversion_deadline: string | null;
+  final_conversion_deadline: string | null;
+  term_end_date: string | null;
+  // Fallback for term_end_date — see the 9/4 note above the ProductStatus section. Only used
+  // when term_end_date itself is empty.
+  expiration_date?: string | null;
+  // Annuity-specific dates (annuity_contract_end_date added 9/7 alongside this broadening) —
+  // never populated on the same row as the term fields above, since a product is either an
+  // annuity or it isn't.
+  annuity_surrender_end_date?: string | null;
+  annuity_contract_end_date?: string | null;
+}
+
+// Prefer the earliest of the tracked dates that's still upcoming (today or later). If everything
+// tracked has already passed, fall back to the most recently passed one — an overdue milestone is
+// exactly why the advisor still needs to see it, not a reason for it to quietly disappear.
+export function getNextOutreachMilestone(product: OutreachMilestoneSource): TermMilestone | null {
+  const candidates: TermMilestone[] = [];
+  if (product.conversion_deadline) candidates.push({ date: product.conversion_deadline, label: "No-exam conversion window" });
+  if (product.final_conversion_deadline) candidates.push({ date: product.final_conversion_deadline, label: "Final conversion deadline" });
+  const termExpiration = product.term_end_date ?? product.expiration_date ?? null;
+  if (termExpiration) candidates.push({ date: termExpiration, label: "Term expiration date" });
+  if (product.annuity_surrender_end_date) candidates.push({ date: product.annuity_surrender_end_date, label: "Surrender charge period ends" });
+  if (product.annuity_contract_end_date) candidates.push({ date: product.annuity_contract_end_date, label: "Annuity contract end date" });
+  if (candidates.length === 0) return null;
+
+  const upcoming = candidates.filter((c) => daysUntil(c.date) >= 0).sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime());
+  if (upcoming.length > 0) return upcoming[0];
+
+  return candidates.sort((a, b) => parseDateOnly(b.date).getTime() - parseDateOnly(a.date).getTime())[0];
+}
+
+export type TermUrgency = "overdue" | "critical" | "soon" | "later";
+
+// overdue: already past. critical: 30 days or less. soon: 90 days or less (bumped up from 60,
+// Karina, 9/8: "lets bump the time up to 90 days instead of 60"). later: everything else — dropped
+// entirely from the Outreach queue and the home page's Time-Sensitive banner, since Karina, same
+// message: "outreach need should only be the ones that are time sensitive," not every unconverted
+// product regardless of how far off its date is. Original cutoffs, Karina 9/4: "the ones that are
+// sixty and then thirty days out should have a red tab or something so it's like, this is high
+// level, check this."
+export function getTermUrgency(dateIso: string): TermUrgency {
+  const days = daysUntil(dateIso);
+  if (days < 0) return "overdue";
+  if (days <= 30) return "critical";
+  if (days <= 90) return "soon";
+  return "later";
+}
+
+export function termUrgencyLabel(dateIso: string, urgency: TermUrgency): string {
+  const days = daysUntil(dateIso);
+  if (urgency === "overdue") return `${Math.abs(days)}d overdue`;
+  if (days === 0) return "today";
+  return `${days}d`;
+}
+
+// What actually happened on an outreach call (added 9/8) — see markOutreachOutcome in
+// clients/actions.ts, which is where this is set. Lives here rather than in that "use server"
+// file since a plain exported constant (not an async function) isn't allowed there — Next.js
+// only allows a "use server" module to export async functions.
+//
+// 9/8, later same day: "renewing" and "keeping as-is" started out as one combined option, but
+// Karina wants them handled differently — "renewing should move to lead. keeping as is should
+// just go back to issued and be done until the next date" — so they're now two separate outcomes.
+// See markOutreachOutcome for what each one actually does.
+export type OutreachOutcome = "shopping" | "renewing" | "keeping" | "declining" | "unreachable";
+
+export const OUTREACH_OUTCOME_LABELS: Record<OutreachOutcome, string> = {
+  shopping: "Shopping for new coverage",
+  renewing: "Renewing — new policy",
+  keeping: "Keeping current coverage as-is",
+  declining: "Declining / letting it lapse",
+  unreachable: "Couldn't reach them yet",
+};
+
+// ─────────────────────────────────────────────────────────────
+// Outreach category "graduation" (added 9/8, later same day) — Karina, looking at the resolved
+// outcomes piling up: "is that going to filter out so eventually it's not a thousand different
+// things in there?" Each resolved outcome now has a rule for when it stops showing up on the
+// Outreach page, WITHOUT ever touching the underlying record — term_contacted_at and
+// outreach_outcome on the product stay exactly as recorded forever; this only governs what still
+// shows up in the Outreach categories today. Both functions are computed fresh from live data
+// every time the Outreach page renders (never written back to the database), specifically so this
+// stays correct no matter where or how a client's stage got changed elsewhere in the app — the
+// client's own profile, an admin reassigning a book, anywhere — with nothing to keep in sync.
+//
+// Her walkthrough, outcome by outcome:
+//  - "Couldn't reach them yet" — "that's fine, that's not good to stay as is." No change; the
+//    existing 3-day follow-up reminder is already what keeps this one moving.
+//  - "Shopping for new coverage" — "should stay there until the pipeline gets marked as applied,
+//    then it should go into renewing new policy." See effectiveOutreachOutcome below.
+//  - "Renewing — new policy" — "once it's in the issued state, it should move out of that
+//    category." See isGraduatedFromOutreach below.
+//  - "Keeping as-is" / "Declining" — "after maybe fourteen or thirty days, it moves out of that
+//    block... and just goes back into where it's supposed to be in the pipeline." Asked her for a
+//    number; she asked what I'd recommend, so this defaults to 14 days — long enough to still see
+//    it if you need to double-check what was recorded, short enough that the page doesn't stay
+//    cluttered with old resolved items. A single constant, easy to change if it feels wrong.
+export const OUTREACH_GRACE_DAYS = 14;
+
+// "Shopping for new coverage" advances to "Renewing — new policy" once the client's own pipeline
+// stage shows real progress on the new business (Applied, or further). Call this BEFORE
+// isGraduatedFromOutreach below, and use its result (not the raw stored outcome) for which
+// category card/section a product actually appears under.
+export function effectiveOutreachOutcome(outcome: OutreachOutcome, clientStage: string | null): OutreachOutcome {
+  if (outcome === "shopping" && (clientStage === "applied" || clientStage === "issued" || clientStage === "pending")) {
+    return "renewing";
+  }
+  return outcome;
+}
+
+// Whether a touched-base product should stop appearing in the Outreach categories entirely.
+// `outcome` here is the EFFECTIVE outcome (the result of effectiveOutreachOutcome above), not
+// necessarily what's stored in the database.
+export function isGraduatedFromOutreach(
+  outcome: OutreachOutcome,
+  contactedAt: string,
+  clientStage: string | null,
+  now: Date = new Date()
+): boolean {
+  if (outcome === "renewing") return clientStage === "issued";
+  if (outcome === "keeping" || outcome === "declining") {
+    const daysSince = (now.getTime() - new Date(contactedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince > OUTREACH_GRACE_DAYS;
+  }
+  return false;
+}
