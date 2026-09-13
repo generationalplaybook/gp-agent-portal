@@ -4020,6 +4020,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   (Cmd/Ctrl+Shift+R) on the home page and Reminders tab will tell us whether it's this same class
   of caching issue or something new; let me know what you see either way.
 
+- **9/13, illustration PDF header restored to full branding + client contact info, BUILT.**
+  Karina pushed back on the plain "product name / client name on one line" header from earlier
+  the same day: "why's it just so simple like that... it needs to match the other illustrations
+  that we send out to clients... there was one you made a while ago, and it was actually very
+  good and clean." She sent a screenshot of an older branded design and asked to preview mockups
+  before anything got rebuilt for real ("dont build yet. i need to see it first") — went through
+  several rounds of real jsPDF-rendered previews (dark block vs. light, title size, with/without a
+  thin rule, product/carrier line in the card or not) before landing on the approved version:
+    - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline restored at the top
+      of the document (this had only lived in the per-page footer since 9/11 — it's now in both
+      places; the footer keeps the site URL, the header doesn't repeat it).
+    - Product name directly under the tagline, no rule between them ("that lighter line should be
+      removed... final expense should go right underneath policy illustration summary"), then one
+      heavier rule ("that black line is good").
+    - A new client info card below the rule: name + phone + email, so an advisor has the client's
+      contact info at a glance without leaving the PDF. Deliberately does NOT repeat the
+      product/carrier line — Karina: "it doesn't need to say the product name again... the
+      products aren't listed underneath" — since the product name is already directly above, and
+      for a multi-option Final Expense scenario this same card sits above 2-3 different products.
+  Phone/email weren't previously fetched anywhere near either PDF generator, so this also added
+  `phone, email` to both client Supabase queries (`clients/[id]/scenarios/[scenarioId]/page.tsx`
+  and `clients/[id]/illustrations/[productId]/page.tsx`) and threaded `clientPhone`/`clientEmail`
+  as new optional props through `ScenarioForm.tsx` and `IllustrationForm.tsx` into both
+  `generateScenarioIllustrationPDF` and `generateIllustrationPDF` calls. Applied identically to
+  both PDF generators for consistency. Verified against the real production code path (not just a
+  standalone mockup) with a rendered Final Expense multi-option PDF. Lint and `tsc --noEmit` both
+  clean.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,

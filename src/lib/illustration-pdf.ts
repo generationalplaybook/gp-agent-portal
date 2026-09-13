@@ -40,6 +40,13 @@ export interface AdvisorInfo {
 
 export interface IllustrationPdfInput {
   clientName: string;
+  // Added 9/13 (second pass) per Karina, for the restored branded header's client info card: "I
+  // want it to have the client information at the top... the client's name and maybe like phone
+  // number and email so that it's easily accessible to the advisor if they're looking at this."
+  // Optional so every existing caller that hasn't been updated to pass these yet still compiles —
+  // the header just shows the placeholder "—" glyph for whichever one is missing.
+  clientPhone?: string | null;
+  clientEmail?: string | null;
   productName: string;
   carrier: string | null;
   productType: string | null;
@@ -207,36 +214,54 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     }
   }
 
-  // Header — reworked 9/13 per Karina, after seeing a Final Expense scenario with 3 budget
-  // options across different carriers: baking the carrier into this title (a 9/13-earlier-today
-  // change) read as wrong once multiple carriers were being compared on the same page — "it
-  // needs to just show final expense whole life, and then the three different products." Title
-  // is now always the plain product name/type, unmodified, full stop; per-carrier detail lives on
-  // each option's own row below (see the final_expense block further down) where it's actually
-  // scoped to the right product. Also dropped the small productType/carrier line that used to sit
-  // under the client name on the right — Karina: "that text doesn't need to be there" — the
-  // client name now stands alone.
-  //
-  // (Earlier 9/11 history, still true: the wordmark and "Policy Illustration Summary" subtitle
-  // that used to sit top-left live in the per-page footer instead, per Karina's 9/11 request to
-  // move them to the bottom center of each page.)
-  //
-  // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
-  // with the client name opposite it, both inline and right-aligned.)
+  // Header — rebuilt 9/13 (second pass) per Karina, after the plain "product name / client name
+  // on one line" header from earlier that same day read as too bare once she compared it against
+  // the other illustrations advisors already see: "why's it just so simple like that... it needs
+  // to match the other illustrations that we send out to clients." She sent a screenshot of an
+  // older branded header design and asked to see mockups before any of it got rebuilt for real —
+  // several rounds of previews later, this is the version she approved:
+  //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
+  //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
+  //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
+  //   - Product name directly underneath, no rule between it and the tagline — Karina: "that
+  //     lighter line should be removed... final expense should go right underneath policy
+  //     illustration summary" — then the one heavier rule she said to keep ("that black line is
+  //     good"). Client name is no longer inline here; it moved into the info card below.
+  //   - A client info card with name + phone + email, so an advisor has the client's contact info
+  //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
+  //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
+  //     product name again... the products aren't listed underneath" — the product name is
+  //     already directly above, and for a multi-option Final Expense scenario this same card sits
+  //     above 2-3 different products, so a single carrier line here would be misleading anyway.
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 26);
+  doc.text("GENERATIONAL PLAYBOOK", M, 30);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(GRAY);
+  doc.text("Policy Illustration Summary", M, 43);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.clientName, W - M, 26, { align: "right" });
+  doc.text(input.productName, M, 62);
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
-  doc.line(M, 40, W - M, 40);
-  y = 60;
+  doc.line(M, 74, W - M, 74);
+
+  setFill(NEUTRAL_FILL);
+  doc.roundedRect(M, 92, W - 2 * M, 50, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, M + 16, 116);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(CHARCOAL);
+  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M + 16, 132);
+  y = 160;
 
   const data = input.data;
 
@@ -655,36 +680,54 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
   }
 
-  // Header — reworked 9/13 per Karina, after seeing a Final Expense scenario with 3 budget
-  // options across different carriers: baking the carrier into this title (a 9/13-earlier-today
-  // change) read as wrong once multiple carriers were being compared on the same page — "it
-  // needs to just show final expense whole life, and then the three different products." Title
-  // is now always the plain product name/type, unmodified, full stop; per-carrier detail lives on
-  // each option's own row below (see the final_expense block further down) where it's actually
-  // scoped to the right product. Also dropped the small productType/carrier line that used to sit
-  // under the client name on the right — Karina: "that text doesn't need to be there" — the
-  // client name now stands alone.
-  //
-  // (Earlier 9/11 history, still true: the wordmark and "Policy Illustration Summary" subtitle
-  // that used to sit top-left live in the per-page footer instead, per Karina's 9/11 request to
-  // move them to the bottom center of each page.)
-  //
-  // (Earlier 9/7 history, still true of what remains: product name at 13pt so it doesn't compete
-  // with the client name opposite it, both inline and right-aligned.)
+  // Header — rebuilt 9/13 (second pass) per Karina, after the plain "product name / client name
+  // on one line" header from earlier that same day read as too bare once she compared it against
+  // the other illustrations advisors already see: "why's it just so simple like that... it needs
+  // to match the other illustrations that we send out to clients." She sent a screenshot of an
+  // older branded header design and asked to see mockups before any of it got rebuilt for real —
+  // several rounds of previews later, this is the version she approved:
+  //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
+  //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
+  //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
+  //   - Product name directly underneath, no rule between it and the tagline — Karina: "that
+  //     lighter line should be removed... final expense should go right underneath policy
+  //     illustration summary" — then the one heavier rule she said to keep ("that black line is
+  //     good"). Client name is no longer inline here; it moved into the info card below.
+  //   - A client info card with name + phone + email, so an advisor has the client's contact info
+  //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
+  //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
+  //     product name again... the products aren't listed underneath" — the product name is
+  //     already directly above, and for a multi-option Final Expense scenario this same card sits
+  //     above 2-3 different products, so a single carrier line here would be misleading anyway.
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 26);
+  doc.text("GENERATIONAL PLAYBOOK", M, 30);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(GRAY);
+  doc.text("Policy Illustration Summary", M, 43);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.clientName, W - M, 26, { align: "right" });
+  doc.text(input.productName, M, 62);
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
-  doc.line(M, 40, W - M, 40);
-  y = 60;
+  doc.line(M, 74, W - M, 74);
+
+  setFill(NEUTRAL_FILL);
+  doc.roundedRect(M, 92, W - 2 * M, 50, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, M + 16, 116);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setText(CHARCOAL);
+  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M + 16, 132);
+  y = 160;
 
   const data = input.data;
 

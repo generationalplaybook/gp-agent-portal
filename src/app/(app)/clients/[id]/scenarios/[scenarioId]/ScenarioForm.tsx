@@ -468,11 +468,17 @@ function FinalExpenseOptionsEditor({
 export default function ScenarioForm({
   clientId,
   clientName,
+  clientPhone,
+  clientEmail,
   scenario,
   advisor,
 }: {
   clientId: string;
   clientName: string;
+  // Added 9/13 (second pass) so the PDF header's client info card can show phone/email — see
+  // illustration-pdf.ts's header comment for the full history.
+  clientPhone?: string | null;
+  clientEmail?: string | null;
   scenario: Scenario;
   advisor?: AdvisorInfo;
 }) {
@@ -546,6 +552,8 @@ export default function ScenarioForm({
     generateScenarioIllustrationPDF(
       {
         clientName,
+        clientPhone,
+        clientEmail,
         productName,
         carrier: carrier.trim() || null,
         productType: scenario.product_type,
@@ -562,6 +570,8 @@ export default function ScenarioForm({
     generateScenarioIllustrationPDF(
       {
         clientName,
+        clientPhone,
+        clientEmail,
         productName,
         carrier: carrier.trim() || null,
         productType: scenario.product_type,

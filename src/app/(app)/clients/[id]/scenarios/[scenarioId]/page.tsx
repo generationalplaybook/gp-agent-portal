@@ -18,7 +18,10 @@ export default async function ScenarioPage({
       data: { user },
     },
   ] = await Promise.all([
-    supabase.from("clients").select("id, full_name").eq("id", id).single(),
+    // phone, email added 9/13 (second pass) for the illustration PDF header's client info card —
+    // Karina wanted the client's contact info visible at the top of the PDF for quick advisor
+    // reference.
+    supabase.from("clients").select("id, full_name, phone, email").eq("id", id).single(),
     supabase
       .from("illustration_scenarios")
       .select("id, product_name, product_type, carrier, data, notes, converted_product_id, chosen_at")
@@ -54,6 +57,8 @@ export default async function ScenarioPage({
       <ScenarioForm
         clientId={client.id}
         clientName={client.full_name}
+        clientPhone={client.phone}
+        clientEmail={client.email}
         scenario={{ ...scenario, data: scenario.data as IllustrationData }}
         advisor={advisor}
       />

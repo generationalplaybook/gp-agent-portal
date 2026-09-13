@@ -18,7 +18,10 @@ export default async function IllustrationPage({
       data: { user },
     },
   ] = await Promise.all([
-    supabase.from("clients").select("id, full_name").eq("id", id).single(),
+    // phone, email added 9/13 (second pass) for the illustration PDF header's client info card —
+    // Karina wanted the client's contact info visible at the top of the PDF for quick advisor
+    // reference.
+    supabase.from("clients").select("id, full_name, phone, email").eq("id", id).single(),
     supabase.from("client_products").select("id, product_name, product_type, carrier").eq("id", productId).single(),
     supabase.from("product_illustrations").select("data").eq("product_id", productId).maybeSingle(),
     supabase.auth.getUser(),
@@ -50,6 +53,8 @@ export default async function IllustrationPage({
       <IllustrationForm
         clientId={client.id}
         clientName={client.full_name}
+        clientPhone={client.phone}
+        clientEmail={client.email}
         product={product}
         initialData={(illustration?.data as never) ?? null}
         advisor={advisor}
