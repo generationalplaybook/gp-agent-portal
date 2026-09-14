@@ -45,9 +45,23 @@ export default async function HomePage() {
       .from("client_meetings")
       .select("id, meeting_at, client_id, clients(id, full_name)")
       .order("meeting_at", { ascending: true }),
+    // 9/14 — the bare `clients(id, full_name)` embed below used to work, but broke silently once
+    // clients.pending_checkin_reminder_id (a reminders(id) FK, added later — see schema.sql
+    // section on Pending check-in reminders) gave PostgREST a SECOND relationship between
+    // `reminders` and `clients` (the original `reminders.client_id -> clients.id`, plus this new
+    // one in the opposite direction). With two paths connecting the same two tables, PostgREST
+    // can't infer which one an unqualified `clients(...)` embed means, and errors out — which
+    // silently emptied this whole query (`reminders` came back null, and `(reminders ?? [])`
+    // swallowed it into an empty list) rather than throwing anywhere visible. That's what Karina
+    // was seeing: the automatic Pending check-in reminder existed and showed fine on the client's
+    // own profile (that query has no embed at all, so it never hit this), but both the Reminders
+    // Due card here and the Reminders tab (same embed) showed nothing, for every reminder, not
+    // just that one. Fixed the same way `client_products`'s queries elsewhere on this page already
+    // had to (see `clients!client_id(...)` below) — `!client_id`/`!recruit_id` tells PostgREST
+    // exactly which FK to use instead of trying to infer it.
     supabase
       .from("reminders")
-      .select("id, remind_at, message, sent_at, client_id, recruit_id, clients(id, full_name), recruits(id, full_name)")
+      .select("id, remind_at, message, sent_at, client_id, recruit_id, clients!client_id(id, full_name), recruits!recruit_id(id, full_name)")
       .order("remind_at", { ascending: true }),
     // Time-sensitive outreach (Karina, 9/4): "it should also show up on the dashboard... so it
     // doesn't get missed." Broadened 9/7 to cover any product with a relevant end date (term or

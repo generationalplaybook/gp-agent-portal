@@ -8,9 +8,21 @@ export default async function RemindersPage() {
 
   // A reminder now belongs to either a client or (since Team/Recruits) a recruit — never both —
   // so both possible parents are joined here; only one will actually be non-null per row.
+  //
+  // `!client_id` / `!recruit_id` added 9/14 — Karina: "the automatic reminder is being generated
+  // when a client goes into pending status... but when I go into the reminders tab, there's also
+  // nothing there pending." Root cause: once `clients.pending_checkin_reminder_id` (a reminders(id)
+  // FK) existed, PostgREST had TWO relationships between `reminders` and `clients` — the original
+  // `reminders.client_id -> clients.id`, plus that new one running the other way — so a bare,
+  // unqualified `clients(...)` embed became ambiguous and errored, which silently emptied this
+  // entire query (every reminder, not just the Pending one) rather than failing loudly anywhere.
+  // The identical bug, and identical fix, applies to the home page's Reminders Due card — see the
+  // comment there. `!client_id`/`!recruit_id` tells PostgREST exactly which FK to join through,
+  // the same disambiguation this app's `client_products` queries already needed for the same
+  // reason (it has two FKs to `clients`: `client_id` and `owner_client_id`).
   const { data: reminders } = await supabase
     .from("reminders")
-    .select("id, remind_at, message, sent_at, client_id, recruit_id, clients(id, full_name), recruits(id, full_name)")
+    .select("id, remind_at, message, sent_at, client_id, recruit_id, clients!client_id(id, full_name), recruits!recruit_id(id, full_name)")
     .order("remind_at", { ascending: true });
 
   const pending = (reminders ?? []).filter((r) => !r.sent_at);

@@ -4073,6 +4073,47 @@ Things Karina has asked to defer to a future build, so they don't get lost.
        against the real production code path with a rendered Final Expense multi-option PDF; lint,
        `tsc --noEmit`, and a full `npm run build` all clean.
 
+- **9/14, "Pending reminder shows on the client's profile but not the home page or Reminders
+  tab" — the REAL root cause found (finally), BUILT.** This is the third round on this exact
+  complaint. Round one (9/13) fixed a real bug in `updateStage`'s reminder-creation guard. Round
+  two (9/13) added missing `revalidatePath("/")` calls across every reminder-mutating action.
+  Both were real fixes, worth keeping, but Karina reported the SAME symptom again on a fresh test
+  (client "August Sneed" — moved to Pending, reminder correctly created and showing on his
+  profile: "Check in: August Sneed is in Pending," dated 3 days out — but the home page's
+  Reminders Due card showed "0 pending / No reminders due" and the Reminders tab showed "No
+  reminders set" — not just missing THIS reminder, missing ALL of them, account-wide). That last
+  detail was the key clue: a stage-transition bug or a stale cache would only affect the ONE
+  reminder in question, not every reminder in the account.
+  Root cause: `clients.pending_checkin_reminder_id` (a foreign key FROM `clients` TO
+  `reminders.id`, added when the automatic Pending check-in reminder feature first shipped) gave
+  PostgREST a SECOND relationship between the `reminders` and `clients` tables — the original,
+  intended one is `reminders.client_id -> clients.id`; this new one runs the opposite direction.
+  Once there are two distinct foreign-key paths connecting the same two tables, an unqualified
+  `clients(...)` embed in a Supabase `.select()` is ambiguous and PostgREST rejects the whole
+  query with an error — which, because this codebase reads query results as `{ data }` without
+  checking `{ error }`, failed completely silently: `reminders` came back `null`/undefined, and
+  `(reminders ?? [])` quietly turned that into an empty list everywhere it's used. The home page
+  (`src/app/(app)/page.tsx`) and the Reminders tab (`src/app/(app)/reminders/page.tsx`) both embed
+  `clients(id, full_name)` this way — so BOTH silently returned zero reminders, every time,
+  regardless of what was actually in the table. The client's own profile page was never affected
+  because its reminders query filters by `client_id` directly and doesn't embed `clients` at all.
+  This exact class of bug already happened once before in this codebase, on `client_products`
+  (which has two FKs to `clients`: `client_id` and `owner_client_id`) — those queries were already
+  written with the `clients!client_id(...)` disambiguation hint that tells PostgREST which FK to
+  use. The reminders queries just never got that treatment, because they predate
+  `pending_checkin_reminder_id` — they were correct when written and broke silently later, from an
+  unrelated change. Fixed by adding the same `!client_id`/`!recruit_id` hints to both queries.
+  Confirmed this diagnosis directly against the live site (Karina linked her computer and I
+  navigated to August Sneed's real profile, the home page, and the Reminders tab, and saw exactly
+  the "shows on profile, empty everywhere else, for every reminder" pattern this root cause
+  predicts) — this is the first round on this complaint verified against live production data
+  rather than a local re-creation, and the fix is a well-established PostgREST pattern, not a
+  guess. Lint, `tsc --noEmit`, and a full `npm run build` all clean.
+  **Once you deploy this:** the existing "Check in: August Sneed is in Pending" reminder should
+  just start showing up on the home page and Reminders tab on its own — nothing needs to be
+  re-created. If it still doesn't after a redeploy and a hard refresh, tell me and we'll dig
+  further, but I'm confident in this one given what the live site showed.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
