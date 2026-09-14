@@ -32,6 +32,29 @@ function withCarrier(name: string, carrier: string | null): string {
   return `${name} (${carrier})`;
 }
 
+// The header's big title used to just be input.productName — added 9/14 per Karina, after she
+// saw the header showing the specific product's name/carrier (e.g. "Final Expense Whole Life —
+// Banner Life," carried over from whatever the advisor typed into that scenario's product name
+// field): "we don't need the product carrier... we just need to show, like, this is a final
+// expense whole life scenario... if it's an IUL, we would say index universal life... we don't
+// need the product name because the product name is going to show in the actual scenarios."
+// So the header title is now the general product TYPE, not the specific named product — the
+// specific product/carrier already shows on each option row below it. PRODUCT_TYPE_OPTIONS
+// (src/lib/types.ts) stores a short code for two of its six values; expand just those two into
+// the fuller phrasing Karina used ("Final Expense" -> "Final Expense Whole Life", "IUL" -> "Index
+// Universal Life"). The rest ("Term Life", "Whole Life", "Annuity", "Other") are already
+// full words, so they pass through unchanged. Falls back to the product name only if a scenario
+// somehow has no product type set at all (shouldn't happen — it's required at creation — but
+// better than a blank header).
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  "Final Expense": "Final Expense Whole Life",
+  IUL: "Index Universal Life",
+};
+function productTypeLabel(input: IllustrationPdfInput): string {
+  if (!input.productType) return input.productName;
+  return PRODUCT_TYPE_LABELS[input.productType] ?? input.productType;
+}
+
 export interface AdvisorInfo {
   name?: string | null;
   phone?: string | null;
@@ -223,10 +246,11 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
   //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
   //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
-  //   - Product name directly underneath, no rule between it and the tagline — Karina: "that
-  //     lighter line should be removed... final expense should go right underneath policy
-  //     illustration summary" — then the one heavier rule she said to keep ("that black line is
-  //     good"). Client name is no longer inline here; it moved into the info card below.
+  //   - Product TYPE (not the specific product/carrier — see productTypeLabel above) directly
+  //     underneath, no rule between it and the tagline — Karina: "that lighter line should be
+  //     removed... final expense should go right underneath policy illustration summary" — then
+  //     the one heavier rule she said to keep ("that black line is good"). Client name is no
+  //     longer inline here; it moved into the info card below.
   //   - A client info card with name + phone + email, so an advisor has the client's contact info
   //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
   //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
@@ -245,7 +269,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 62);
+  doc.text(productTypeLabel(input), M, 62);
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
@@ -623,20 +647,23 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   //
   // 9/11: the wordmark itself joined it here — Karina, after a client meeting, re: the header:
   // "I don't like... the way that the Generation Playbook is in the header. It needs to be at the
-  // bottom center of each page on a PDF." Moved down to y=778/788, just below the disclaimer's
-  // lowest possible line on the last page (baseline 758 plus one wrapped line lands around
-  // 766-768), well inside the 792pt page either way.
+  // bottom center of each page on a PDF." Moved down to y=778/788.
+  //
+  // 9/14: collapsed back to ONE line — Karina, after the wordmark returned to the header (see the
+  // header comment above), on this same footer: "it's touching the bottom of the page too much
+  // where you have the website... remove the website and where that generational playbook is in
+  // dark black... let's just make that generational playbook dot com because we don't need the
+  // name repeated again... remove the website thing from underneath." The wordmark line now
+  // holds the site URL text instead (same bold/dark styling), and the separate lighter URL line
+  // below it is gone — which also fixes the bottom-margin complaint, since that second line was
+  // the one sitting closest to the physical page edge (792pt tall page, was at y=788).
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(OBSIDIAN);
-    doc.text("GENERATIONAL PLAYBOOK", W / 2, 778, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    setText(GRAY);
-    doc.text("GenerationalPlaybook.com", W / 2, 788, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 778, { align: "center" });
   }
 
   if (action === "view") {
@@ -689,10 +716,11 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
   //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
   //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
-  //   - Product name directly underneath, no rule between it and the tagline — Karina: "that
-  //     lighter line should be removed... final expense should go right underneath policy
-  //     illustration summary" — then the one heavier rule she said to keep ("that black line is
-  //     good"). Client name is no longer inline here; it moved into the info card below.
+  //   - Product TYPE (not the specific product/carrier — see productTypeLabel above) directly
+  //     underneath, no rule between it and the tagline — Karina: "that lighter line should be
+  //     removed... final expense should go right underneath policy illustration summary" — then
+  //     the one heavier rule she said to keep ("that black line is good"). Client name is no
+  //     longer inline here; it moved into the info card below.
   //   - A client info card with name + phone + email, so an advisor has the client's contact info
   //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
   //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
@@ -711,7 +739,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   setText(OBSIDIAN);
-  doc.text(input.productName, M, 62);
+  doc.text(productTypeLabel(input), M, 62);
 
   doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
   doc.setLineWidth(1.5);
@@ -1399,19 +1427,16 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     { maxWidth: 612 - 2 * M }
   );
 
-  // Site URL moved out of the header and into a page footer, and the wordmark joined it 9/11 —
-  // see the identical comment in generateIllustrationPDF above.
+  // Site URL moved out of the header and into a page footer, and the wordmark joined it 9/11,
+  // then collapsed back to one line 9/14 — see the identical comment in generateIllustrationPDF
+  // above.
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(OBSIDIAN);
-    doc.text("GENERATIONAL PLAYBOOK", W / 2, 778, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    setText(GRAY);
-    doc.text("GenerationalPlaybook.com", W / 2, 788, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 778, { align: "center" });
   }
 
   if (action === "view") {

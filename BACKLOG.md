@@ -4048,6 +4048,31 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   standalone mockup) with a rendered Final Expense multi-option PDF. Lint and `tsc --noEmit` both
   clean.
 
+- **9/14, illustration PDF header title + footer, two more rounds of polish after seeing it live,
+  BUILT.** Karina saw the rebuilt header on a real Final Expense scenario and flagged two things:
+    1. The header's big title was showing the specific product name with its carrier baked in
+       (e.g. "Final Expense Whole Life — Banner Life," from whatever the advisor typed into that
+       scenario's product name field) — "we don't need the product carrier... we just need to
+       show, like, this is a final expense whole life scenario... if it's an IUL, we would say
+       index universal life... we don't need the product name because the product name is going
+       to show in the actual scenarios." Added a `productTypeLabel()` helper that shows the
+       general product TYPE instead (the same "Term Life / Whole Life / IUL / Final Expense /
+       Annuity / Other" options from `PRODUCT_TYPE_OPTIONS` in `src/lib/types.ts`), expanding just
+       the two abbreviated ones into the fuller phrasing she used ("Final Expense" → "Final
+       Expense Whole Life", "IUL" → "Index Universal Life"); the rest pass through unchanged. The
+       specific product/carrier still shows correctly on each option row below, unaffected.
+    2. The footer was "touching the bottom of the page too much" and repeating the wordmark
+       unnecessarily now that it's also in the header: "remove the website and where that
+       generational playbook is in dark black... let's just make that generational playbook dot
+       com because we don't need the name repeated again... remove the website thing from
+       underneath." Collapsed the footer from two lines (bold "GENERATIONAL PLAYBOOK" + a lighter
+       "GenerationalPlaybook.com" URL line 10pt below it, ending just 4pt from the physical page
+       edge) into one bold line reading "GenerationalPlaybook.com," which both removes the
+       redundant wordmark and fixes the bottom-margin complaint (the line that was closest to the
+       edge is the one that got removed). Applied identically to both PDF generators. Verified
+       against the real production code path with a rendered Final Expense multi-option PDF; lint,
+       `tsc --noEmit`, and a full `npm run build` all clean.
+
 ## Blocked on Karina
 
 - **Phase 6 — carrier PDFs.** Need 6 missing carrier PDF files (Ameritas Life,
