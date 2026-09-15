@@ -4,6 +4,36 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## ⚠ Needs Testing — built, but NOT yet verified by Karina
 
+- **"Forgot password" bounced straight back to login — root cause found and fixed 9/15, needs a
+  real test once deployed.** Karina: "forgot password still doesnt do anything." This was NOT a
+  deploy problem, even though it looked exactly like one — spent a while today (see this same
+  date, "Diagnosed live deploy pipeline...") ruling out GitHub Desktop, Vercel builds, and the
+  domain config one by one, all of which turned out fine. The real bug: `src/proxy.ts` (this app's
+  auth middleware, matches every route) redirects any logged-out visitor straight to `/login`
+  unless their path is in its `PUBLIC_PATHS` allowlist. `/set-password` was on that list;
+  `/forgot-password` never was, even though the page itself (built 9/8) has always worked fine —
+  it just could never be reached by a logged-out user. Added `/forgot-password` to `PUBLIC_PATHS`,
+  same pattern already used for `/login`/`/signup` (public while logged out, but a logged-in user
+  visiting it gets bounced home via the existing `ALLOWED_WHILE_LOGGED_IN` logic, same as
+  login/signup already do). Once this deploys, click "Forgot password?" on `/login` and confirm
+  both the "email me a code" and "reset my password" paths actually load instead of bouncing back.
+
+- **Diagnosed live deploy pipeline end-to-end, 9/15 — confirmed healthy, not the cause of the
+  forgot-password bug above.** Karina got locked out of her own account (forgot her password) same
+  day this was chased down, unblocked with a direct SQL password write in Supabase's SQL Editor
+  (not a code change). While helping her back in, walked the entire deploy chain with her live,
+  step by step, since `/forgot-password` looked completely missing from production: GitHub Desktop
+  push — confirmed happening; Vercel deployments — all "Ready", latest one correctly promoted to
+  Production; domain config — `advisor.generationalplaybook.com` correctly attached to this exact
+  project; the actual repo folder GitHub Desktop tracks (via "Show in Finder") — confirmed same
+  folder she edits, and confirmed `forgot-password`/`set-password` folders present there; GitHub.com
+  itself — confirmed both folders present on `main` at the exact commit (`bd46a31`) Vercel has live
+  in Production right now. Every link in that chain checked out, which is what pointed at the
+  actual bug (the `proxy.ts` allowlist, above) instead. Worth remembering: her deploy process
+  (unzip → drag files into the GitHub Desktop-tracked folder → commit → push → Vercel
+  auto-builds/promotes) works correctly — if something looks "not live" again, check the code path
+  first before assuming deploys are broken.
+
 - **"Resend Invite" for pending advisors — BUILT 9/9, genuinely unverified against a live
   Supabase project, please test with a real pending invite the first chance you get.** Karina:
   "can we have a resend invite option on pending people because they may have not gotten the

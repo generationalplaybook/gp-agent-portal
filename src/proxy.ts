@@ -14,9 +14,17 @@ import { TERMS_VERSION } from "@/lib/terms";
 // with the path missing here, a logged-OUT client opening that link would have been bounced to
 // /login instead, same as any other page. Adding /financial-analysis alongside it here also fixes
 // that pre-existing gap for Medical Report links already sent out.
+//
+// NOTE (found 9/15, Karina: "forgot password still doesn't do anything"): same gap as above, this
+// time for /forgot-password itself. The page (src/app/forgot-password) was built 9/8 and has been
+// sitting there fully working ever since, but it was never added to this list — so every
+// logged-out visitor hit this guard first and got bounced to /login before the page ever loaded.
+// This was the actual bug the whole time; the deploy pipeline (push -> GitHub -> Vercel build ->
+// production) was confirmed working correctly while chasing this down.
 const PUBLIC_PATHS = [
   "/login",
   "/signup",
+  "/forgot-password",
   "/set-password",
   "/auth/confirm",
   "/intake",
