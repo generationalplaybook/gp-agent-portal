@@ -21,21 +21,26 @@ import { createClient } from "@/lib/supabase/server";
 // verifies on page LOAD, not on click — exactly the auto-scanner problem described above, just
 // never fixed for this second template. Same fix, same page, just point the template here too.)
 
+// Karina, 9/15: "this continue screen seems useless" — fair, a bare button with no explanation
+// reads as pointless filler. The click itself can't go away (that's the whole anti-prescanning
+// fix above), but the screen can at least say why it's there instead of just "click to
+// continue" — so each one now names the actual reason: confirming a real person, not an email
+// scanner, is the one doing this.
 const COPY: Record<string, { title: string; body: string; button: string }> = {
   invite: {
     title: "Confirm your invitation",
-    body: "Click below to accept your invitation to GP Advisor Portal.",
+    body: "For your security, we ask you to confirm this yourself before it takes effect — email apps sometimes open links automatically, so a click here confirms it's really you.",
     button: "Accept Invitation",
   },
   recovery: {
     title: "Reset your password",
-    body: "Click below to continue resetting your password.",
+    body: "For your security, we ask you to confirm this yourself before it takes effect — email apps sometimes open links automatically, so a click here confirms it's really you.",
     button: "Continue",
   },
 };
 const DEFAULT_COPY = {
   title: "Confirm this link",
-  body: "Click below to continue.",
+  body: "For your security, we ask you to confirm this yourself before it takes effect — email apps sometimes open links automatically, so a click here confirms it's really you.",
   button: "Continue",
 };
 

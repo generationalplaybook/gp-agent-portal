@@ -23,14 +23,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   edit, not app code (Authentication → Email Templates → "Magic Link or OTP" → Source): replaced
   the link with `{{ .Token }}` shown as plain text. Karina confirmed the code now appears in the
   email and successfully signed in with it.
-  **Still outstanding, not blocking:** the "reset my password" (link-based) path was landing in
-  Gmail spam and having its link stripped by Gmail as a result. Checked custom SMTP (already
-  correctly configured via Resend — not the cause) and DNS records (DKIM/SPF/DMARC all already
-  correctly in place — also not the cause, confirmed by Karina, who had these set up before
-  tonight). Most likely just normal new/low-volume sender scrutiny from Gmail that eases with
-  time and real usage, not something fixable with a single setting. Not urgent since the
-  one-time-code path is a full working alternative — but if Karina retests "reset my password"
-  later and it's still landing in spam, that's expected for now, not a regression.
+  **"Reset my password" spam placement — RESOLVED on retest 9/15, no code change needed.** After
+  the DMARC/SPF/DKIM check above (all already correctly in place beforehand — false alarm, not
+  the cause), Karina retested later the same night and the reset email landed in her Inbox, not
+  spam. Whatever was driving the earlier spam placement (most likely just normal new-sender
+  scrutiny) appears to have settled on its own. Worth a second confirmation next time it's used,
+  but not treated as an open issue.
+
+  **"Reset my password" link itself — second real bug found and fixed 9/15, SAME NIGHT, needs
+  test once deployed.** Once the email actually landed in the inbox, clicking "Reset password"
+  went to `/set-password` showing "This link has expired or is invalid" — even on a link clicked
+  within a minute of the email arriving. This is the exact same problem `/auth/confirm` was
+  already built to solve for invites (see that page's own comment, and `EMAIL_SETUP.md`): Gmail
+  and other mail clients auto-prefetch links in incoming emails to scan them for safety, which
+  burns a one-time Supabase auth token the instant the email arrives — before the real person
+  ever manually clicks it. The "Invite user" template was already fixed to route through
+  `/auth/confirm` (a page requiring an actual button click, which scanners don't do); the "Reset
+  password" template was still pointing straight at `{{ .ConfirmationURL }}`, which verifies on
+  page LOAD — so it never got the same protection. Now that custom SMTP is finally set up
+  (see above), this was worth finishing properly:
+  1. **Code (done, in this delivery):** genericized `/auth/confirm`'s copy so it says "Reset your
+     password" / "Continue" for a `type=recovery` link instead of always saying "Confirm your
+     invitation" — same page, same button-click protection, just correct wording per link type.
+  2. **Still needed — Supabase dashboard, not code:** edit the "Reset password" email template
+     (Authentication → Email Templates → Reset password → Source) to replace
+     `<p><a href="{{ .ConfirmationURL }}">Reset password</a></p>` with
+     `<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/set-password">Reset password</a></p>`.
+  Once both are live, send a fresh reset-password test and confirm the link actually lands on a
+  working "Reset your password" / "Continue" screen instead of "expired or invalid."
 
 - **Diagnosed live deploy pipeline end-to-end, 9/15 — confirmed healthy, not the cause of the
   forgot-password bug above.** Karina got locked out of her own account (forgot her password) same
