@@ -13,9 +13,31 @@ import { createClient } from "@/lib/supabase/server";
 // scanners fetch the page but don't submit forms, so gating the actual verification behind a
 // real button click (a POST, via the server action below) defeats that.
 //
-// Once custom SMTP is set up, point the "Invite user" (and reset/magic-link) email templates
-// here instead of using {{ .ConfirmationURL }}:
-//   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next={{ .RedirectTo }}
+// Custom SMTP is now set up (9/15), so this is wired up for both templates:
+//   Invite user:      {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/set-password
+//   Reset password:   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/set-password
+// (found 9/15 — Karina's reset-password link was hitting "This link has expired or is invalid"
+// because the Reset Password template still pointed straight at {{ .ConfirmationURL }}, which
+// verifies on page LOAD, not on click — exactly the auto-scanner problem described above, just
+// never fixed for this second template. Same fix, same page, just point the template here too.)
+
+const COPY: Record<string, { title: string; body: string; button: string }> = {
+  invite: {
+    title: "Confirm your invitation",
+    body: "Click below to accept your invitation to GP Advisor Portal.",
+    button: "Accept Invitation",
+  },
+  recovery: {
+    title: "Reset your password",
+    body: "Click below to continue resetting your password.",
+    button: "Continue",
+  },
+};
+const DEFAULT_COPY = {
+  title: "Confirm this link",
+  body: "Click below to continue.",
+  button: "Continue",
+};
 
 async function acceptInvite(formData: FormData) {
   "use server";
@@ -52,13 +74,13 @@ export default async function ConfirmInvitePage({
     redirect("/set-password?error=invalid");
   }
 
+  const copy = COPY[type] ?? DEFAULT_COPY;
+
   return (
     <div className="flex flex-1 items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm rounded-xl border border-[#D9CFBA] bg-white p-8 text-center shadow-sm">
-        <h1 className="mb-2 text-xl font-semibold text-[#1C1C1C]">Confirm your invitation</h1>
-        <p className="mb-6 text-sm text-[#666]">
-          Click below to accept your invitation to GP Advisor Portal.
-        </p>
+        <h1 className="mb-2 text-xl font-semibold text-[#1C1C1C]">{copy.title}</h1>
+        <p className="mb-6 text-sm text-[#666]">{copy.body}</p>
         <form action={acceptInvite}>
           <input type="hidden" name="token_hash" value={token_hash} />
           <input type="hidden" name="type" value={type} />
@@ -67,7 +89,7 @@ export default async function ConfirmInvitePage({
             type="submit"
             className="w-full rounded-md bg-[#1C1C1C] px-4 py-2 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
           >
-            Accept Invitation
+            {copy.button}
           </button>
         </form>
       </div>

@@ -4,19 +4,33 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## ⚠ Needs Testing — built, but NOT yet verified by Karina
 
-- **"Forgot password" bounced straight back to login — root cause found and fixed 9/15, needs a
-  real test once deployed.** Karina: "forgot password still doesnt do anything." This was NOT a
-  deploy problem, even though it looked exactly like one — spent a while today (see this same
-  date, "Diagnosed live deploy pipeline...") ruling out GitHub Desktop, Vercel builds, and the
-  domain config one by one, all of which turned out fine. The real bug: `src/proxy.ts` (this app's
-  auth middleware, matches every route) redirects any logged-out visitor straight to `/login`
-  unless their path is in its `PUBLIC_PATHS` allowlist. `/set-password` was on that list;
-  `/forgot-password` never was, even though the page itself (built 9/8) has always worked fine —
-  it just could never be reached by a logged-out user. Added `/forgot-password` to `PUBLIC_PATHS`,
-  same pattern already used for `/login`/`/signup` (public while logged out, but a logged-in user
-  visiting it gets bounced home via the existing `ALLOWED_WHILE_LOGGED_IN` logic, same as
-  login/signup already do). Once this deploys, click "Forgot password?" on `/login` and confirm
-  both the "email me a code" and "reset my password" paths actually load instead of bouncing back.
+- **"Forgot password" bounced straight back to login — root cause found and fixed 9/15, ONE-TIME-CODE
+  PATH VERIFIED WORKING 9/15 (Karina: "the code thing worked" / "yes signed inn").** Karina:
+  "forgot password still doesnt do anything." This was NOT a deploy problem, even though it looked
+  exactly like one — spent a while today (see this same date, "Diagnosed live deploy pipeline...")
+  ruling out GitHub Desktop, Vercel builds, and the domain config one by one, all of which turned
+  out fine. The real bug: `src/proxy.ts` (this app's auth middleware, matches every route)
+  redirects any logged-out visitor straight to `/login` unless their path is in its `PUBLIC_PATHS`
+  allowlist. `/set-password` was on that list; `/forgot-password` never was, even though the page
+  itself (built 9/8) has always worked fine — it just could never be reached by a logged-out user.
+  Added `/forgot-password` to `PUBLIC_PATHS`, same pattern already used for `/login`/`/signup`
+  (public while logged out, but a logged-in user visiting it gets bounced home via the existing
+  `ALLOWED_WHILE_LOGGED_IN` logic, same as login/signup already do).
+  Second bug found same day, also fixed and verified: the "email me a one-time code" option was
+  using Supabase's default "Magic Link or OTP" email template, which only included a clickable
+  link (going nowhere useful) and never showed the actual 6-digit code as text — so there was
+  nothing to type into the app's "Enter your code" screen. This is a Supabase dashboard template
+  edit, not app code (Authentication → Email Templates → "Magic Link or OTP" → Source): replaced
+  the link with `{{ .Token }}` shown as plain text. Karina confirmed the code now appears in the
+  email and successfully signed in with it.
+  **Still outstanding, not blocking:** the "reset my password" (link-based) path was landing in
+  Gmail spam and having its link stripped by Gmail as a result. Checked custom SMTP (already
+  correctly configured via Resend — not the cause) and DNS records (DKIM/SPF/DMARC all already
+  correctly in place — also not the cause, confirmed by Karina, who had these set up before
+  tonight). Most likely just normal new/low-volume sender scrutiny from Gmail that eases with
+  time and real usage, not something fixable with a single setting. Not urgent since the
+  one-time-code path is a full working alternative — but if Karina retests "reset my password"
+  later and it's still landing in spam, that's expected for now, not a regression.
 
 - **Diagnosed live deploy pipeline end-to-end, 9/15 — confirmed healthy, not the cause of the
   forgot-password bug above.** Karina got locked out of her own account (forgot her password) same
@@ -266,6 +280,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   one-liner — do NOT start this until Karina confirms she wants it built this way.
 
 ## Requested, not yet built
+
+- **Design all outbound auth emails (invite, reset password, one-time code, etc.) — requested
+  9/15, NOT built.** Karina: "I also want to design all of the emails that go out. So they look
+  good." Right now every Supabase auth email (Authentication → Email Templates in the Supabase
+  dashboard) is plain unstyled default HTML — just an `<h2>`/`<p>` stack, no branding. Natural to
+  do this at the same time as the custom-SMTP work below, since that's when we'll already be in
+  the template editor fixing the broken code/link issues — same templates, same visit. Scope:
+  real branded HTML for each template (Generational Playbook look — logo, colors, fonts matching
+  the rest of the portal) rather than Supabase's bare default.
+
+- **Custom SMTP (Resend) for Supabase auth emails — flagged 9/8 for invites, confirmed 9/15 to
+  also affect password reset and one-time-code emails, NOT yet done.** See `EMAIL_SETUP.md` in
+  the project root for the full walkthrough (sign up for Resend, verify the sending domain, plug
+  SMTP details into Supabase, fix the "Invite user" template's link). Originally written because
+  Gmail was burning invite links via link-prescanning; on 9/15, while helping Karina back into her
+  own account, found the same root cause (no custom SMTP -> Supabase's shared/default mail sender
+  -> poor Gmail reputation) also explains two things Karina hit that night:
+  1. Password-reset emails landing in Gmail Spam, where Gmail strips/disables the "Reset password"
+     link even though the template's `<a href="{{ .ConfirmationURL }}">` markup is correct —
+     confirmed by reading the template source directly. Marking the message "Not spam" did NOT
+     restore the link on that already-delivered message (Karina tested this).
+  2. The "email me a one-time code" option (Supabase's default Magic Link template) only includes
+     a clickable link, not the actual code as visible text — so there's nothing to type into the
+     app's "Enter your code" screen, even after finding the link. `{{ .Token }}` needs to be added
+     to that template's body so the code is actually visible. (Clicking that link currently also
+     just bounces to /login rather than signing in — probably moot once the visible code makes the
+     link unnecessary, but worth a second look if it still misbehaves after the template fix.)
+  Once custom SMTP is live, do the email-design pass above at the same time.
 
 - **Carrier Logins + State Licenses — private per-advisor reference on My Profile — discussed
   9/3, BUILT 9/3.** Karina was tracking her own broker/carrier portal logins (F&G, North
