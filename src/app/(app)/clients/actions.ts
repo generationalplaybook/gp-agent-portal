@@ -99,26 +99,129 @@ export async function createClientRecord(formData: FormData) {
 // client_products.pending_approval_at's markPendingApproval (schema.sql section 51): dated 3 days
 // out, so it shows up right away in the Reminders list and this client's own Reminders card,
 // rather than waiting on a later cron run. The old cron (route + vercel.json entry) is deleted.
-const PENDING_STAGE_CHECKIN_DAYS = 3;
+//
+// 9/16 — expanded from one reminder to four, and split into two stages. Karina walked through her
+// real pipeline: Applied waits on the carrier's decision; once feedback starts, the client moves
+// into Pending, which is the underwriting wait itself (carriers often allow up to ~30 days).
+// Separately, once the carrier has actually said yes but the client hasn't paid, that's now its
+// own stage, Approved, sitting between Pending and Issued — previously Pending was overloaded to
+// mean this case too (see the original comment above: "approved for a quote but the premium hadn't
+// been paid yet"). Both stages now auto-create four check-in reminders at day 3/7/10/14 of
+// whichever stage the client just entered, instead of Pending's original single day-3 one. The
+// two stages differ only in what happens at day 14 and after:
+//   - Pending: real carrier timelines vary, so day 14 isn't a hard stop — the Reminders page shows
+//     a visible "Extend 14 more days" button on that reminder (see reminders/ReminderRow.tsx),
+//     which restarts a fresh 3/7/10/14 cycle. Left alone, it just sits there overdue like any
+//     other ignored reminder.
+//   - Approved: Karina was explicit this should never drag past 2 weeks — "by the 14th, if it's
+//     not paid for, I don't know what to tell an advisor" — so there's no extend option. Day 14's
+//     message just reads urgent in plain text (prefixed "⚠️ URGENT"), same row style as everything
+//     else, no new tag or column.
+// Karina, asked whether clients already sitting in Pending today should be moved to Approved to
+// match (since that's what the stage was actually built for): "keep them in pending" — no bulk
+// migration. Anyone actually approved-and-unpaid today gets moved to Approved by hand, same as any
+// other stage change; existing Pending clients are simply read under Pending's new meaning (the
+// carrier-underwriting cadence, with Extend) going forward.
+const STAGE_CHECKIN_DAYS = [3, 7, 10, 14] as const;
 
-// Deletes the check-in reminder created when a client entered Pending (if any) and returns the
-// field values to clear on the client row. Called from every path that can move a client OUT of
-// Pending — not just the Stage dropdown below, but also resolveQuotesOnIssue and
-// markOutreachOutcome further down — so a client leaving Pending via any of them doesn't leave an
-// orphaned "check on this" reminder behind.
-async function clearPendingCheckin(
+type StageBatchKind = "pending" | "approved";
+
+const STAGE_BATCH_FIELDS: Record<StageBatchKind, { enteredAt: string; reminderIds: string }> = {
+  pending: { enteredAt: "stage_entered_pending_at", reminderIds: "pending_reminder_ids" },
+  approved: { enteredAt: "stage_entered_approved_at", reminderIds: "approved_reminder_ids" },
+};
+
+function stageBatchMessages(kind: StageBatchKind, fullName: string): string[] {
+  if (kind === "pending") {
+    return [
+      `Check in: ${fullName} still with the carrier for underwriting (day 3)`,
+      `Check in: ${fullName} still with the carrier for underwriting (day 7)`,
+      `Check in: ${fullName} still with the carrier for underwriting (day 10)`,
+      `${fullName} still with the carrier for underwriting — day 14 of this cycle. Extend if it's not resolved yet.`,
+    ];
+  }
+  return [
+    `Check in: ${fullName} approved, still awaiting payment (day 3)`,
+    `Check in: ${fullName} still awaiting payment (day 7)`,
+    `Check in: ${fullName} still awaiting payment (day 10)`,
+    `⚠️ URGENT — ${fullName} approved 14 days, still unpaid. Close this out before it lapses.`,
+  ];
+}
+
+// Creates the four day-3/7/10/14 reminders for a client entering Pending or Approved, returning
+// the patch fields (entered-at timestamp + the new reminder ids) to write onto the client row.
+async function createStageBatch(
+  clientId: string,
+  fullName: string,
+  kind: StageBatchKind
+): Promise<Record<string, unknown>> {
+  const fields = STAGE_BATCH_FIELDS[kind];
+  const messages = stageBatchMessages(kind, fullName);
+  const ids: string[] = [];
+  for (let i = 0; i < STAGE_CHECKIN_DAYS.length; i++) {
+    const remindAt = new Date();
+    remindAt.setDate(remindAt.getDate() + STAGE_CHECKIN_DAYS[i]);
+    ids.push(await addReminder({ clientId }, remindAt.toISOString(), messages[i]));
+  }
+  return { [fields.enteredAt]: new Date().toISOString(), [fields.reminderIds]: ids };
+}
+
+// Deletes whichever of Pending's or Approved's check-in reminders are currently live on this
+// client and clears both batches' fields — called from every path that can move a client out of
+// either stage (the Stage dropdown below, resolveQuotesOnIssue, and markOutreachOutcome further
+// down), so a client leaving Pending or Approved via any of them doesn't leave orphaned "check on
+// this" reminders behind. Safe to call unconditionally (deleting an empty set of ids is a no-op),
+// so callers don't need to first work out which of the two stages the client was actually in.
+async function clearStageBatches(
   supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
   clientId: string
-): Promise<{ stage_entered_pending_at: null; pending_checkin_reminder_id: null }> {
+): Promise<Record<string, unknown>> {
   const { data: current } = await supabase
     .from("clients")
-    .select("pending_checkin_reminder_id")
+    .select("pending_reminder_ids, approved_reminder_ids")
     .eq("id", clientId)
     .single();
-  if (current?.pending_checkin_reminder_id) {
-    await supabase.from("reminders").delete().eq("id", current.pending_checkin_reminder_id);
+
+  const allIds = [...(current?.pending_reminder_ids ?? []), ...(current?.approved_reminder_ids ?? [])];
+  if (allIds.length > 0) {
+    await supabase.from("reminders").delete().in("id", allIds);
   }
-  return { stage_entered_pending_at: null, pending_checkin_reminder_id: null };
+
+  return {
+    stage_entered_pending_at: null,
+    pending_reminder_ids: [],
+    stage_entered_approved_at: null,
+    approved_reminder_ids: [],
+  };
+}
+
+// Restarts Pending's check-in cycle for a client whose carrier still hasn't responded past day
+// 14 — the "Extend 14 more days" button on the Reminders page (see ReminderRow.tsx). Deletes
+// whatever's left of the current 3/7/10/14 batch (including already-completed ones — a fresh
+// cycle starts clean) and creates a new one dated from today. No-ops if the client isn't actually
+// in Pending anymore (the button shouldn't be visible in that case, but this guards against a
+// stale click).
+export async function extendPendingCheckin(clientId: string): Promise<void> {
+  const { supabase } = await requireUser();
+
+  const { data: current } = await supabase
+    .from("clients")
+    .select("stage, full_name, pending_reminder_ids")
+    .eq("id", clientId)
+    .single();
+  if (current?.stage !== "pending") return;
+
+  if (current.pending_reminder_ids?.length) {
+    await supabase.from("reminders").delete().in("id", current.pending_reminder_ids);
+  }
+
+  const patch = await createStageBatch(clientId, current.full_name ?? "client", "pending");
+  await supabase.from("clients").update(patch).eq("id", clientId);
+
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/clients");
+  revalidatePath("/reminders");
+  revalidatePath("/");
 }
 
 export async function updateStage(clientId: string, stage: ClientStage) {
@@ -126,44 +229,35 @@ export async function updateStage(clientId: string, stage: ClientStage) {
 
   const { data: current } = await supabase
     .from("clients")
-    .select("stage, pending_checkin_reminder_id, full_name")
+    .select("stage, pending_reminder_ids, approved_reminder_ids, full_name")
     .eq("id", clientId)
     .single();
 
-  // Already Pending with a live reminder AND staying in Pending — don't stack a second reminder
-  // on top of it (the Stage dropdown only fires on an actual change, so this mainly guards
-  // against this action being called some other way). Everything else about the row is untouched
-  // either way.
+  // Already in Pending or Approved with a live batch AND staying in that same stage — don't stack
+  // a second batch on top of it (the Stage dropdown only fires on an actual change, so this mainly
+  // guards against this action being called some other way). Everything else about the row is
+  // untouched either way.
   //
-  // Bug fixed 9/13 — Karina: "I undid a client's pipeline from pending to quoted and then put it
-  // back to pending, and still no reminder has been set." Root cause: this check only looked at
-  // the CURRENT stage/reminder, never the stage being moved TO. So a client that was already
-  // sitting in Pending with a reminder, moved OUT to any other stage (Quoted here), still read as
-  // "already pending with reminder" — patch stayed `{}`, which meant clearPendingCheckin never
-  // ran and pending_checkin_reminder_id was never cleared even though the client's stage really
-  // did change away from Pending. Moving it back to Pending afterward then saw current.stage as
-  // whatever it had actually become (not "pending"), so it DID try to create a fresh reminder —
-  // but the stale reminder id/orphaned row from the missed cleanup could leave things in a
-  // confusing, inconsistent state depending on exactly when/how the DB was read. Added `stage ===
-  // "pending"` to the check so this shortcut only ever fires when the target stage is ALSO
-  // Pending (i.e. a redundant pending→pending call) — any real transition, in or out of Pending,
-  // now always goes through the create-reminder or clear-reminder branch as intended.
-  const alreadyPendingWithReminder = stage === "pending" && current?.stage === "pending" && !!current?.pending_checkin_reminder_id;
+  // Bug fixed 9/13 (Pending-only at the time; same shape kept here for Approved): Karina — "I
+  // undid a client's pipeline from pending to quoted and then put it back to pending, and still no
+  // reminder has been set." Root cause: this check only looked at the CURRENT stage/batch, never
+  // the stage being moved TO, so a real transition out of Pending could read as "already
+  // pending" and skip the clear. Checking that `stage` (the target) matches `current?.stage` here
+  // means this shortcut only fires on a redundant same-stage call — any real transition, in or out
+  // of either stage, always goes through the create-batch or clear-batch branch as intended.
+  const alreadyInStageWithBatch =
+    stage === current?.stage &&
+    ((stage === "pending" && (current?.pending_reminder_ids?.length ?? 0) > 0) ||
+      (stage === "approved" && (current?.approved_reminder_ids?.length ?? 0) > 0));
 
-  let patch: { stage_entered_pending_at: string | null; pending_checkin_reminder_id: string | null } | Record<string, never>;
-  if (alreadyPendingWithReminder) {
-    patch = {};
-  } else if (stage === "pending") {
-    const remindAt = new Date();
-    remindAt.setDate(remindAt.getDate() + PENDING_STAGE_CHECKIN_DAYS);
-    const reminderId = await addReminder(
-      { clientId },
-      remindAt.toISOString(),
-      `Check in: ${current?.full_name ?? "client"} is in Pending`
-    );
-    patch = { stage_entered_pending_at: new Date().toISOString(), pending_checkin_reminder_id: reminderId };
-  } else {
-    patch = await clearPendingCheckin(supabase, clientId);
+  let patch: Record<string, unknown> = {};
+  if (!alreadyInStageWithBatch) {
+    if (current?.stage === "pending" || current?.stage === "approved") {
+      patch = { ...patch, ...(await clearStageBatches(supabase, clientId)) };
+    }
+    if (stage === "pending" || stage === "approved") {
+      patch = { ...patch, ...(await createStageBatch(clientId, current?.full_name ?? "client", stage)) };
+    }
   }
 
   await supabase
@@ -194,10 +288,11 @@ export async function resolveQuotesOnIssue(
   allQuoteProductIds: string[]
 ): Promise<void> {
   const { supabase } = await requireUser();
-  // 9/13 — routed through clearPendingCheckin (not a bare stage_entered_pending_at: null) so a
-  // client resolved onto Issue while still sitting in Pending doesn't leave that Pending check-in
-  // reminder behind — same cleanup the Stage dropdown itself now does (see updateStage above).
-  await supabase.from("clients").update({ stage: "issued", ...(await clearPendingCheckin(supabase, clientId)) }).eq("id", clientId);
+  // 9/13 — routed through clearStageBatches (not a bare stage_entered_pending_at: null) so a
+  // client resolved onto Issue while still sitting in Pending or Approved doesn't leave that
+  // stage's check-in reminders behind — same cleanup the Stage dropdown itself now does (see
+  // updateStage above).
+  await supabase.from("clients").update({ stage: "issued", ...(await clearStageBatches(supabase, clientId)) }).eq("id", clientId);
   await supabase.from("client_products").update({ is_quote: false }).eq("id", chosenProductId);
   const toDelete = allQuoteProductIds.filter((id) => id !== chosenProductId);
   if (toDelete.length > 0) {
@@ -205,8 +300,8 @@ export async function resolveQuotesOnIssue(
   }
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
-  // Same gap as updateStage above (fixed 9/13) — this can delete a live Pending check-in
-  // reminder via clearPendingCheckin, so the Reminders tab and the home page's Reminders Due
+  // Same gap as updateStage above (fixed 9/13) — this can delete live Pending/Approved check-in
+  // reminders via clearStageBatches, so the Reminders tab and the home page's Reminders Due
   // card both need to hear about it too, not just the client's own profile.
   revalidatePath("/reminders");
   revalidatePath("/");
@@ -1016,34 +1111,34 @@ export async function markOutreachOutcome(
   // already further along, this can move that stage backward or forward too, since `stage` is one
   // field per client, not per policy. Deliberate per her description, but worth knowing.
   // Only "Couldn't reach them" leaves stage untouched.
-  // 9/13 — each of these three routed through clearPendingCheckin (not a bare
-  // stage_entered_pending_at: null) so a client moved off Pending by an Outreach outcome doesn't
-  // leave that Pending check-in reminder behind — same cleanup the Stage dropdown itself now does
-  // (see updateStage above).
+  // 9/13 — each of these three routed through clearStageBatches (not a bare
+  // stage_entered_pending_at: null) so a client moved off Pending or Approved by an Outreach
+  // outcome doesn't leave that stage's check-in reminders behind — same cleanup the Stage dropdown
+  // itself now does (see updateStage above).
   if (outcome === "shopping" || outcome === "renewing") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "lead", ...(await clearPendingCheckin(supabase, clientId)) })
+      .update({ stage: "lead", ...(await clearStageBatches(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "keeping") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "issued", ...(await clearPendingCheckin(supabase, clientId)) })
+      .update({ stage: "issued", ...(await clearStageBatches(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   } else if (outcome === "declining") {
     const { error: stageError } = await supabase
       .from("clients")
-      .update({ stage: "declined", ...(await clearPendingCheckin(supabase, clientId)) })
+      .update({ stage: "declined", ...(await clearStageBatches(supabase, clientId)) })
       .eq("id", clientId);
     if (stageError) throw new Error(stageError.message);
   }
 
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
-  // Same clearPendingCheckin gap as updateStage/resolveQuotesOnIssue above — this can also
-  // delete a live Pending check-in reminder, so the Reminders tab needs to hear about it too.
+  // Same clearStageBatches gap as updateStage/resolveQuotesOnIssue above — this can also
+  // delete live Pending/Approved check-in reminders, so the Reminders tab needs to hear about it too.
   revalidatePath("/reminders");
   revalidatePath("/");
 }

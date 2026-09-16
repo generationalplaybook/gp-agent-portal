@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import LocalDateTime from "./LocalDateTime";
 import { updateReminder, completeReminder, reopenReminder, deleteReminder, type ReminderOwner } from "./reminders/actions";
+import { extendPendingCheckin } from "./clients/actions";
 
 // See FollowUpForm/RemindersCard for why this conversion has to happen in the
 // browser rather than on the server.
@@ -30,6 +31,7 @@ export default function ReminderRow({
   owner,
   subjectName,
   subjectHref,
+  pendingExtend,
 }: {
   reminder: Reminder;
   owner: ReminderOwner;
@@ -38,16 +40,41 @@ export default function ReminderRow({
   // where showing their own name back to you would be redundant.
   subjectName?: string;
   subjectHref?: string;
+  // True for exactly one reminder: the day-14 (last) reminder of a client's CURRENT Pending
+  // check-in batch, while that client is still actually in Pending. Set by the caller (it needs
+  // clients.stage/pending_reminder_ids, which this component doesn't fetch itself) — see
+  // reminders/page.tsx and RemindersCard.tsx. Shows the "Extend 14 more days" button (9/16, real
+  // carrier underwriting timelines vary, so day 14 here isn't a hard stop the way it is for
+  // Approved).
+  pendingExtend?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [remindAt, setRemindAt] = useState(() => isoToLocalInputValue(reminder.remind_at));
   const [message, setMessage] = useState(reminder.message ?? "");
   const [busy, setBusy] = useState(false);
+  const [extending, setExtending] = useState(false);
   const [error, setError] = useState("");
 
   const completed = !!reminder.sent_at;
   const overdue = !completed && isOverdue(reminder.remind_at);
+  // Approved's day-14 reminder reads as urgent purely through its own message text (no new tag or
+  // column, per Karina — "it doesn't need a whole new tag") — this just recognizes that text to
+  // give it a little visual weight to match.
+  const urgent = !completed && !!reminder.message?.startsWith("⚠️");
+
+  async function handleExtend() {
+    if (!owner.clientId) return;
+    setExtending(true);
+    setError("");
+    try {
+      await extendPendingCheckin(owner.clientId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not extend.");
+    } finally {
+      setExtending(false);
+    }
+  }
 
   async function handleSave() {
     setBusy(true);
@@ -143,7 +170,7 @@ export default function ReminderRow({
   return (
     <div
       className={`flex items-center justify-between gap-4 border-l-2 py-3 pl-3 ${
-        completed ? "border-[#D9CFBA]" : overdue ? "border-[#8B1A1A]" : "border-[#1E6B3C]"
+        completed ? "border-[#D9CFBA]" : pendingExtend ? "border-[#8A7B52]" : overdue ? "border-[#8B1A1A]" : "border-[#1E6B3C]"
       }`}
     >
       <div className={completed ? "opacity-60" : ""}>
@@ -155,17 +182,46 @@ export default function ReminderRow({
           ) : (
             <div className="text-sm font-semibold text-[#1C1C1C]">{subjectName}</div>
           ))}
-        <div className={`text-sm ${completed ? "text-[#707070] line-through" : "text-[#2E2E2E]"}`}>
+        <div
+          className={`text-sm ${
+            completed ? "text-[#707070] line-through" : urgent ? "font-bold text-[#8B1A1A]" : "text-[#2E2E2E]"
+          }`}
+        >
           {reminder.message || "Follow up"}
         </div>
-        <div className={`text-xs ${completed ? "text-[#707070]" : overdue ? "font-semibold text-[#8B1A1A]" : "text-[#707070]"}`}>
+        <div
+          className={`text-xs ${
+            completed
+              ? "text-[#707070]"
+              : pendingExtend
+                ? "font-semibold text-[#8A7B52]"
+                : overdue
+                  ? "font-semibold text-[#8B1A1A]"
+                  : "text-[#707070]"
+          }`}
+        >
           {completed ? "Completed: " : overdue ? "Overdue: " : ""}
           <LocalDateTime iso={reminder.remind_at} />
         </div>
+        {pendingExtend && (
+          <div className="mt-1 text-[11px] text-[#707070]">
+            Carriers can take up to ~30 days — still not resolved? Extend it, or leave it here to keep tracking.
+          </div>
+        )}
         {error && <p className="mt-1 text-xs text-[#8B1A1A]">{error}</p>}
       </div>
       {!confirmingDelete ? (
         <div className="flex shrink-0 items-center gap-3">
+          {pendingExtend && !completed && (
+            <button
+              type="button"
+              disabled={extending}
+              onClick={handleExtend}
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-[#8A7B52] bg-[#D9CFBA] px-3 py-1.5 text-xs font-bold text-[#1C1C1C] hover:bg-[#cfc2a3] disabled:opacity-60"
+            >
+              {extending ? "Extending..." : "↻ Extend 14 more days"}
+            </button>
+          )}
           {completed ? (
             <button
               type="button"

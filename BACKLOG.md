@@ -4,6 +4,45 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 ## ⚠ Needs Testing — built, but NOT yet verified by Karina
 
+- **New "Approved" pipeline stage + escalating Pending/Approved check-in reminders (built 9/16,
+  NOT yet run against the live database — Karina needs to run a SQL snippet first).** Grew out of
+  Karina walking through her real pipeline: Applied waits on the carrier's decision; once feedback
+  starts, the client moves into Pending, the underwriting wait itself (carriers often allow up to
+  ~30 days); separately, once the carrier says yes but the client hasn't paid, that's its own
+  stage, Approved, sitting between Pending and Issued (previously Pending was overloaded to mean
+  this case too — see the "Pending-stage check-in nudge" entry below and schema.sql section 50).
+  Confirmed via a Claude Design mockup before building (client "Renee Ortiz" in Pending, "August
+  Sneed" in Approved) — https://claude.ai/artifact/6bS5Thz3yFWqiwF4ZYXaxL.
+  What changed: both Pending and Approved now auto-create FOUR check-in reminders (day 3/7/10/14
+  from the moment a client enters that stage, off the stage's own "entered at" timestamp — no
+  manual date entry) instead of Pending's original single day-3 one. They show up in the Reminders
+  list exactly like any other reminder — an ignored one just stacks under the next, no new tag or
+  filter needed (Karina: "it doesn't need a whole new tag... it just would keep coming up in the
+  reminder list"). The two stages differ only past day 14: Pending gets a visible "↻ Extend 14 more
+  days" button right on that reminder row (Karina wanted this "visible enough so agents don't
+  forget," since real carrier timelines vary and only the advisor knows if a given one is still
+  legitimately in play) — clicking it restarts a fresh 3/7/10/14 cycle; left alone, it just sits
+  overdue like anything else. Approved has no extend option — Karina was explicit it should never
+  drag past 2 weeks ("by the 14th, if it's not paid for, I don't know what to tell an advisor") —
+  so day 14 there just reads urgent in plain message text (prefixed "⚠️ URGENT"), styled a little
+  bolder/red on the row, no new column. Whichever stage a client leaves (Issued, Declined, or any
+  other move), that stage's not-yet-completed reminders get deleted automatically.
+  Approved's pipeline color (client badges, dropdown, Client Pipeline card) is the midpoint blend
+  of Pending's gray (#737776) and Issued's green (#478c5c) — the same "average the two" method
+  Karina used to arrive at Pending's own color back in September — rather than an unrelated hue.
+  **Before this works, Karina needs to run the new SQL in schema.sql (section 53, near the bottom)
+  against the live Supabase database** — adds the 'approved' enum value and three new columns on
+  `clients` (`pending_reminder_ids`, `stage_entered_approved_at`, `approved_reminder_ids`). Asked
+  whether clients already sitting in Pending today should be bulk-moved to Approved to match (since
+  Pending was originally built for that exact case): Karina — "keep them in pending." No migration
+  script; anyone actually approved-and-unpaid today just gets moved to Approved by hand, same as
+  any other stage change — existing Pending clients are simply read under Pending's new meaning
+  (the carrier-underwriting cadence, with Extend) going forward.
+  Scope note: this only touches the client-level Stage dropdown pipeline. The separate, older
+  per-product "Awaiting carrier approval" feature (marking one product on a multi-product client as
+  pending, independent of the overall Stage — `client_products.pending_approval_at`) was left as-is
+  — still a single 3-day reminder, no Approved equivalent. Flag if you want that to match.
+
 - **"Forgot password" bounced straight back to login — root cause found and fixed 9/15, ONE-TIME-CODE
   PATH VERIFIED WORKING 9/15 (Karina: "the code thing worked" / "yes signed inn").** Karina:
   "forgot password still doesnt do anything." This was NOT a deploy problem, even though it looked
@@ -51,6 +90,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
      `<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/set-password">Reset password</a></p>`.
   Once both are live, send a fresh reset-password test and confirm the link actually lands on a
   working "Reset your password" / "Continue" screen instead of "expired or invalid."
+
+  **VERIFIED WORKING END TO END, same night 9/15.** Karina tested the real flow live: email
+  landed in Inbox (not spam), clicking the link landed on `/auth/confirm` with correct "Reset
+  your password" wording (confirming both the template edit and the code push went out
+  correctly), clicking "Continue" landed on a working `/set-password` form. Whole "forgot
+  password" feature — one-time code AND reset-by-link — is now confirmed live and functional.
+  One more polish round same night: Karina flagged the `/auth/confirm` interstitial as "seems
+  useless" (fair — a bare button with no explanation does read as pointless filler). Can't remove
+  the click itself (it's the entire anti-prescanning fix), so added a line explaining why it's
+  there ("email apps sometimes open links automatically, so a click here confirms it's really
+  you") to both the invite and recovery copy in `COPY` — same page, no functional change, just
+  makes the step legible instead of mysterious.
 
 - **Diagnosed live deploy pipeline end-to-end, 9/15 — confirmed healthy, not the cause of the
   forgot-password bug above.** Karina got locked out of her own account (forgot her password) same
@@ -310,24 +361,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   real branded HTML for each template (Generational Playbook look — logo, colors, fonts matching
   the rest of the portal) rather than Supabase's bare default.
 
-- **Custom SMTP (Resend) for Supabase auth emails — flagged 9/8 for invites, confirmed 9/15 to
-  also affect password reset and one-time-code emails, NOT yet done.** See `EMAIL_SETUP.md` in
-  the project root for the full walkthrough (sign up for Resend, verify the sending domain, plug
-  SMTP details into Supabase, fix the "Invite user" template's link). Originally written because
-  Gmail was burning invite links via link-prescanning; on 9/15, while helping Karina back into her
-  own account, found the same root cause (no custom SMTP -> Supabase's shared/default mail sender
-  -> poor Gmail reputation) also explains two things Karina hit that night:
-  1. Password-reset emails landing in Gmail Spam, where Gmail strips/disables the "Reset password"
-     link even though the template's `<a href="{{ .ConfirmationURL }}">` markup is correct —
-     confirmed by reading the template source directly. Marking the message "Not spam" did NOT
-     restore the link on that already-delivered message (Karina tested this).
-  2. The "email me a one-time code" option (Supabase's default Magic Link template) only includes
-     a clickable link, not the actual code as visible text — so there's nothing to type into the
-     app's "Enter your code" screen, even after finding the link. `{{ .Token }}` needs to be added
-     to that template's body so the code is actually visible. (Clicking that link currently also
-     just bounces to /login rather than signing in — probably moot once the visible code makes the
-     link unnecessary, but worth a second look if it still misbehaves after the template fix.)
-  Once custom SMTP is live, do the email-design pass above at the same time.
+- **Custom SMTP (Resend) for Supabase auth emails — RESOLVED 9/15, all sub-issues fixed and
+  verified.** Turned out custom SMTP via Resend was ALREADY correctly configured (found while
+  investigating — domain verified, DKIM/SPF/DMARC all already in place from earlier work, not a
+  gap after all). The real remaining issues that night, all now fixed and confirmed live:
+  1. Password-reset emails landing in Gmail Spam — retested later the same night and it landed in
+     Inbox; whatever was driving the earlier spam placement (most likely ordinary new-sender
+     scrutiny) settled on its own, no code/config change needed.
+  2. "Email me a one-time code" only showed a dead link, no actual code — fixed by editing the
+     "Magic Link or OTP" template to show `{{ .Token }}` as visible text instead of a link.
+     Verified: Karina received the code and signed in with it.
+  3. "Reset password" link hit "This link has expired or is invalid" even when clicked
+     immediately — classic Gmail/mail-client link-prescanning burning the one-time token before a
+     real click. Fixed by routing the "Reset password" template through the existing
+     `/auth/confirm` page (already built for this exact problem on invites, just never pointed at
+     recovery links) instead of `{{ .ConfirmationURL }}`, plus genericizing that page's copy per
+     link type. Verified end to end: email arrives in Inbox, link lands on a "Reset your
+     password" / "Continue" confirm screen, Continue lands on a working `/set-password` form.
+  Still open: the email-design pass above (branded look) — not started, do it whenever Karina's
+  ready.
 
 - **Carrier Logins + State Licenses — private per-advisor reference on My Profile — discussed
   9/3, BUILT 9/3.** Karina was tracking her own broker/carrier portal logins (F&G, North

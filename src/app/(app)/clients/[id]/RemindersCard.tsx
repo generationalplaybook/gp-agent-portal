@@ -13,7 +13,20 @@ interface Reminder {
 
 // Shared between a client's profile and (since Team/Recruits) a recruit's profile — `owner`
 // says which one this card is attached to; everything else is identical either way.
-export default function RemindersCard({ owner, reminders }: { owner: ReminderOwner; reminders: Reminder[] }) {
+// `pendingExtendReminderId` (9/16) is only ever passed from a client's own profile (recruits have
+// no Pending stage) — the id of that client's current day-14 Pending reminder, if any, so the
+// matching row can show the same "Extend 14 more days" button the Reminders tab shows. Computed
+// by the caller (client/[id]/page.tsx already has the client row loaded via `select("*")`) rather
+// than re-fetched here.
+export default function RemindersCard({
+  owner,
+  reminders,
+  pendingExtendReminderId,
+}: {
+  owner: ReminderOwner;
+  reminders: Reminder[];
+  pendingExtendReminderId?: string | null;
+}) {
   const [remindAt, setRemindAt] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -80,7 +93,7 @@ export default function RemindersCard({ owner, reminders }: { owner: ReminderOwn
       {pending.length > 0 && (
         <div className="flex flex-col divide-y divide-[#EDE8DF]">
           {pending.map((r) => (
-            <ReminderRow key={r.id} reminder={r} owner={owner} />
+            <ReminderRow key={r.id} reminder={r} owner={owner} pendingExtend={r.id === pendingExtendReminderId} />
           ))}
         </div>
       )}

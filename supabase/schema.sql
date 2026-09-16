@@ -1478,3 +1478,33 @@ alter table public.client_products add column if not exists pending_checkin_remi
 -- migration to drop.
 -- ─────────────────────────────────────────────────────────────
 alter table public.clients add column if not exists pending_checkin_reminder_id uuid references public.reminders(id) on delete set null;
+
+-- ─────────────────────────────────────────────────────────────
+-- 53. "Approved" pipeline stage split out from "Pending" (added 9/16) — Karina walked through her
+-- real pipeline: Applied waits on the carrier's decision; once feedback starts, the client moves
+-- into Pending, which is the underwriting wait itself (carriers often allow up to ~30 days).
+-- Separately, once the carrier has actually approved it but the client hasn't paid yet, that's its
+-- own stage, Approved, sitting between Pending and Issued — previously Pending was overloaded to
+-- mean this case too (section 50's own comment: "approved for a quote but the premium hadn't been
+-- paid yet"). That's what Approved means now instead.
+--
+-- Both Pending and Approved auto-create FOUR check-in reminders (day 3/7/10/14 from the moment the
+-- client enters that stage) instead of Pending's original single day-3 one — see updateStage in
+-- clients/actions.ts. pending_checkin_reminder_id (section 52, immediately above) is retired in
+-- favor of pending_reminder_ids (an array, since there are 4 now); left in place, unused, rather
+-- than dropped, same as every other retired-but-harmless column in this file. The two stages
+-- differ only in what happens at day 14: Pending gets a visible "Extend 14 more days" button
+-- (real carrier timelines vary, so it isn't a hard stop) that restarts the cycle fresh via
+-- extendPendingCheckin; Approved has no such option — Karina was explicit it should never drag
+-- past 2 weeks — so day 14 there just reads urgent in plain message text.
+--
+-- Karina, asked whether clients already sitting in Pending today should be moved to Approved to
+-- match (since Pending was originally built for that case): "keep them in pending" — no bulk
+-- migration. Anyone actually approved-and-unpaid today gets moved to Approved by hand, same as any
+-- other stage change; existing Pending clients are simply read under Pending's new meaning (the
+-- carrier-underwriting cadence, with Extend) going forward.
+-- ─────────────────────────────────────────────────────────────
+alter type client_stage add value if not exists 'approved';
+alter table public.clients add column if not exists pending_reminder_ids uuid[] not null default '{}';
+alter table public.clients add column if not exists stage_entered_approved_at timestamptz;
+alter table public.clients add column if not exists approved_reminder_ids uuid[] not null default '{}';

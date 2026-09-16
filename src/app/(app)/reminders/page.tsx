@@ -20,20 +20,37 @@ export default async function RemindersPage() {
   // comment there. `!client_id`/`!recruit_id` tells PostgREST exactly which FK to join through,
   // the same disambiguation this app's `client_products` queries already needed for the same
   // reason (it has two FKs to `clients`: `client_id` and `owner_client_id`).
+  // `clients!client_id(...)` now also pulls stage/pending_reminder_ids (9/16) so rowProps below
+  // can tell whether a given row is the current day-14 Pending reminder for that client — the one
+  // "Extend 14 more days" button shows on. Same ambiguous-FK reasoning as the comment above for
+  // why `!client_id` is needed at all.
   const { data: reminders } = await supabase
     .from("reminders")
-    .select("id, remind_at, message, sent_at, client_id, recruit_id, clients!client_id(id, full_name), recruits!recruit_id(id, full_name)")
+    .select(
+      "id, remind_at, message, sent_at, client_id, recruit_id, clients!client_id(id, full_name, stage, pending_reminder_ids), recruits!recruit_id(id, full_name)"
+    )
     .order("remind_at", { ascending: true });
 
   const pending = (reminders ?? []).filter((r) => !r.sent_at);
   const completed = (reminders ?? []).filter((r) => r.sent_at);
 
   function rowProps(r: NonNullable<typeof reminders>[number]) {
-    const client = r.clients as unknown as { id: string; full_name: string } | null;
+    const client = r.clients as unknown as {
+      id: string;
+      full_name: string;
+      stage: string;
+      pending_reminder_ids: string[] | null;
+    } | null;
     const recruit = r.recruits as unknown as { id: string; full_name: string } | null;
     const owner: ReminderOwner = r.client_id ? { clientId: r.client_id } : { recruitId: r.recruit_id! };
+    // The extend button belongs on exactly one reminder: the last id in the client's CURRENT
+    // Pending batch, while they're actually still in Pending (a stage change clears this array —
+    // see clearStageBatches in clients/actions.ts — so a stale array can't light this up after
+    // the fact).
+    const pendingIds = client?.pending_reminder_ids ?? [];
+    const pendingExtend = client?.stage === "pending" && pendingIds.length > 0 && pendingIds[pendingIds.length - 1] === r.id;
     if (client) {
-      return { owner, subjectName: client.full_name, subjectHref: `/clients/${client.id}` };
+      return { owner, subjectName: client.full_name, subjectHref: `/clients/${client.id}`, pendingExtend };
     }
     if (recruit) {
       return { owner, subjectName: `${recruit.full_name} (Recruit)`, subjectHref: `/team/${recruit.id}` };

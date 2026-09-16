@@ -1,4 +1,4 @@
-export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "declined";
+export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "approved" | "declined";
 
 // 9/11 — Karina, after landing on the Client Report PDF's pie chart colors (mustard, brick red,
 // a deep blue, sage green — see fa-pdf.ts's palette comments for the full round-by-round history):
@@ -43,12 +43,29 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
   // 9/11, repositioned per Karina after a client meeting: applied-and-approved clients had
   // nowhere to go except straight to "Issued," even when the policy isn't actually in force yet
   // because the premium hasn't been paid. "Pending should come after applied, and issued should
-  // be where pending is" — this now sits between Applied and Issued for exactly that gap: the
-  // client was approved but hasn't paid, so the advisor knows to check in and follow up before
-  // it lapses back or finally goes in force. (Previously positioned after Issued for a different
-  // purpose — a client with an existing in-force policy who's actively being worked on new
-  // business; that case still fits here too, "approved/awaiting action" either way.)
+  // be where pending is" — this now sits between Applied and Issued for exactly that gap.
+  // (Previously positioned after Issued for a different purpose — a client with an existing
+  // in-force policy who's actively being worked on new business; that case still fits here too,
+  // "approved/awaiting action" either way.)
+  //
+  // 9/16 — split in two, per Karina walking through her actual pipeline end to end: "applied...
+  // we're waiting for either an instant approval or feedback from the carrier. Once we get
+  // feedback from the carrier, we would put them into pending... pending also, a lot of carriers
+  // give you 30 days to do that underwriting process... between pending and issued, we need
+  // approved because there's times where people get approved and they don't pay for it." So
+  // Pending now means the underwriting wait itself (the gap this section originally described,
+  // "approved but hasn't paid," is what Approved means instead) and Approved is new, sitting
+  // between Pending and Issued for exactly that case — approved by the carrier, not yet paid, so
+  // the advisor knows to check in before it lapses back or finally goes in force.
+  // Approved's color isn't a fresh pick — it's the midpoint blend of its two neighbors, Pending's
+  // gray and Issued's green, the same "average the two" method used to arrive at Pending's own
+  // color above. Reads as a step on the way from gray/waiting to green/issued.
+  // Karina, asked whether clients already sitting in Pending today should be moved to Approved to
+  // match (since Pending was originally built for that case): "keep them in pending" — no bulk
+  // migration; anyone actually approved-and-unpaid today gets moved by hand, same as any other
+  // stage change.
   { value: "pending", label: "Pending", color: "#737776" },
+  { value: "approved", label: "Approved", color: "#5D8269" },
   { value: "issued", label: "Issued", color: "#478c5c" },
   { value: "declined", label: "Declined", color: "#b12a29" },
 ];

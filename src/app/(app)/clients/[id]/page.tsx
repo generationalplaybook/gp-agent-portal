@@ -336,7 +336,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
-          <RemindersCard owner={{ clientId: client.id }} reminders={reminders ?? []} />
+          <RemindersCard
+            owner={{ clientId: client.id }}
+            reminders={reminders ?? []}
+            pendingExtendReminderId={
+              client.stage === "pending" && client.pending_reminder_ids?.length
+                ? client.pending_reminder_ids[client.pending_reminder_ids.length - 1]
+                : null
+            }
+          />
         </div>
 
         {/* Meetings & Calls — combined with Schedule a Call into one card (Karina, 9/8: "should
