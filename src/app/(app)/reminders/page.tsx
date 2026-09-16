@@ -40,6 +40,55 @@ export default async function RemindersPage() {
   const pending = (reminders ?? []).filter((r) => !r.sent_at);
   const completed = (reminders ?? []).filter((r) => r.sent_at);
 
+  // Day-grouped sections (9/16, Karina: "reminders need some distinguish factor... alot of
+  // reminders and dates are not exactly that visible") — with 4 reminders per client per
+  // escalating batch (Pending/Approved), this list gets long fast and it was hard to tell at a
+  // glance which ones were actually coming up soon. Headers break it into Overdue / Today /
+  // Tomorrow / This Week / Later instead of one flat strip; each reminder's own row still shows
+  // its exact date/time and overdue styling same as before.
+  function startOfDay(d: Date): Date {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  }
+  const todayStart = startOfDay(new Date());
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const dayAfterTomorrowStart = new Date(todayStart);
+  dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 2);
+  const weekEndStart = new Date(todayStart);
+  weekEndStart.setDate(weekEndStart.getDate() + 7);
+
+  type Bucket = "overdue" | "today" | "tomorrow" | "week" | "later";
+  const BUCKET_LABELS: Record<Bucket, string> = {
+    overdue: "Overdue",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    week: "This Week",
+    later: "Later",
+  };
+  const BUCKET_ORDER: Bucket[] = ["overdue", "today", "tomorrow", "week", "later"];
+
+  function bucketFor(iso: string): Bucket {
+    const t = new Date(iso).getTime();
+    if (t < todayStart.getTime()) return "overdue";
+    if (t < tomorrowStart.getTime()) return "today";
+    if (t < dayAfterTomorrowStart.getTime()) return "tomorrow";
+    if (t < weekEndStart.getTime()) return "week";
+    return "later";
+  }
+
+  const groupedPending: Record<Bucket, typeof pending> = {
+    overdue: [],
+    today: [],
+    tomorrow: [],
+    week: [],
+    later: [],
+  };
+  for (const r of pending) {
+    groupedPending[bucketFor(r.remind_at)].push(r);
+  }
+
   function rowProps(r: NonNullable<typeof reminders>[number]) {
     const client = r.clients as unknown as {
       id: string;
@@ -74,11 +123,26 @@ export default async function RemindersPage() {
         {pending.length === 0 && (
           <p className="text-sm text-[#707070]">No reminders set. Add one above, or from a client&rsquo;s or recruit&rsquo;s profile.</p>
         )}
-        <div className="flex flex-col divide-y divide-[#EDE8DF]">
-          {pending.map((r) => (
-            <ReminderRow key={r.id} reminder={r} {...rowProps(r)} />
-          ))}
-        </div>
+        {BUCKET_ORDER.map((bucket) => {
+          const rows = groupedPending[bucket];
+          if (rows.length === 0) return null;
+          return (
+            <div key={bucket} className="mb-2 last:mb-0">
+              <div
+                className={`pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-wide first:pt-0 ${
+                  bucket === "overdue" ? "text-[#8B1A1A]" : "text-[#8A7B52]"
+                }`}
+              >
+                {BUCKET_LABELS[bucket]} &middot; {rows.length}
+              </div>
+              <div className="flex flex-col divide-y divide-[#EDE8DF] border-t border-[#EDE8DF]">
+                {rows.map((r) => (
+                  <ReminderRow key={r.id} reminder={r} {...rowProps(r)} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {completed.length > 0 && (
