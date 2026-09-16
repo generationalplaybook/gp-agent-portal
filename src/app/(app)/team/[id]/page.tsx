@@ -74,7 +74,14 @@ export default async function RecruitDetailPage({ params }: { params: Promise<{ 
           <RecruitSourceField recruitId={recruit.id} source={recruit.source} />
         </div>
 
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+        {/* flex-1 (added 9/18, Karina: "this scattered box needs to be even... and in line") —
+            this sidebar column only ever has 2 cards (Stage, Reminders) against the main column's
+            3 (profile info, Linked Client, Notes), so it was running out of content well above
+            the main column's bottom edge, leaving the page looking lopsided. The grid row itself
+            already stretches both columns to the same height (CSS Grid's default align-items:
+            stretch), so growing this last card to fill whatever's left brings its bottom edge
+            back in line with the main column instead of trailing off into blank space. */}
+        <div className="flex flex-1 flex-col rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Reminders</h2>
           <RemindersCard owner={{ recruitId: recruit.id }} reminders={reminders ?? []} />
         </div>
