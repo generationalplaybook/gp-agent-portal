@@ -16,10 +16,9 @@ export default function TaskRow({ task, clientId }: { task: ClientTask; clientId
           disabled={isPending}
           onChange={(e) => startTransition(() => toggleTask(task.id, clientId, e.target.checked))}
         />
+        {/* due date no longer shown (9/16, Karina: "task doesnt need date beside it") — tasks
+            are just a plain checklist item now, title only. */}
         <span className={task.done ? "text-[#707070] line-through" : "text-[#2E2E2E]"}>{task.title}</span>
-        {task.due_at && (
-          <span className="text-xs text-[#707070]">· due {new Date(task.due_at).toLocaleDateString()}</span>
-        )}
       </label>
       <button
         onClick={() => startTransition(() => deleteTask(task.id, clientId))}

@@ -234,11 +234,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               placeholder="e.g. Send application"
               className="flex-1 rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
-            <input
-              type="date"
-              name="due_at"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
             <button
               type="submit"
               className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"

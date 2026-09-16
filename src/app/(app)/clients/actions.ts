@@ -458,13 +458,15 @@ export async function addTask(formData: FormData) {
   const { supabase } = await requireUser();
   const clientId = String(formData.get("client_id"));
   const title = String(formData.get("title") || "").trim();
-  const dueAtRaw = String(formData.get("due_at") || "");
   if (!title) return;
 
+  // due_at dropped from the Add Task form (9/16, Karina: "task doesnt need date beside it") —
+  // always inserted null now. Left the client_tasks.due_at column itself alone since existing
+  // rows may still have one set; TaskRow just no longer renders it either way.
   await supabase.from("client_tasks").insert({
     client_id: clientId,
     title,
-    due_at: dueAtRaw ? new Date(dueAtRaw).toISOString() : null,
+    due_at: null,
   });
   revalidatePath(`/clients/${clientId}`);
 }
