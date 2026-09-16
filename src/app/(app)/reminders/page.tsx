@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import ReminderRow from "../ReminderRow";
 import AddReminderButton from "./AddReminderButton";
+import RemindersTabs, { type ReminderSection } from "./RemindersTabs";
 import type { ReminderOwner } from "./actions";
 
 export default async function RemindersPage() {
@@ -113,44 +114,44 @@ export default async function RemindersPage() {
     return { owner, subjectName: "Unknown", subjectHref: undefined };
   }
 
+  // Split into the two tabs RemindersTabs renders (9/16, Karina: "today and tomorrow you should
+  // see, and then this week and later should be on a separate tab"). Built here (server side)
+  // since rowProps() needs the client/recruit data already fetched above; RemindersTabs itself
+  // just renders whatever sections it's handed and toggles which set is visible.
+  const UPCOMING_BUCKETS: Bucket[] = ["overdue", "today", "tomorrow"];
+  const LATER_BUCKETS: Bucket[] = ["week", "later"];
+  function sectionsFor(buckets: Bucket[]): ReminderSection[] {
+    return buckets.map((bucket) => ({
+      bucket,
+      label: BUCKET_LABELS[bucket],
+      rows: groupedPending[bucket].map((r) => ({ reminder: r, rowProps: rowProps(r) })),
+    }));
+  }
+  const upcomingSections = sectionsFor(UPCOMING_BUCKETS);
+  const laterSections = sectionsFor(LATER_BUCKETS);
+  const laterCount = groupedPending.week.length + groupedPending.later.length;
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="font-serif text-2xl text-[#1C1C1C]">Reminders</h1>
         <AddReminderButton />
       </div>
-      <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-        {pending.length === 0 && (
+
+      {pending.length === 0 ? (
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
           <p className="text-sm text-[#707070]">No reminders set. Add one above, or from a client&rsquo;s or recruit&rsquo;s profile.</p>
-        )}
-        {BUCKET_ORDER.map((bucket) => {
-          const rows = groupedPending[bucket];
-          if (rows.length === 0) return null;
-          return (
-            <div key={bucket} className="mb-2 last:mb-0">
-              <div
-                className={`pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-wide first:pt-0 ${
-                  bucket === "overdue" ? "text-[#8B1A1A]" : "text-[#8A7B52]"
-                }`}
-              >
-                {BUCKET_LABELS[bucket]} &middot; {rows.length}
-              </div>
-              <div className="flex flex-col divide-y divide-[#EDE8DF] border-t border-[#EDE8DF]">
-                {rows.map((r) => (
-                  <ReminderRow key={r.id} reminder={r} {...rowProps(r)} />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        </div>
+      ) : (
+        <RemindersTabs upcomingSections={upcomingSections} laterSections={laterSections} laterCount={laterCount} />
+      )}
 
       {completed.length > 0 && (
         <details className="mt-4 text-xs text-[#707070]">
           <summary className="cursor-pointer select-none">
             {completed.length} completed reminder{completed.length > 1 ? "s" : ""}
           </summary>
-          <div className="mt-2 rounded-lg border border-[#D9CFBA] bg-white p-6">
+          <div className="mt-2 rounded-lg border border-[#D9CFBA] bg-white p-4 sm:p-6">
             <div className="flex flex-col divide-y divide-[#EDE8DF]">
               {completed.map((r) => (
                 <ReminderRow key={r.id} reminder={r} {...rowProps(r)} />

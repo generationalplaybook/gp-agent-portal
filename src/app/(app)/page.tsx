@@ -13,6 +13,7 @@ import {
 import { formatDateOnly, parseDateOnly } from "@/lib/dates";
 import LocalDateTime from "./LocalDateTime";
 import OnboardingBanner from "./OnboardingBanner";
+import ClientPipelineCard from "./ClientPipelineCard";
 
 // The landing page after login (built 9/3, replacing the old straight-to-/clients redirect —
 // Karina: "I want the first home screen to be cards... it can be overwhelming" seeing the full
@@ -264,45 +265,12 @@ export default async function HomePage() {
       </Link>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {/* Client Pipeline */}
-        <div className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Client Pipeline</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 4h18l-7 8v6l-4 2v-8z" />
-            </svg>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{totalClients}</span>
-            <span className="text-sm text-[#555]">active clients</span>
-          </div>
-          {totalClients > 0 && (
-            <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-[#EDE8DF]">
-              {stageCounts.map((s) => (
-                <div
-                  key={s.value}
-                  style={{ width: `${(s.count / totalClients) * 100}%`, backgroundColor: s.color }}
-                  title={`${s.label}: ${s.count}`}
-                />
-              ))}
-            </div>
-          )}
-          <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3">
-            {stageCounts.map((s) => (
-              <Link
-                key={s.value}
-                href={`/clients?stage=${s.value}`}
-                className="-mx-1.5 flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-[#1C1C1C] hover:bg-[#F5F0E8] hover:underline"
-              >
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-                {s.label} &middot; {s.count}
-              </Link>
-            ))}
-          </div>
-          <Link href="/clients" className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
-            View all clients &rarr;
-          </Link>
-        </div>
+        {/* Client Pipeline — now a shared client component (ClientPipelineCard.tsx) so the
+            whole card can be clickable/hoverable like the other three below (9/16, Karina:
+            "Client pipeline does nothing... needs to be a clickable box as well"), while still
+            keeping its per-stage links working. See that file's comment for why it needed to
+            move out of this server component. */}
+        <ClientPipelineCard totalClients={totalClients} stageCounts={stageCounts} />
 
         {/* Upcoming Meetings */}
         <Link
