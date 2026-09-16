@@ -24,6 +24,12 @@ export default async function RemindersPage() {
   // can tell whether a given row is the current day-14 Pending reminder for that client — the one
   // "Extend 14 more days" button shows on. Same ambiguous-FK reasoning as the comment above for
   // why `!client_id` is needed at all.
+  //
+  // 9/18 — briefly tried hiding a batch reminder from this list until its own date arrived
+  // (Karina: "do you think this is overkill?" re: all 4 of a batch showing up immediately). She
+  // came back: "it needs to show in the list before the actual day" — she wants the advance
+  // visibility, overkill feeling and all — so that filtering was reverted; every reminder shows
+  // immediately again, same as it always has for every reminder in this app, automatic or manual.
   const { data: reminders } = await supabase
     .from("reminders")
     .select(

@@ -57,6 +57,14 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   old "is in Pending" one plus one of each duplicated day-3/7/10/14 pair) via the Delete button on
   each row — nothing automatic will clean those up since they were never tracked in the new arrays;
   (3) try moving a client to Approved again once the SQL is confirmed, to verify the fix.
+  **UX round-trip, 9/18** — Karina, looking at the live list: "do you think this is overkill?"
+  (all 4 of a batch showing up immediately, most not due for another week-plus). Tried hiding a
+  batch reminder from every list until its own date arrived — she came back: "no, it needs to show
+  in the list before the actual day, why do you build before we talk things through, that's
+  annoying." Fair — reverted that same day, before she'd even had to redeploy it. Landed on: leave
+  it exactly as it was before any of this — all 4 show immediately, she's fine with the "overkill"
+  feeling in exchange for seeing the whole runway ahead of time. No behavior change here at all;
+  just documenting that this was tried and explicitly rejected, so it doesn't get re-proposed.
   Scope note: this only touches the client-level Stage dropdown pipeline. The separate, older
   per-product "Awaiting carrier approval" feature (marking one product on a multi-product client as
   pending, independent of the overall Stage — `client_products.pending_approval_at`) was left as-is

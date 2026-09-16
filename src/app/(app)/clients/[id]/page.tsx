@@ -217,6 +217,43 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
+        {/* Tasks — moved up here from the bottom of the page (9/16, Karina: "this tasks, i feel
+            needs to be higher up on the page") so an advisor sees their to-do items for this
+            client right after the header, instead of having to scroll past five other cards.
+            Nothing else about Tasks changed — still a plain per-client checklist item, no
+            reminder/notification tie-in; Karina's take on that: "keep it i think its good an
+            advisor can set task then set reminder ot check it" — i.e. pairing a Task with a
+            separate manual Reminder is the intended workflow, not something to automate. */}
+        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Tasks</h2>
+          <form action={addTask} className="mb-4 flex flex-wrap gap-2">
+            <input type="hidden" name="client_id" value={client.id} />
+            <input
+              name="title"
+              required
+              placeholder="e.g. Send application"
+              className="flex-1 rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <input
+              type="date"
+              name="due_at"
+              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
+            >
+              Add Task
+            </button>
+          </form>
+          <div className="flex flex-col gap-2">
+            {(!tasks || tasks.length === 0) && <p className="text-sm text-[#707070]">No tasks yet.</p>}
+            {tasks?.map((t) => (
+              <TaskRow key={t.id} task={t} clientId={client.id} />
+            ))}
+          </div>
+        </div>
+
         {/* Family — linked household members, at a glance */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Family</h2>
@@ -284,36 +321,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {/* Tasks */}
-        <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Tasks</h2>
-          <form action={addTask} className="mb-4 flex flex-wrap gap-2">
-            <input type="hidden" name="client_id" value={client.id} />
-            <input
-              name="title"
-              required
-              placeholder="e.g. Send application"
-              className="flex-1 rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-            <input
-              type="date"
-              name="due_at"
-              className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-            />
-            <button
-              type="submit"
-              className="rounded-md bg-[#1C1C1C] px-3 py-1.5 text-xs font-semibold text-[#FAF8F4] hover:bg-[#2E2E2E]"
-            >
-              Add Task
-            </button>
-          </form>
-          <div className="flex flex-col gap-2">
-            {(!tasks || tasks.length === 0) && <p className="text-sm text-[#707070]">No tasks yet.</p>}
-            {tasks?.map((t) => (
-              <TaskRow key={t.id} task={t} clientId={client.id} />
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Sidebar: stage + analyses + financial analysis + follow-up */}
