@@ -24,14 +24,29 @@ export default function StageSelect({
   const [currentStage, setCurrentStage] = useState<ClientStage>(stage);
   const [resolving, setResolving] = useState(false);
   const [chosenId, setChosenId] = useState("");
+  const [error, setError] = useState("");
 
+  // 9/18 — this used to fire updateStage without awaiting or catching anything, so a failure on
+  // the server (e.g. the live database not yet having a new enum value or column this build
+  // expects) left the dropdown showing the new stage optimistically while nothing had actually
+  // changed, with no error shown anywhere — see BACKLOG.md. Now it reverts the dropdown and shows
+  // the actual error message on a failure, instead of silently disagreeing with what's saved.
   function handleChange(next: ClientStage) {
     if (next === "issued" && quotedProducts.length > 0) {
       setResolving(true);
       return;
     }
+    const previous = currentStage;
     setCurrentStage(next);
-    startTransition(() => updateStage(clientId, next));
+    setError("");
+    startTransition(async () => {
+      try {
+        await updateStage(clientId, next);
+      } catch (e) {
+        setCurrentStage(previous);
+        setError(e instanceof Error ? e.message : "Could not update stage.");
+      }
+    });
   }
 
   function confirmResolve() {
@@ -62,6 +77,7 @@ export default function StageSelect({
           </option>
         ))}
       </select>
+      {error && <p className="max-w-[14rem] text-right text-xs text-[#8B1A1A]">{error}</p>}
 
       {resolving && (
         <div className="w-72 rounded-md border border-[#D9CFBA] bg-white p-3 text-left shadow-sm">

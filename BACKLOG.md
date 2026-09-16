@@ -5,7 +5,7 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 ## ⚠ Needs Testing — built, but NOT yet verified by Karina
 
 - **New "Approved" pipeline stage + escalating Pending/Approved check-in reminders (built 9/16,
-  NOT yet run against the live database — Karina needs to run a SQL snippet first).** Grew out of
+  bug found live 9/18, fixed same day — NOT yet re-verified by Karina).** Grew out of
   Karina walking through her real pipeline: Applied waits on the carrier's decision; once feedback
   starts, the client moves into Pending, the underwriting wait itself (carriers often allow up to
   ~30 days); separately, once the carrier says yes but the client hasn't paid, that's its own
@@ -38,6 +38,25 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   script; anyone actually approved-and-unpaid today just gets moved to Approved by hand, same as
   any other stage change — existing Pending clients are simply read under Pending's new meaning
   (the carrier-underwriting cadence, with Extend) going forward.
+  **Bug found live 9/18** — Karina moved a client (Jeanine Virgin) to Approved: the dropdown showed
+  "Approved" but the Pipeline Stage badge kept showing "Pending," and the Reminders list ended up
+  with the batch duplicated (day 3/7/10/14 each appearing twice, a minute apart) plus the client's
+  old pre-this-feature "is in Pending" reminder still sitting there. Root cause: `updateStage`
+  built the new reminder batch FIRST, then wrote `stage` and the batch's ids together in one
+  update whose error was never checked — so when that write failed (the live database hadn't
+  actually picked up the new 'approved' enum value/columns yet), the reminders had already been
+  created (separate inserts, unaffected), but `stage` itself silently never changed. The dropdown
+  looked like nothing happened, so retrying it doubled everything while the stage stayed stuck.
+  Fixed: `stage` is now written on its own, first, and throws immediately on any error — before
+  any reminder is created — and the dropdown (StageSelect.tsx) now actually awaits the action,
+  reverts itself and shows the real error message if it fails, instead of optimistically showing a
+  stage that never actually saved. **Still needs from Karina:** (1) re-run the schema.sql section
+  53 SQL (it's written with `if not exists`, safe to run again) to confirm 'approved' and the three
+  new columns actually exist on the live database — that's almost certainly why this failed; (2)
+  manually delete the duplicate/stale reminders already sitting on Jeanine Virgin's profile (the
+  old "is in Pending" one plus one of each duplicated day-3/7/10/14 pair) via the Delete button on
+  each row — nothing automatic will clean those up since they were never tracked in the new arrays;
+  (3) try moving a client to Approved again once the SQL is confirmed, to verify the fix.
   Scope note: this only touches the client-level Stage dropdown pipeline. The separate, older
   per-product "Awaiting carrier approval" feature (marking one product on a multi-product client as
   pending, independent of the overall Stage — `client_products.pending_approval_at`) was left as-is

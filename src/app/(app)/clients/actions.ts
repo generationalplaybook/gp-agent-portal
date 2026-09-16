@@ -216,7 +216,8 @@ export async function extendPendingCheckin(clientId: string): Promise<void> {
   }
 
   const patch = await createStageBatch(clientId, current.full_name ?? "client", "pending");
-  await supabase.from("clients").update(patch).eq("id", clientId);
+  const { error } = await supabase.from("clients").update(patch).eq("id", clientId);
+  if (error) throw new Error(error.message);
 
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
@@ -250,20 +251,33 @@ export async function updateStage(clientId: string, stage: ClientStage) {
     ((stage === "pending" && (current?.pending_reminder_ids?.length ?? 0) > 0) ||
       (stage === "approved" && (current?.approved_reminder_ids?.length ?? 0) > 0));
 
-  let patch: Record<string, unknown> = {};
+  // 9/18 — bug found live (Karina: "i changed a client to approved and it doesnt change the
+  // status", then a screenshot full of duplicated day-3/7/10/14 reminders): this used to build
+  // the reminder batch FIRST, then write { stage, ...patch } in one combined update with its
+  // error silently ignored. When that write failed — here, because the live database hadn't
+  // actually picked up the 'approved' enum value yet — the reminders had already been created
+  // (they're separate inserts, unaffected by the enum), but `stage` itself never changed. The
+  // dropdown looked like nothing happened, so retrying it ran the whole thing again, doubling
+  // every reminder each time with the stage still stuck. Now the stage itself is written FIRST,
+  // on its own, and any error throws immediately — before any reminder exists — so a failure here
+  // is loud (surfaces in the UI, see StageSelect.tsx) instead of quietly leaving orphaned
+  // reminders behind with nothing to show for them.
+  const { error: stageError } = await supabase.from("clients").update({ stage }).eq("id", clientId);
+  if (stageError) throw new Error(stageError.message);
+
   if (!alreadyInStageWithBatch) {
+    let patch: Record<string, unknown> = {};
     if (current?.stage === "pending" || current?.stage === "approved") {
       patch = { ...patch, ...(await clearStageBatches(supabase, clientId)) };
     }
     if (stage === "pending" || stage === "approved") {
       patch = { ...patch, ...(await createStageBatch(clientId, current?.full_name ?? "client", stage)) };
     }
+    if (Object.keys(patch).length > 0) {
+      await supabase.from("clients").update(patch).eq("id", clientId);
+    }
   }
 
-  await supabase
-    .from("clients")
-    .update({ stage, ...patch })
-    .eq("id", clientId);
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
   revalidatePath("/reminders");
