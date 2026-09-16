@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ReminderRow from "../ReminderRow";
 import type { ReminderOwner } from "./actions";
 
-export type Bucket = "overdue" | "today" | "tomorrow" | "week" | "later";
+type Bucket = "overdue" | "today" | "tomorrow" | "week" | "later";
+
+const BUCKET_LABELS: Record<Bucket, string> = {
+  overdue: "Overdue",
+  today: "Today",
+  tomorrow: "Tomorrow",
+  week: "This Week",
+  later: "Later",
+};
+const UPCOMING_BUCKETS: Bucket[] = ["overdue", "today", "tomorrow"];
+const LATER_BUCKETS: Bucket[] = ["week", "later"];
 
 interface ReminderLike {
   id: string;
@@ -20,29 +30,73 @@ interface RowProps {
   pendingExtend?: boolean;
 }
 
-export interface ReminderSection {
-  bucket: Bucket;
-  label: string;
-  rows: { reminder: ReminderLike; rowProps: RowProps }[];
+interface Item {
+  reminder: ReminderLike;
+  rowProps: RowProps;
 }
 
-// Split out of reminders/page.tsx (9/16) so the day-grouped sections can live behind two tabs
-// instead of one long flat list — Karina: "today and tomorrow you should see, and then this week
-// and later should be on a separate tab... this page could get really, really long otherwise."
-// Overdue/Today/Tomorrow stay on the tab that's already selected when the page loads (so nothing
-// extra needs to be clicked to see them); This Week/Later sit behind the second tab.
-export default function RemindersTabs({
-  upcomingSections,
-  laterSections,
-  laterCount,
-}: {
-  upcomingSections: ReminderSection[];
-  laterSections: ReminderSection[];
-  laterCount: number;
-}) {
+interface Section {
+  bucket: Bucket;
+  label: string;
+  rows: Item[];
+}
+
+// Split out of reminders/page.tsx (9/16) for two reasons:
+// 1. The day-grouped sections (Overdue/Today/Tomorrow/This Week/Later) live behind two tabs
+//    instead of one long flat list — Karina: "today and tomorrow you should see, and then this
+//    week and later should be on a separate tab... this page could get really, really long
+//    otherwise." Overdue/Today/Tomorrow stay on the tab that's already selected on page load;
+//    This Week/Later sit behind the second tab.
+// 2. The bucketing itself has to happen HERE, in a "use client" component, not back in the
+//    server-rendered page — Karina, 9/16: "why does this show as today when today is Sept
+//    15th." The page fetches data in a Server Component, which runs on the server's clock
+//    (UTC in this deployment); computing "today"/"tomorrow" boundaries there used the server's
+//    calendar day, not the advisor's. Same root cause LocalDateTime.tsx exists to fix for a
+//    single timestamp — this just needed the same fix applied to calendar-day boundaries.
+export default function RemindersTabs({ items }: { items: Item[] }) {
   const [tab, setTab] = useState<"upcoming" | "later">("upcoming");
+
+  const { upcomingSections, laterSections, laterCount, upcomingCount } = useMemo(() => {
+    function startOfDay(d: Date): Date {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    }
+    const todayStart = startOfDay(new Date());
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const dayAfterTomorrowStart = new Date(todayStart);
+    dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 2);
+    const weekEndStart = new Date(todayStart);
+    weekEndStart.setDate(weekEndStart.getDate() + 7);
+
+    function bucketFor(iso: string): Bucket {
+      const t = new Date(iso).getTime();
+      if (t < todayStart.getTime()) return "overdue";
+      if (t < tomorrowStart.getTime()) return "today";
+      if (t < dayAfterTomorrowStart.getTime()) return "tomorrow";
+      if (t < weekEndStart.getTime()) return "week";
+      return "later";
+    }
+
+    const grouped: Record<Bucket, Item[]> = { overdue: [], today: [], tomorrow: [], week: [], later: [] };
+    for (const item of items) {
+      grouped[bucketFor(item.reminder.remind_at)].push(item);
+    }
+
+    function sectionsFor(buckets: Bucket[]): Section[] {
+      return buckets.map((bucket) => ({ bucket, label: BUCKET_LABELS[bucket], rows: grouped[bucket] }));
+    }
+
+    return {
+      upcomingSections: sectionsFor(UPCOMING_BUCKETS),
+      laterSections: sectionsFor(LATER_BUCKETS),
+      laterCount: grouped.week.length + grouped.later.length,
+      upcomingCount: grouped.overdue.length + grouped.today.length + grouped.tomorrow.length,
+    };
+  }, [items]);
+
   const sections = tab === "upcoming" ? upcomingSections : laterSections;
-  const upcomingCount = upcomingSections.reduce((n, s) => n + s.rows.length, 0);
 
   return (
     <div>

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import ReminderRow from "../ReminderRow";
 import AddReminderButton from "./AddReminderButton";
-import RemindersTabs, { type ReminderSection } from "./RemindersTabs";
+import RemindersTabs from "./RemindersTabs";
 import type { ReminderOwner } from "./actions";
 
 export default async function RemindersPage() {
@@ -41,55 +41,6 @@ export default async function RemindersPage() {
   const pending = (reminders ?? []).filter((r) => !r.sent_at);
   const completed = (reminders ?? []).filter((r) => r.sent_at);
 
-  // Day-grouped sections (9/16, Karina: "reminders need some distinguish factor... alot of
-  // reminders and dates are not exactly that visible") — with 4 reminders per client per
-  // escalating batch (Pending/Approved), this list gets long fast and it was hard to tell at a
-  // glance which ones were actually coming up soon. Headers break it into Overdue / Today /
-  // Tomorrow / This Week / Later instead of one flat strip; each reminder's own row still shows
-  // its exact date/time and overdue styling same as before.
-  function startOfDay(d: Date): Date {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
-  }
-  const todayStart = startOfDay(new Date());
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  const dayAfterTomorrowStart = new Date(todayStart);
-  dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 2);
-  const weekEndStart = new Date(todayStart);
-  weekEndStart.setDate(weekEndStart.getDate() + 7);
-
-  type Bucket = "overdue" | "today" | "tomorrow" | "week" | "later";
-  const BUCKET_LABELS: Record<Bucket, string> = {
-    overdue: "Overdue",
-    today: "Today",
-    tomorrow: "Tomorrow",
-    week: "This Week",
-    later: "Later",
-  };
-  const BUCKET_ORDER: Bucket[] = ["overdue", "today", "tomorrow", "week", "later"];
-
-  function bucketFor(iso: string): Bucket {
-    const t = new Date(iso).getTime();
-    if (t < todayStart.getTime()) return "overdue";
-    if (t < tomorrowStart.getTime()) return "today";
-    if (t < dayAfterTomorrowStart.getTime()) return "tomorrow";
-    if (t < weekEndStart.getTime()) return "week";
-    return "later";
-  }
-
-  const groupedPending: Record<Bucket, typeof pending> = {
-    overdue: [],
-    today: [],
-    tomorrow: [],
-    week: [],
-    later: [],
-  };
-  for (const r of pending) {
-    groupedPending[bucketFor(r.remind_at)].push(r);
-  }
-
   function rowProps(r: NonNullable<typeof reminders>[number]) {
     const client = r.clients as unknown as {
       id: string;
@@ -114,22 +65,15 @@ export default async function RemindersPage() {
     return { owner, subjectName: "Unknown", subjectHref: undefined };
   }
 
-  // Split into the two tabs RemindersTabs renders (9/16, Karina: "today and tomorrow you should
-  // see, and then this week and later should be on a separate tab"). Built here (server side)
-  // since rowProps() needs the client/recruit data already fetched above; RemindersTabs itself
-  // just renders whatever sections it's handed and toggles which set is visible.
-  const UPCOMING_BUCKETS: Bucket[] = ["overdue", "today", "tomorrow"];
-  const LATER_BUCKETS: Bucket[] = ["week", "later"];
-  function sectionsFor(buckets: Bucket[]): ReminderSection[] {
-    return buckets.map((bucket) => ({
-      bucket,
-      label: BUCKET_LABELS[bucket],
-      rows: groupedPending[bucket].map((r) => ({ reminder: r, rowProps: rowProps(r) })),
-    }));
-  }
-  const upcomingSections = sectionsFor(UPCOMING_BUCKETS);
-  const laterSections = sectionsFor(LATER_BUCKETS);
-  const laterCount = groupedPending.week.length + groupedPending.later.length;
+  // Day-grouping (Overdue/Today/Tomorrow/This Week/Later) used to happen right here, server-side
+  // — but this is a Server Component, which runs on the server's clock (UTC in this deployment),
+  // not the advisor's. Karina, 9/16: "why does this show as today when today is Sept 15th" — a
+  // reminder due early on the 16th was landing in "Today" because the server's UTC clock had
+  // already rolled over to the 16th while it was still the evening of the 15th in her timezone.
+  // Same root cause LocalDateTime.tsx exists to fix for individual timestamps; the grouping logic
+  // needed the identical fix, just for calendar-day boundaries instead of a single date string —
+  // so it now lives inside RemindersTabs ("use client"), computed from the browser's own clock.
+  const items = pending.map((r) => ({ reminder: r, rowProps: rowProps(r) }));
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -143,7 +87,7 @@ export default async function RemindersPage() {
           <p className="text-sm text-[#707070]">No reminders set. Add one above, or from a client&rsquo;s or recruit&rsquo;s profile.</p>
         </div>
       ) : (
-        <RemindersTabs upcomingSections={upcomingSections} laterSections={laterSections} laterCount={laterCount} />
+        <RemindersTabs items={items} />
       )}
 
       {completed.length > 0 && (
