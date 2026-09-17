@@ -703,3 +703,15 @@ export const KB_PRODUCTS: KBProductOption[] = KB.filter(
 )
   .map((item) => ({ name: item.name, carrier: inferCarrier(item), groupLabel: item.label, productType: inferProductType(item) }))
   .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel) || a.name.localeCompare(b.name));
+
+// The two Ethos Estate Planning entries KB_PRODUCTS deliberately excludes (see the comment
+// above it) — kept out of the Illustration/Scenario picker on purpose, since there's no cash
+// value/death benefit to illustrate. Karina, 9/16: she still wants them trackable as real
+// products on a client's record ("we need to have two of those... so we have record and it can
+// contact the family member if needed") — added 9/16, so this is a SEPARATE list, only wired
+// into the "+ Add Product" picker (ProductsSection.tsx), never into KB_PRODUCTS/the Illustration
+// picker. Carrier is genuinely "Ethos" here (not brokered underwriting like their insurance
+// products) — this is Ethos's own legal-document service.
+export const KB_ESTATE_PLANNING_PRODUCTS: KBProductOption[] = KB.filter((item) => /estate planning/i.test(item.type))
+  .map((item) => ({ name: item.name, carrier: item.label, groupLabel: item.label, productType: "Estate Planning" as ProductTypeOption }))
+  .sort((a, b) => a.name.localeCompare(b.name));

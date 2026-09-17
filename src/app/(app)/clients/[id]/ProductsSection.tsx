@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
-import { KB_PRODUCTS } from "@/lib/kb-data";
+import { KB_PRODUCTS, KB_ESTATE_PLANNING_PRODUCTS } from "@/lib/kb-data";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
 import DollarInput from "./DollarInput";
@@ -15,7 +15,12 @@ import DollarInput from "./DollarInput";
 // picking a known product should autofill Carrier and Type too, same convenience the "+ Add
 // Illustration" picker on ScenariosSection.tsx already has (KB_PRODUCTS already resolves the
 // real underwriting carrier — e.g. "Accumulation IUL (via Ethos)" -> North American, not Ethos).
-const PRODUCT_NAME_SUGGESTIONS = KB_PRODUCTS.map((p) => p.name);
+// KB_ESTATE_PLANNING_PRODUCTS (Ethos Will/Trust Estate Plan) added here 9/16 — these are
+// deliberately NOT part of KB_PRODUCTS (no illustration exists for them), but Karina wants them
+// pickable here so there's a real product record on file. This is the ONLY place they're wired
+// in — ScenariosSection.tsx/ScenarioForm.tsx still use KB_PRODUCTS alone.
+const ADD_PRODUCT_OPTIONS = [...KB_PRODUCTS, ...KB_ESTATE_PLANNING_PRODUCTS];
+const PRODUCT_NAME_SUGGESTIONS = ADD_PRODUCT_OPTIONS.map((p) => p.name);
 
 const EMPTY_FIELDS: ProductFields = {
   product_name: "",
@@ -73,7 +78,7 @@ export default function ProductsSection({
 
   const productLookup = useMemo(() => {
     const byName = new Map<string, (typeof KB_PRODUCTS)[number]>();
-    KB_PRODUCTS.forEach((p) => byName.set(p.name, p));
+    ADD_PRODUCT_OPTIONS.forEach((p) => byName.set(p.name, p));
     return byName;
   }, []);
 

@@ -310,15 +310,20 @@ export interface ClientMeeting {
   created_at: string;
 }
 
-export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Final Expense", "Annuity", "Other"];
+// "Estate Planning" added 9/16 — Karina wants Ethos's Will Estate Plan / Trust Estate Plan
+// tracked as real products on a client's record (no illustration involved, just a record that
+// it's on file — see KB_ESTATE_PLANNING_PRODUCTS in kb-data.ts for why these are kept out of
+// the Illustration/Scenario picker specifically).
+export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Final Expense", "Annuity", "Estate Planning", "Other"];
 
 // Permanent/lifetime coverage — no meaningful "expiration date" the way term life does (Karina,
 // 9/4: a final expense whole life, whole life, or IUL policy doesn't expire). Used to hide the
 // generic Expiration date field on the Add/Edit Product form for these types, the same way it's
 // already hidden for a term policy (replaced by Term expiration date) and an annuity (replaced
 // by Surrender period ends). Left showing for "Other" and a blank/unselected type since it's
-// unknown what those actually are.
-export const PERMANENT_PRODUCT_TYPES = ["Whole Life", "IUL", "Final Expense"];
+// unknown what those actually are. Estate Planning added here too (9/16) — a Will/Trust package
+// includes free lifetime edits, no expiration to track.
+export const PERMANENT_PRODUCT_TYPES = ["Whole Life", "IUL", "Final Expense", "Estate Planning"];
 
 // The riders that show up often enough to offer as one-click checkboxes when logging a product.
 // Anything else (Ethos Perks, a carrier-specific endorsement, etc.) gets typed in as a custom

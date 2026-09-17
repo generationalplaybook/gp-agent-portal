@@ -217,6 +217,34 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   form itself when the carrier is Ethos, so an advisor doesn't forget to mention it; (c) nothing
   further — the KB coverage may already be exactly what she was thinking of, and she just wanted
   to confirm it existed. Don't build anything until she says which surface she means.
+  **RESOLVED 9/16 — surface chosen, BUILT.** Karina: "we need to build in a product... they have
+  two products, the Will Estate Plan and the Trust Estate Plan... we need to have two of those
+  because we would like to keep record of that, so when something does happen to the client we
+  have record." Answer to candidates (a)/(b)/(c) above: neither — she wants them trackable as
+  real **Products** on a client's record (not the PDF, not a form reminder), explicitly with no
+  illustration attached ("there wouldn't be an illustration for it").
+  Both KB entries already existed and were already deliberately excluded from `KB_PRODUCTS`
+  (`kb-data.ts`) — the shared list behind BOTH the "+ Add Product" picker and the "+ Add
+  Illustration"/Scenario picker — specifically because they have no cash value/death benefit
+  numbers to illustrate (see the comment above `KB_PRODUCTS`). Rather than loosen that shared
+  filter (which would've made them illustratable too, the opposite of what she asked), added a
+  separate `KB_ESTATE_PLANNING_PRODUCTS` list and wired it into ONLY the "+ Add Product" picker
+  on `ProductsSection.tsx` (name suggestions + the Carrier/Type autofill-on-pick). The
+  Illustration/Scenario picker (`ScenariosSection.tsx`/`ScenarioForm.tsx`) still uses
+  `KB_PRODUCTS` alone, untouched — picking "Will Estate Plan" or "Trust Estate Plan" is only
+  possible from Products, never from Add Illustration.
+  Also added a new "Estate Planning" entry to `PRODUCT_TYPE_OPTIONS` (`types.ts`) — no schema
+  change needed, `product_type` is a plain text column — and to `PERMANENT_PRODUCT_TYPES`, so the
+  Add/Edit Product form correctly hides "Expiration date" for it (free lifetime edits, no term).
+  Carrier autofills to "Ethos" (their own legal-document service, not brokered underwriting like
+  their insurance products). Everything else on the Add Product form (face amount, premium,
+  riders, etc.) stays visible but is optional and can just be left blank for these — same as it
+  already is for any other product type.
+  Not built: no dedicated "who to contact" field on the product itself. Contact info for a
+  client's family already lives in the existing Family section (name/phone/email per linked
+  family member) — flag if you want something more structured tied specifically to the Will/Trust
+  record (e.g. a named executor/contact field), otherwise the "Other notes" field on the product
+  is there if you want to jot one down for now.
 
 - **Knowledge Base — Level vs. Increasing Death Benefit concept; existing "Death Benefit
   Increase" field needs a caveat, not a rename (flagged 9/1, discuss before building — CORE
