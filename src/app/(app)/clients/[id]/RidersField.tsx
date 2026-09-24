@@ -85,7 +85,7 @@ export default function RidersField({
               addCustom();
             }
           }}
-          placeholder="Other rider (e.g. Ethos Perks)"
+          placeholder="Other rider (e.g. Waiver of Premium)"
           className="flex-1 rounded-md border border-[#D9CFBA] px-2.5 py-1 text-xs outline-none focus:border-[#1C1C1C]"
         />
         <button

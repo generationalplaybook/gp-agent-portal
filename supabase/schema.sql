@@ -1508,3 +1508,42 @@ alter type client_stage add value if not exists 'approved';
 alter table public.clients add column if not exists pending_reminder_ids uuid[] not null default '{}';
 alter table public.clients add column if not exists stage_entered_approved_at timestamptz;
 alter table public.clients add column if not exists approved_reminder_ids uuid[] not null default '{}';
+
+-- ─────────────────────────────────────────────────────────────
+-- 54. Presentations (added 9/18) — Karina: "we need to work on the presentations... let's do
+-- that now." Client-facing sales decks an advisor shows during a meeting (product pitches,
+-- company overview, etc.) — distinct from the internal Knowledge Base (`kb-data.ts`), which is
+-- reference material an advisor reads, not something shown to a client. She and her team are
+-- still building the actual decks, so this is just the library to drop them into: a title, a
+-- short note on what it's for, and a link out to wherever the real deck lives (Google Slides,
+-- Canva, a PDF, PowerPoint Online...) — no file storage/embedding here, same lightweight
+-- "link out" pattern Carrier Logins already uses for portal login URLs.
+-- Private per advisor for now, same isolation model as every other advisor-owned table in this
+-- file (carrier_logins, state_licenses, clients itself) — nothing in this codebase has ever
+-- shared a table across advisors, so this defaults to that same pattern rather than introducing
+-- a new one unasked. Flag if the whole team should see one shared library instead.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.presentations (
+  id uuid primary key default gen_random_uuid(),
+  agent_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  description text,
+  link text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists presentations_agent_id_idx on public.presentations(agent_id);
+
+alter table public.presentations enable row level security;
+
+drop policy if exists "Agents manage their own presentations" on public.presentations;
+create policy "Agents manage their own presentations"
+  on public.presentations for all
+  using (agent_id = auth.uid())
+  with check (agent_id = auth.uid());
+
+drop trigger if exists presentations_set_updated_at on public.presentations;
+create trigger presentations_set_updated_at
+  before update on public.presentations
+  for each row execute procedure public.set_updated_at();

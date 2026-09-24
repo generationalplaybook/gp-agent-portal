@@ -18,6 +18,7 @@ export const LINKS = [
   { href: "/client-analyzer", label: "Client Analyzer" },
   { href: "/compare", label: "Compare" },
   { href: "/downloads", label: "Downloads" },
+  { href: "/presentations", label: "Presentations" },
 ];
 
 export default function NavLinks() {

@@ -169,6 +169,23 @@ export interface StateLicense {
   updated_at: string;
 }
 
+// Presentations (added 9/18) — client-facing sales decks an advisor shows during a meeting
+// (product pitches, company overview, etc.), NOT the internal Knowledge Base. Karina's still
+// building the actual decks with her team; this is just the library to drop them into as they're
+// ready — title + what it's for + a link out to wherever the deck actually lives (Google Slides,
+// Canva, a PDF, PowerPoint Online...). Private per advisor for now, same isolation model as every
+// other advisor-owned table in this app (Carrier Logins, State Licenses, clients themselves) —
+// flag if this should actually be shared across a whole team instead, that's a bigger change.
+export interface Presentation {
+  id: string;
+  agent_id: string;
+  title: string;
+  description: string | null;
+  link: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Client {
   id: string;
   owner_id: string;
@@ -326,15 +343,18 @@ export const PRODUCT_TYPE_OPTIONS = ["Term Life", "Whole Life", "IUL", "Final Ex
 export const PERMANENT_PRODUCT_TYPES = ["Whole Life", "IUL", "Final Expense", "Estate Planning"];
 
 // The riders that show up often enough to offer as one-click checkboxes when logging a product.
-// Anything else (Ethos Perks, a carrier-specific endorsement, etc.) gets typed in as a custom
-// rider instead — riders vary a lot by carrier, so this list is deliberately just the common
-// ones, not exhaustive.
+// Anything else (a carrier-specific endorsement, etc.) gets typed in as a custom rider instead —
+// riders vary a lot by carrier, so this list is deliberately just the common ones, not exhaustive.
+// Ethos Perks added 9/24 (Karina: comes up often enough that typing it every time was a hassle) —
+// this list is shared by RidersField wherever it's used (Illustration Scenarios, real Products,
+// real Illustrations), so it now shows as a checkbox in all three.
 export const COMMON_RIDER_OPTIONS = [
   "Accelerated Death Benefit Rider – Terminal Illness",
   "Accelerated Death Benefit Rider – Critical Illness",
   "Accelerated Death Benefit Rider – Chronic Illness",
   "Overloan Protection Benefit Endorsement",
   "Protected Death Benefit Endorsement",
+  "Ethos Perks",
 ];
 
 // Annuity-specific riders (added 9/4) — a completely different common list than life insurance's

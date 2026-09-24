@@ -32,6 +32,18 @@ function withCarrier(name: string, carrier: string | null): string {
   return `${name} (${carrier})`;
 }
 
+// Formats a Term Length field for display — added 9/24 per Karina, after typing a bare "30"
+// rendered as "30 term" on the summary ("the term should say 30 year the work eyar should be
+// automatic"). The field is free text (so "Annual Renewable" or anything else still works
+// unchanged), but the common case is an advisor just typing the number — this turns THAT case
+// into "30-year term" automatically instead of requiring "30 years" to be typed by hand every
+// time. Used everywhere a term length renders (both the primary field and options 2/3).
+function formatTermLength(termLength: string): string {
+  const trimmed = termLength.trim();
+  if (/^\d+$/.test(trimmed)) return `${trimmed}-year`;
+  return trimmed;
+}
+
 // The header's big title used to just be input.productName — added 9/14 per Karina, after she
 // saw the header showing the specific product's name/carrier (e.g. "Final Expense Whole Life —
 // Banner Life," carried over from whatever the advisor typed into that scenario's product name
@@ -409,7 +421,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     setText(OBSIDIAN);
-    if (data.termLength) doc.text(data.termLength + " term", M + 280, y + 26);
+    if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
     if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
     if (data.conversionDeadline) {
       doc.setFont("helvetica", "normal");
@@ -1101,28 +1113,101 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "term") {
-    setFill(NEUTRAL_FILL);
-    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    setText(OBSIDIAN);
-    doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    setText(CHARCOAL);
-    doc.text("Death Benefit", M + 14, y + 50);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    setText(OBSIDIAN);
-    if (data.termLength) doc.text(data.termLength + " term", M + 280, y + 26);
-    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
-    if (data.conversionDeadline) {
+    // Up to 3 options — added 9/24 per Karina: "i want to show my client 500,000 and another
+    // option... allow up to 3 options?" Same stacked-full-width-row pattern as Final Expense's
+    // multi-option rendering below: with just the one (primary) option, keep the exact original
+    // single big box for full backward compatibility; with 2 or 3, stack one full-width row per
+    // option instead. An option's term length falls back to the primary termLength when left
+    // blank, matching TermOptionsEditor's placeholder text in ScenarioForm.tsx.
+    const hasOption2 = !!(
+      (data.deathBenefit2 && data.deathBenefit2.trim()) ||
+      (data.levelPremium2 && data.levelPremium2.trim()) ||
+      (data.termLength2 && data.termLength2.trim())
+    );
+    const hasOption3 = !!(
+      (data.deathBenefit3 && data.deathBenefit3.trim()) ||
+      (data.levelPremium3 && data.levelPremium3.trim()) ||
+      (data.termLength3 && data.termLength3.trim())
+    );
+
+    if (!hasOption2 && !hasOption3) {
+      setFill(NEUTRAL_FILL);
+      doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      setText(OBSIDIAN);
+      doc.text(data.deathBenefit ? "$" + formatMoney(data.deathBenefit) : "—", M + 14, y + 34);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
+      doc.setFontSize(9);
       setText(CHARCOAL);
-      doc.text("Convertible without exam until " + data.conversionDeadline, M + 280, y + 60);
+      doc.text("Death Benefit", M + 14, y + 50);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      setText(OBSIDIAN);
+      if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
+      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
+      if (data.conversionDeadline) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        setText(CHARCOAL);
+        doc.text("Convertible without exam until " + data.conversionDeadline, M + 280, y + 60);
+      }
+      y += 96;
+    } else {
+      const options: { label: string; db?: string; prem?: string; term?: string }[] = [
+        { label: "Option 1", db: data.deathBenefit, prem: data.levelPremium, term: data.termLength },
+      ];
+      if (hasOption2) {
+        options.push({
+          label: "Option 2",
+          db: data.deathBenefit2,
+          prem: data.levelPremium2,
+          term: (data.termLength2 && data.termLength2.trim()) || data.termLength,
+        });
+      }
+      if (hasOption3) {
+        options.push({
+          label: "Option 3",
+          db: data.deathBenefit3,
+          prem: data.levelPremium3,
+          term: (data.termLength3 && data.termLength3.trim()) || data.termLength,
+        });
+      }
+
+      const rowH = 78;
+      const rowGap = 14;
+      ensureSpace(options.length * rowH + (options.length - 1) * rowGap + 18);
+      options.forEach((opt, i) => {
+        setFill(NEUTRAL_FILL);
+        doc.roundedRect(M, y, W - 2 * M, rowH, 4, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        setText(GRAY);
+        doc.text(opt.label.toUpperCase(), M + 14, y + 18);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        setText(OBSIDIAN);
+        doc.text(opt.db ? "$" + formatMoney(opt.db) : "—", M + 14, y + 44);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        setText(CHARCOAL);
+        doc.text("Death Benefit", M + 14, y + 60);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        setText(OBSIDIAN);
+        if (opt.term) doc.text(formatTermLength(opt.term) + " term", M + 280, y + 30);
+        if (opt.prem) doc.text("$" + formatMoney(opt.prem) + " level premium", M + 280, y + 48);
+        y += rowH + (i < options.length - 1 ? rowGap : 18);
+      });
+
+      if (data.conversionDeadline) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        setText(CHARCOAL);
+        doc.text("Convertible without exam until " + data.conversionDeadline, M, y);
+        y += 18;
+      }
     }
-    y += 96;
 
     if (data.riders.length > 0) {
       doc.setFont("helvetica", "bold");

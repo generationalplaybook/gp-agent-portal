@@ -1913,8 +1913,26 @@ Things Karina has asked to defer to a future build, so they don't get lost.
 
 - **Downloads section.** Left alone for now — no changes requested yet.
 
-- **Presentation embed / training & licensing content.** Karina is still building the
-  presentation materials; she said we can add this once that's ready.
+- **Presentation embed / training & licensing content — scoped down and BUILT 9/18, real content
+  still to come.** Karina: "we need to work on the presentations as well, lets do that now. I
+  feel like the portal is in a good place." Clarified before building: these are **client-facing
+  sales presentations** (not training material for recruits, not licensing/compliance docs), she
+  wants a brand-new section for them, and the actual decks aren't finished yet — "we are working
+  on presentation together still."
+  New "Presentations" nav item (`NavLinks.tsx`, shared with `MobileNav.tsx`) → `/presentations` —
+  a simple library, not an embed: each entry is a title, an optional one-line description ("what
+  it's for / when to use it"), and a link out to wherever the real deck lives (Google Slides,
+  Canva, a PDF, PowerPoint Online — anything). No file upload/embedding, same lightweight
+  "link out" pattern Carrier Logins already uses for portal login URLs. Add/edit/delete happens
+  right on the page — no code needed to add a deck as each one gets finished.
+  New table `presentations` (schema.sql section 54) — **private per advisor**, same isolation
+  model as Carrier Logins/State Licenses/clients themselves. Nothing in this app has ever shared
+  a table across advisors, so this defaulted to that same pattern rather than guessing at a new
+  one — **flag if you actually want the whole team sharing one shared library instead**, that's
+  a real change (this app's isolation model has been strict per-advisor everywhere else).
+  **Needs the new SQL run against the live Supabase database** (schema.sql section 54, `if not
+  exists`/idempotent, safe to re-run) before this page will work — same as every other new table
+  this session.
 
 - **Brand the invite/auth emails.** Right now invite emails come from Supabase's default
   "Supabase Auth" sender with generic wording/styling ("You've been invited... powered by

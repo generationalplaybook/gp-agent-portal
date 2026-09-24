@@ -103,6 +103,20 @@ export interface TermIllustration {
   riders: string[];
   conversionDeadline: string;
   notes: string;
+  // Second and third options — added 9/24 per Karina, same pattern as Final Expense's
+  // deathBenefit2/3 (see FinalExpenseIllustration below): "there are different options like i
+  // want to show my client 500,000 and another option... allow up to 3 options". Term length is
+  // included per-option too (unlike Final Expense) since term policies commonly get compared at
+  // different lengths (e.g. 20 vs 30 year), not just different face amounts — left blank, an
+  // option falls back to the scenario's primary termLength above. deathBenefit/levelPremium/
+  // termLength above stay the primary (first) option, optional/additive, so every existing Term
+  // scenario is unaffected.
+  deathBenefit2?: string;
+  levelPremium2?: string;
+  termLength2?: string;
+  deathBenefit3?: string;
+  levelPremium3?: string;
+  termLength3?: string;
 }
 
 // Final Expense Whole Life is guaranteed- or simplified-issue and permanent from day one — the

@@ -13,6 +13,7 @@ import {
   type AnnuityMilestone,
   type DeathBenefitTarget,
   type FinalExpenseIllustration,
+  type TermIllustration,
 } from "@/lib/illustration";
 import { generateScenarioIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
 import { KB_PRODUCTS } from "@/lib/kb-data";
@@ -303,6 +304,162 @@ function AnnuityMilestonesEditor({
       >
         + Add Milestone
       </button>
+    </div>
+  );
+}
+
+const MAX_TERM_OPTIONS = 3;
+
+// Term budget/length options — added 9/24 per Karina: "i need an option to add another option
+// because there are different options like i want to show my client 500,000 and another option
+// ... maybe allow up to 3 options?" Same pattern as FinalExpenseOptionsEditor below (up to 3 flat
+// Death Benefit + Level Premium pairs), plus Term Length per option since term policies commonly
+// get compared at different lengths too (20 vs 30 year), not just different face amounts — left
+// blank, an option falls back to reading as the same term length shown above. deathBenefit/
+// levelPremium/termLength on TermIllustration stay the primary (first) option, so every existing
+// Term scenario is unaffected. Options 2 and 3 use local show/hide state (not just "is there
+// data") so a newly-added, still-empty option row doesn't disappear the moment it's added — same
+// reasoning as Final Expense's version.
+function TermOptionsEditor({
+  data,
+  setData,
+}: {
+  data: TermIllustration;
+  setData: (d: TermIllustration) => void;
+}) {
+  const hasOption2 = !!(
+    (data.deathBenefit2 && data.deathBenefit2.trim()) ||
+    (data.levelPremium2 && data.levelPremium2.trim()) ||
+    (data.termLength2 && data.termLength2.trim())
+  );
+  const hasOption3 = !!(
+    (data.deathBenefit3 && data.deathBenefit3.trim()) ||
+    (data.levelPremium3 && data.levelPremium3.trim()) ||
+    (data.termLength3 && data.termLength3.trim())
+  );
+  const [showOption2, setShowOption2] = useState(hasOption2);
+  const [showOption3, setShowOption3] = useState(hasOption3);
+
+  function removeOption2() {
+    setShowOption2(false);
+    setData({ ...data, deathBenefit2: "", levelPremium2: "", termLength2: "" });
+  }
+  function removeOption3() {
+    setShowOption3(false);
+    setData({ ...data, deathBenefit3: "", levelPremium3: "", termLength3: "" });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Death Benefit
+          <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Level Premium
+          <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          Term Length
+          <input
+            value={data.termLength}
+            onChange={(e) => setData({ ...data, termLength: e.target.value })}
+            placeholder="e.g. 20"
+            className={inputClass}
+          />
+        </label>
+      </div>
+
+      {showOption2 && (
+        <div className="rounded-md border border-[#D9CFBA] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Option 2</div>
+            <button type="button" onClick={removeOption2} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
+              Remove
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Death Benefit
+              <DollarInput
+                value={data.deathBenefit2 ?? ""}
+                onChange={(v) => setData({ ...data, deathBenefit2: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Level Premium
+              <DollarInput
+                value={data.levelPremium2 ?? ""}
+                onChange={(v) => setData({ ...data, levelPremium2: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Term Length{" "}
+              <span className="font-normal normal-case text-[#8b8b8b]">(optional: leave blank to match the term length above)</span>
+              <input
+                value={data.termLength2 ?? ""}
+                onChange={(e) => setData({ ...data, termLength2: e.target.value })}
+                placeholder="e.g. 30"
+                className={inputClass + " w-full"}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {showOption3 && (
+        <div className="rounded-md border border-[#D9CFBA] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#666]">Option 3</div>
+            <button type="button" onClick={removeOption3} className="text-xs text-[#8B1A1A] underline hover:text-[#6b1414]">
+              Remove
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Death Benefit
+              <DollarInput
+                value={data.deathBenefit3 ?? ""}
+                onChange={(v) => setData({ ...data, deathBenefit3: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Level Premium
+              <DollarInput
+                value={data.levelPremium3 ?? ""}
+                onChange={(v) => setData({ ...data, levelPremium3: v })}
+                className={inputClass + " w-full"}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[#666]">
+              Term Length{" "}
+              <span className="font-normal normal-case text-[#8b8b8b]">(optional: leave blank to match the term length above)</span>
+              <input
+                value={data.termLength3 ?? ""}
+                onChange={(e) => setData({ ...data, termLength3: e.target.value })}
+                placeholder="e.g. 30"
+                className={inputClass + " w-full"}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {!showOption2 || !showOption3 ? (
+        <button
+          type="button"
+          onClick={() => (!showOption2 ? setShowOption2(true) : setShowOption3(true))}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add another option
+        </button>
+      ) : (
+        <p className="text-xs text-[#707070]">Maximum of {MAX_TERM_OPTIONS} options.</p>
+      )}
     </div>
   );
 }
@@ -804,24 +961,12 @@ export default function ScenarioForm({
         {data.kind === "term" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Death Benefit
-                <DollarInput value={data.deathBenefit} onChange={(v) => setData({ ...data, deathBenefit: v })} className={inputClass} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Level Premium
-                <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Term Length
-                <input
-                  value={data.termLength}
-                  onChange={(e) => setData({ ...data, termLength: e.target.value })}
-                  placeholder="e.g. 20 years"
-                  className={inputClass}
-                />
-              </label>
+            <p className="mb-4 text-xs text-[#707070]">
+              Add up to 2 more death benefit/premium/term options below so a client can see a few budget tiers
+              side by side, e.g. $500,000 vs. $1,000,000.
+            </p>
+            <TermOptionsEditor data={data} setData={setData} />
+            <div className="mt-4 max-w-xs">
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Convertible Without Exam Until
                 <input

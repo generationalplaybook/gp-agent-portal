@@ -2,8 +2,17 @@
 // calculateAge / daysUntilNextBirthday are deliberately generic — the planned guardian-tracking
 // backlog item (auto-flagging minors who turn 18) can reuse these instead of re-deriving age math.
 
+import { parseDateOnly } from "./dates";
+
+// Bug fixed 9/24 (Karina: "this has said 41 before the 22nd... is the calculation off?"): these
+// used to parse birth_date with `new Date(birthDateIso)`, which treats a bare "YYYY-MM-DD" string
+// as UTC midnight — the exact bug dates.ts's parseDateOnly exists to prevent (see its comment).
+// For anyone west of UTC (i.e. every US timezone), that instant lands on the LOCAL calendar day
+// *before* the real birth date, so age (and the minor/turning-18 flags derived from it) rolled
+// over a full day early, every year, for every client. Switched to parseDateOnly, which builds
+// the Date from local y/m/d components instead of going through a UTC-parsed instant.
 export function calculateAge(birthDateIso: string, asOf: Date = new Date()): number {
-  const dob = new Date(birthDateIso);
+  const dob = parseDateOnly(birthDateIso);
   let age = asOf.getFullYear() - dob.getFullYear();
   const hasHadBirthdayThisYear =
     asOf.getMonth() > dob.getMonth() ||
@@ -15,7 +24,7 @@ export function calculateAge(birthDateIso: string, asOf: Date = new Date()): num
 // Days until this person's next birthday (0 = today). Used to flag a minor approaching 18
 // soon, not just currently under 18.
 export function daysUntilNextBirthday(birthDateIso: string, asOf: Date = new Date()): number {
-  const dob = new Date(birthDateIso);
+  const dob = parseDateOnly(birthDateIso);
   const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());
   let next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
   if (next < today) next = new Date(today.getFullYear() + 1, dob.getMonth(), dob.getDate());
@@ -46,7 +55,7 @@ export function inverseRelationship(relationship: string): string | null {
 // penalty milestone, which (unlike calculateAge/daysUntilNextBirthday above) isn't a whole-year
 // birthday.
 export function isHalfBirthdayToday(birthDateIso: string, age: number, asOf: Date = new Date()): boolean {
-  const dob = new Date(birthDateIso);
+  const dob = parseDateOnly(birthDateIso);
   const target = new Date(dob.getFullYear() + age, dob.getMonth() + 6, dob.getDate());
   target.setHours(0, 0, 0, 0);
   const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());

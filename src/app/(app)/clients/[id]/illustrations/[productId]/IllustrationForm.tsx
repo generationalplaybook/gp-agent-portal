@@ -291,7 +291,7 @@ export default function IllustrationForm({
                 <input
                   value={data.termLength}
                   onChange={(e) => setData({ ...data, termLength: e.target.value })}
-                  placeholder="e.g. 20 years"
+                  placeholder="e.g. 20"
                   className={inputClass}
                 />
               </label>
