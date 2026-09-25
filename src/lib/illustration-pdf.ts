@@ -408,8 +408,12 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += nl.length * 12 + 10;
     }
   } else if (data.kind === "term") {
+    // Box grows by 16pt when finalConversionDeadline is set, to fit the second conversion line
+    // below (added 9/25 per Karina — see the comment on TermIllustration.finalConversionDeadline
+    // in lib/illustration.ts for why a single "no exam" deadline wasn't enough).
+    const termBoxHeight = data.finalConversionDeadline ? 94 : 78;
     setFill(NEUTRAL_FILL);
-    doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+    doc.roundedRect(M, y, W - 2 * M, termBoxHeight, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     setText(OBSIDIAN);
@@ -429,7 +433,13 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       setText(CHARCOAL);
       doc.text("Convertible without exam until " + data.conversionDeadline, M + 280, y + 60);
     }
-    y += 96;
+    if (data.finalConversionDeadline) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      setText(CHARCOAL);
+      doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M + 280, y + 74);
+    }
+    y += termBoxHeight + 18;
 
     if (data.riders.length > 0) {
       doc.setFont("helvetica", "bold");
@@ -1131,8 +1141,12 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     );
 
     if (!hasOption2 && !hasOption3) {
+      // Box grows by 16pt when finalConversionDeadline is set, to fit the second conversion line
+      // below (added 9/25 per Karina — see the comment on TermIllustration.finalConversionDeadline
+      // in lib/illustration.ts for why a single "no exam" deadline wasn't enough).
+      const termBoxHeight = data.finalConversionDeadline ? 94 : 78;
       setFill(NEUTRAL_FILL);
-      doc.roundedRect(M, y, W - 2 * M, 78, 4, 4, "F");
+      doc.roundedRect(M, y, W - 2 * M, termBoxHeight, 4, 4, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
       setText(OBSIDIAN);
@@ -1152,7 +1166,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         setText(CHARCOAL);
         doc.text("Convertible without exam until " + data.conversionDeadline, M + 280, y + 60);
       }
-      y += 96;
+      if (data.finalConversionDeadline) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        setText(CHARCOAL);
+        doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M + 280, y + 74);
+      }
+      y += termBoxHeight + 18;
     } else {
       const options: { label: string; db?: string; prem?: string; term?: string }[] = [
         { label: "Option 1", db: data.deathBenefit, prem: data.levelPremium, term: data.termLength },
@@ -1205,8 +1225,16 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFontSize(8.5);
         setText(CHARCOAL);
         doc.text("Convertible without exam until " + data.conversionDeadline, M, y);
-        y += 18;
+        y += 14;
       }
+      if (data.finalConversionDeadline) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        setText(CHARCOAL);
+        doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M, y);
+        y += 14;
+      }
+      if (data.conversionDeadline || data.finalConversionDeadline) y += 4;
     }
 
     if (data.riders.length > 0) {

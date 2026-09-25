@@ -966,16 +966,34 @@ export default function ScenarioForm({
               side by side, e.g. $500,000 vs. $1,000,000.
             </p>
             <TermOptionsEditor data={data} setData={setData} />
-            <div className="mt-4 max-w-xs">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Convertible Without Exam Until
-                <input
-                  value={data.conversionDeadline}
-                  onChange={(e) => setData({ ...data, conversionDeadline: e.target.value })}
-                  placeholder="e.g. age 65"
-                  className={inputClass}
-                />
-              </label>
+            {/* Two-tier conversion window, mirroring the same conversion_deadline / final_conversion_deadline
+                split already used for Outreach milestones (see getNextOutreachMilestone in lib/products.ts) —
+                Karina, 9/25: "i ned the convertable max age and note medical exame needed" once she saw the
+                single "Convertible Without Exam Until" field didn't capture that a policy can often still be
+                converted past that age, just with a new medical exam required. */}
+            <div className="mt-4 flex flex-wrap gap-4">
+              <div className="max-w-xs flex-1">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Convertible Without Exam Until
+                  <input
+                    value={data.conversionDeadline}
+                    onChange={(e) => setData({ ...data, conversionDeadline: e.target.value })}
+                    placeholder="e.g. age 65"
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <div className="max-w-xs flex-1">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Final Conversion Deadline <span className="font-normal text-[#999]">(max age, exam required)</span>
+                  <input
+                    value={data.finalConversionDeadline ?? ""}
+                    onChange={(e) => setData({ ...data, finalConversionDeadline: e.target.value })}
+                    placeholder="e.g. age 75"
+                    className={inputClass}
+                  />
+                </label>
+              </div>
             </div>
             <div className="mt-4">
               <div className="mb-2 text-xs font-semibold text-[#666]">Living Benefits &amp; Riders</div>

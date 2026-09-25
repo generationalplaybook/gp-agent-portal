@@ -102,6 +102,14 @@ export interface TermIllustration {
   levelPremium: string;
   riders: string[];
   conversionDeadline: string;
+  // Added 9/25 per Karina: "i ned the convertable max age and note medical exame needed" — the
+  // single conversionDeadline field above only captured the NO-EXAM window, but many term
+  // policies (e.g. North American's ADDvantage Term) still allow conversion past that age with a
+  // new medical exam, up to a later hard cutoff. Mirrors the same two-tier
+  // conversion_deadline/final_conversion_deadline split already used for Outreach milestones (see
+  // getNextOutreachMilestone in lib/products.ts). Optional/additive — undefined on every existing
+  // scenario/illustration.
+  finalConversionDeadline?: string;
   notes: string;
   // Second and third options — added 9/24 per Karina, same pattern as Final Expense's
   // deathBenefit2/3 (see FinalExpenseIllustration below): "there are different options like i

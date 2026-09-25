@@ -217,115 +217,116 @@ export default async function HomePage() {
 
       {showOnboardingBanner && <OnboardingBanner doneCount={onboardingDoneCount} totalCount={onboardingTotalSteps} />}
 
-      {/* New Intake Submissions — Karina, 9/25: "there is no alert on the dashboard" when a new
-          intake form comes in. Only rendered when there's actually something to review, so it
-          doesn't take up space on a normal day — same red-banner treatment as Time-Sensitive below
-          it, since a fresh submission is exactly the kind of thing that shouldn't sit unnoticed. */}
-      {newIntakeClients.length > 0 && (
+      {/* New Intake Submissions + Time-Sensitive — side by side like the four cards below
+          ("stacked side by side like the ones below so it's all even," Karina 9/25), rather than
+          each as its own full-width banner. New Intake only renders when there's something to
+          review, so on a normal day this row collapses to just Time-Sensitive, full width. */}
+      <div className={`mb-6 grid gap-6 ${newIntakeClients.length > 0 ? "sm:grid-cols-2" : ""}`}>
+        {newIntakeClients.length > 0 && (
+          <Link
+            href="/clients?view=needs_review"
+            className="flex flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#8B1A1A]">
+                New Intake Submissions
+              </span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 12 6 8z" />
+                <path d="M10 19a2 2 0 0 0 4 0" />
+              </svg>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{newIntakeClients.length}</span>
+              <span className="text-sm text-[#555]">awaiting review</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {Array.from(newIntakeBySource.entries()).map(([label, count]) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-[#8B1A1A]/30 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#8B1A1A]"
+                >
+                  {label}: {count}
+                </span>
+              ))}
+            </div>
+            <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+              Review submissions &rarr;
+            </span>
+          </Link>
+        )}
+
+        {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
+            the adviser needs to immediately get to... so it doesn't get missed." Broadened 9/7
+            beyond term policies — see the comment on the termProductsRaw query above. */}
         <Link
-          href="/clients?view=needs_review"
-          className="mb-6 flex flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
+          href="/clients?view=outreach"
+          className={`flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
+            urgentTermProducts.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
+          }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[#8B1A1A]">
-              New Intake Submissions
+            <span
+              className={`text-xs font-semibold uppercase tracking-wide ${
+                urgentTermProducts.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
+              }`}
+            >
+              Time-Sensitive
             </span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 12 6 8z" />
-              <path d="M10 19a2 2 0 0 0 4 0" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={urgentTermProducts.length > 0 ? "#8B1A1A" : "#555555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
             </svg>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{newIntakeClients.length}</span>
-            <span className="text-sm text-[#555]">awaiting review</span>
+            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{urgentTermProducts.length}</span>
+            <span className="text-sm text-[#555]">within 90 days, not yet touched base</span>
           </div>
+          {/* 9/11 — Karina: "there has to be somewhere there's a count of how many haven't been
+              able to be reached... it should also show couldn't reach, shopping for new coverage,
+              renewing, keeping current, and declining." These already had their own sections on the
+              Outreach page — this surfaces the same counts right here so a 0 above doesn't read as
+              "nothing to do" when there's still a pile of already-contacted-but-unresolved clients
+              (especially "Couldn't reach them yet") worth a follow-up. */}
           <div className="mt-3 flex flex-wrap gap-2">
-            {Array.from(newIntakeBySource.entries()).map(([label, count]) => (
+            {OUTCOME_ORDER.map((outcome) => (
               <span
-                key={label}
-                className="rounded-full border border-[#8B1A1A]/30 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#8B1A1A]"
+                key={outcome}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                  outcomeCounts[outcome] > 0 ? "border-[#8B1A1A]/30 bg-white text-[#8B1A1A]" : "border-[#D9CFBA] bg-white text-[#707070]"
+                }`}
               >
-                {label}: {count}
+                {OUTREACH_OUTCOME_LABELS[outcome]}: {outcomeCounts[outcome]}
               </span>
             ))}
           </div>
-          <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-            Review submissions &rarr;
+          {previewUrgentTerm.length > 0 && (
+            <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF]">
+              {previewUrgentTerm.map((p) => (
+                <div key={p.id} className="py-1.5 text-xs">
+                  <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
+                  <br />
+                  <span className="text-[#666]">
+                    {p.productName}: {p.milestone.label}{" "}
+                    {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {termProductsError && (
+            <p className="mt-4 text-xs font-semibold text-[#8B1A1A]">
+              Couldn&rsquo;t load this: {termProductsError.message}
+            </p>
+          )}
+          {!termProductsError && urgentTermProducts.length === 0 && (
+            <p className="mt-4 text-xs text-[#555]">Nothing urgent right now.</p>
+          )}
+          <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+            View outreach queue &rarr;
           </span>
         </Link>
-      )}
-
-      {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
-          the adviser needs to immediately get to... so it doesn't get missed." A banner rather
-          than one of the even grid cards below, since the whole point is that it stands out.
-          Broadened 9/7 beyond term policies — see the comment on the termProductsRaw query above. */}
-      <Link
-        href="/clients?view=outreach"
-        className={`mb-6 flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
-          urgentTermProducts.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span
-            className={`text-xs font-semibold uppercase tracking-wide ${
-              urgentTermProducts.length > 0 ? "text-[#8B1A1A]" : "text-[#555]"
-            }`}
-          >
-            Time-Sensitive
-          </span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={urgentTermProducts.length > 0 ? "#8B1A1A" : "#555555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 2" />
-          </svg>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{urgentTermProducts.length}</span>
-          <span className="text-sm text-[#555]">within 90 days, not yet touched base</span>
-        </div>
-        {/* 9/11 — Karina: "there has to be somewhere there's a count of how many haven't been
-            able to be reached... it should also show couldn't reach, shopping for new coverage,
-            renewing, keeping current, and declining." These already had their own sections on the
-            Outreach page — this surfaces the same counts right here so a 0 above doesn't read as
-            "nothing to do" when there's still a pile of already-contacted-but-unresolved clients
-            (especially "Couldn't reach them yet") worth a follow-up. */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {OUTCOME_ORDER.map((outcome) => (
-            <span
-              key={outcome}
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                outcomeCounts[outcome] > 0 ? "border-[#8B1A1A]/30 bg-white text-[#8B1A1A]" : "border-[#D9CFBA] bg-white text-[#707070]"
-              }`}
-            >
-              {OUTREACH_OUTCOME_LABELS[outcome]}: {outcomeCounts[outcome]}
-            </span>
-          ))}
-        </div>
-        {previewUrgentTerm.length > 0 && (
-          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">
-            {previewUrgentTerm.map((p) => (
-              <div key={p.id} className="py-1.5 text-xs sm:py-0">
-                <span className="font-semibold text-[#8B1A1A]">{p.clientName}</span>
-                <br />
-                <span className="text-[#666]">
-                  {p.productName}: {p.milestone.label}{" "}
-                  {formatDateOnly(p.milestone.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-        {termProductsError && (
-          <p className="mt-4 text-xs font-semibold text-[#8B1A1A]">
-            Couldn&rsquo;t load this: {termProductsError.message}
-          </p>
-        )}
-        {!termProductsError && urgentTermProducts.length === 0 && (
-          <p className="mt-4 text-xs text-[#555]">Nothing urgent right now.</p>
-        )}
-        <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-          View outreach queue &rarr;
-        </span>
-      </Link>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Client Pipeline — now a shared client component (ClientPipelineCard.tsx) so the

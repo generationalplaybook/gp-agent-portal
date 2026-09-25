@@ -304,6 +304,18 @@ export default function IllustrationForm({
                   className={inputClass}
                 />
               </label>
+              {/* Two-tier conversion window, mirroring conversion_deadline / final_conversion_deadline
+                  already used for Outreach milestones (see getNextOutreachMilestone in lib/products.ts) —
+                  Karina, 9/25: "i ned the convertable max age and note medical exame needed." */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Final Conversion Deadline <span className="font-normal text-[#999]">(max age, exam required)</span>
+                <input
+                  value={data.finalConversionDeadline ?? ""}
+                  onChange={(e) => setData({ ...data, finalConversionDeadline: e.target.value })}
+                  placeholder="e.g. age 75"
+                  className={inputClass}
+                />
+              </label>
             </div>
             <div className="mt-4">
               <div className="mb-2 text-xs font-semibold text-[#666]">Living Benefits &amp; Riders</div>
