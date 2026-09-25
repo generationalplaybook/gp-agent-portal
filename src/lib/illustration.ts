@@ -188,6 +188,20 @@ export interface AnnuityIllustration {
   incomeStartTiming?: "immediate" | "deferred";
   incomeStartAge?: string; // only used/entered when incomeStartTiming is "deferred"
   incomeMonthlyAmount?: string; // the monthly income amount once it starts, either way
+  // Surrender term length — added 9/25 per Karina: "we need a spot for how many year annuity it
+  // is." Free text (e.g. "7-Year", "10-Year") rather than a number, same pattern as
+  // TermIllustration.termLength — carriers commonly sell the same FIA in several term-length
+  // variants (Athene Performance Elite 7 vs 10 vs 15, etc.) with different caps/participation
+  // rates, and this is what actually identifies which variant is being illustrated. Optional/
+  // additive.
+  termLength?: string;
+  // Current cap rate — added 9/25 per Karina, same conversation as termLength above: the
+  // Accumulation Value milestones are driven by an assumed index crediting rate the client never
+  // otherwise sees. capRateStrategy is the index strategy the rate applies to (e.g. "S&P 500
+  // Annual Point-to-Point"); optional on its own since a strategy name isn't always relevant to
+  // note, but capRate is the number that actually needs disclosing. Both optional/additive.
+  capRate?: string;
+  capRateStrategy?: string;
 }
 
 export type IllustrationData = CashValueIllustration | TermIllustration | FinalExpenseIllustration | AnnuityIllustration;

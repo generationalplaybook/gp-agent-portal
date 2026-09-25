@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import type { IllustrationData } from "./illustration";
+import type { IllustrationData, AnnuityIllustration } from "./illustration";
 import { parseMoney, formatMoney } from "./illustration";
 import { LOGO_MARK_ASPECT, LOGO_MARK_PNG_BASE64 } from "./logo-mark-asset";
 
@@ -225,6 +225,185 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
   doc.text(withCarrier(input.productName, input.carrier), M + 16, 138);
 
   return 164;
+}
+
+// Annuity section — shared by both generateIllustrationPDF and generateScenarioIllustrationPDF
+// (previously each had its own byte-identical copy of this whole block, same reasoning as
+// drawBrandedHeader above). Owns its own page-break bookkeeping (PAGE_MAX_Y/ensureSpace) exactly
+// like each caller's outer copy did, since a long annuity section (income rider note, notes field)
+// can still run past one page on its own. Returns the y position to resume drawing from.
+function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: number): number {
+  const W = 612;
+  const M = 50;
+  const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+  const PAGE_MAX_Y = 752;
+  let y = startY;
+  function ensureSpace(needed: number) {
+    if (y + needed > PAGE_MAX_Y) {
+      doc.addPage();
+      y = 68;
+    }
+  }
+
+  // Initial Premium + term length on one line — termLength added 9/25 per Karina: "we need a spot
+  // for how many year annuity it is" (carriers commonly sell the same FIA in several term-length
+  // variants — Athene Performance Elite 7 vs 10 vs 15 — with different caps, so this is part of
+  // identifying which variant is being illustrated, not just trivia).
+  const premiumParts = [
+    data.initialPremium ? "Initial Premium: $" + formatMoney(data.initialPremium) : null,
+    data.termLength || null,
+  ].filter(Boolean);
+  if (premiumParts.length) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    setText(OBSIDIAN);
+    doc.text(premiumParts.join("   ·   "), M, y);
+    y += 22;
+  }
+
+  // Cap rate disclosure — added 9/25 per Karina. The Accumulation Value milestones below are
+  // driven by an assumed index crediting rate the client otherwise never sees, so this discloses
+  // it right above the numbers it explains (same placement Karina picked for the IUL side's
+  // equivalent assumption line). Cap rates reset periodically and are never guaranteed, hence the
+  // explicit "not guaranteed" language rather than presenting it as a fixed fact.
+  if (data.capRate) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    setText(GRAY);
+    const strategyPart = data.capRateStrategy ? ` on the ${data.capRateStrategy} strategy` : "";
+    const capNote = doc.splitTextToSize(
+      `Values assume a ${data.capRate} current cap rate${strategyPart}. Cap rates are declared periodically and are not guaranteed.`,
+      W - 2 * M
+    );
+    doc.text(capNote, M, y);
+    y += capNote.length * 10 + 10;
+  }
+
+  const milestones = data.milestones.filter((m) => m.label.trim());
+  if (milestones.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    setText(GRAY);
+    doc.text("No milestones entered yet.", M, y);
+    y += 20;
+  } else {
+    // Income Value column/series only shown when there's actually an income rider — added 9/25
+    // per Karina: "for non income annuities we shouldnt show income on the exported pdf." Before
+    // this the column always rendered (as "—" for every row on a pure accumulation annuity),
+    // which was clutter for a value that doesn't apply. 3-column layout below spreads Age/
+    // Accumulation/Death Benefit wider across the same page width the 4-column layout used.
+    const showIncome = !!data.hasIncomeRider;
+    const colX = showIncome ? [M, M + 140, M + 290, M + 430] : [M, M + 180, M + 380];
+    const headers = showIncome ? ["", "Accumulation Value", "Income Value", "Death Benefit"] : ["", "Accumulation Value", "Death Benefit"];
+
+    // Table + chart together: header/rule/rows (16 + 14 + rows*16 + 14) plus the chart block
+    // itself (~156, same reasoning as the cash_value charts elsewhere in this file but this
+    // one's 120pt tall instead of 110). Checked as one combined block since an annuity scenario
+    // is rarely long enough to need a break between its table and its single chart.
+    ensureSpace(16 + 14 + milestones.length * 16 + 14 + 156);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(OBSIDIAN);
+    headers.forEach((h, i) => doc.text(h, colX[i], y));
+    y += 16;
+    doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
+    doc.setLineWidth(1);
+    doc.line(M, y, W - M, y);
+    y += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    milestones.forEach((m) => {
+      setText(OBSIDIAN);
+      doc.setFont("helvetica", "bold");
+      doc.text(m.label, colX[0], y);
+      doc.setFont("helvetica", "normal");
+      setText(CHARCOAL);
+      doc.text(m.accumulationValue ? "$" + formatMoney(m.accumulationValue) : "—", colX[1], y);
+      if (showIncome) {
+        doc.text(m.incomeValue ? "$" + formatMoney(m.incomeValue) : "—", colX[2], y);
+        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[3], y);
+      } else {
+        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[2], y);
+      }
+      y += 16;
+    });
+    y += 14;
+
+    const xLabels = milestones.map((m) => m.label);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text("PROJECTED VALUE OVER TIME", M, y);
+    y += 4;
+    if (showIncome) {
+      drawLegend(doc, M + 175, y - 2.5, [
+        { label: "Accumulation Value", color: OBSIDIAN },
+        { label: "Income Value", color: GRAY, dashed: true },
+      ]);
+    }
+    y += 12;
+    drawLineChart(doc, {
+      x: M,
+      y,
+      width: W - 2 * M,
+      height: 120,
+      xLabels,
+      series: showIncome
+        ? [
+            { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN },
+            { values: milestones.map((m) => parseMoney(m.incomeValue)), color: GRAY, dashed: true },
+          ]
+        : [{ values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN }],
+    });
+    y += 140;
+  }
+
+  // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
+  if (data.hasIncomeRider) {
+    // Conservative estimate (header + amount line + the wrapped tax-treatment note, which runs
+    // ~4-5 lines at this width/size) — same reasoning as the Policy Premium check above.
+    ensureSpace(120);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text("Income Rider", M, y);
+    y += 14;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    const timing =
+      data.incomeStartTiming === "deferred"
+        ? "Starts at age " + (data.incomeStartAge || "—")
+        : "Starts immediately";
+    const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
+    doc.text(timing + ": " + amount, M, y);
+    y += 16;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    setText(CHARCOAL);
+    const incomeNote = doc.splitTextToSize(
+      "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit. Unlike a life insurance death benefit, though, this isn't automatically fully tax-free: only the return of principal passes tax-free, and any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
+      W - 2 * M
+    );
+    doc.text(incomeNote, M, y);
+    y += incomeNote.length * 10 + 10;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+  }
+
+  if (data.notes) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    setText(CHARCOAL);
+    const nl = doc.splitTextToSize(data.notes, W - 2 * M);
+    ensureSpace(nl.length * 12 + 10);
+    doc.text(nl, M, y);
+    y += nl.length * 12 + 10;
+  }
+
+  return y;
 }
 
 // Palette gone fully monochrome 9/7, fifth round. Karina noticed the previous round ("Not yet
@@ -618,123 +797,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       y += nl.length * 12 + 10;
     }
   } else {
-    // annuity
-    if (data.initialPremium) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      setText(OBSIDIAN);
-      doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
-      y += 22;
-    }
-
-    const milestones = data.milestones.filter((m) => m.label.trim());
-    if (milestones.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(10);
-      setText(GRAY);
-      doc.text("No milestones entered yet.", M, y);
-      y += 20;
-    } else {
-      // Table + chart together: header/rule/rows (16 + 14 + rows*16 + 14) plus the chart block
-      // itself (~156, same reasoning as the cash_value charts elsewhere in this file but this
-      // one's 120pt tall instead of 110). Checked as one combined block since an annuity scenario
-      // is rarely long enough to need a break between its table and its single chart.
-      ensureSpace(16 + 14 + milestones.length * 16 + 14 + 156);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(OBSIDIAN);
-      const colX = [M, M + 140, M + 290, M + 430];
-      const headers = ["", "Accumulation Value", "Income Value", "Death Benefit"];
-      headers.forEach((h, i) => doc.text(h, colX[i], y));
-      y += 16;
-      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
-      doc.setLineWidth(1);
-      doc.line(M, y, W - M, y);
-      y += 14;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      milestones.forEach((m) => {
-        setText(OBSIDIAN);
-        doc.setFont("helvetica", "bold");
-        doc.text(m.label, colX[0], y);
-        doc.setFont("helvetica", "normal");
-        setText(CHARCOAL);
-        doc.text(m.accumulationValue ? "$" + formatMoney(m.accumulationValue) : "—", colX[1], y);
-        doc.text(m.incomeValue ? "$" + formatMoney(m.incomeValue) : "—", colX[2], y);
-        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[3], y);
-        y += 16;
-      });
-      y += 14;
-
-      const xLabels = milestones.map((m) => m.label);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("PROJECTED VALUE OVER TIME", M, y);
-      y += 4;
-      drawLegend(doc, M + 175, y - 2.5, [
-        { label: "Accumulation Value", color: OBSIDIAN },
-        { label: "Income Value", color: GRAY, dashed: true },
-      ]);
-      y += 12;
-      drawLineChart(doc, {
-        x: M,
-        y,
-        width: W - 2 * M,
-        height: 120,
-        xLabels,
-        series: [
-          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN },
-          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: GRAY, dashed: true },
-        ],
-      });
-      y += 140;
-    }
-
-    // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
-    if (data.hasIncomeRider) {
-      // Conservative estimate (header + amount line + the wrapped tax-treatment note, which runs
-      // ~4-5 lines at this width/size) — same reasoning as the Policy Premium check above.
-      ensureSpace(120);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("Income Rider", M, y);
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      const timing =
-        data.incomeStartTiming === "deferred"
-          ? "Starts at age " + (data.incomeStartAge || "—")
-          : "Starts immediately";
-      const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
-      doc.text(timing + ": " + amount, M, y);
-      y += 16;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(7.5);
-      setText(CHARCOAL);
-      const incomeNote = doc.splitTextToSize(
-        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit. Unlike a life insurance death benefit, though, this isn't automatically fully tax-free: only the return of principal passes tax-free, and any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
-        W - 2 * M
-      );
-      doc.text(incomeNote, M, y);
-      y += incomeNote.length * 10 + 10;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-    }
-
-    if (data.notes) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
-      ensureSpace(nl.length * 12 + 10);
-      doc.text(nl, M, y);
-      y += nl.length * 12 + 10;
-    }
+    y = drawAnnuitySection(doc, data, y);
   }
 
   if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
@@ -1444,123 +1507,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       y += nl.length * 12 + 10;
     }
   } else {
-    // annuity
-    if (data.initialPremium) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      setText(OBSIDIAN);
-      doc.text("Initial Premium: $" + formatMoney(data.initialPremium), M, y);
-      y += 22;
-    }
-
-    const milestones = data.milestones.filter((m) => m.label.trim());
-    if (milestones.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(10);
-      setText(GRAY);
-      doc.text("No milestones entered yet.", M, y);
-      y += 20;
-    } else {
-      // Table + chart together: header/rule/rows (16 + 14 + rows*16 + 14) plus the chart block
-      // itself (~156, same reasoning as the cash_value charts elsewhere in this file but this
-      // one's 120pt tall instead of 110). Checked as one combined block since an annuity scenario
-      // is rarely long enough to need a break between its table and its single chart.
-      ensureSpace(16 + 14 + milestones.length * 16 + 14 + 156);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(OBSIDIAN);
-      const colX = [M, M + 140, M + 290, M + 430];
-      const headers = ["", "Accumulation Value", "Income Value", "Death Benefit"];
-      headers.forEach((h, i) => doc.text(h, colX[i], y));
-      y += 16;
-      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
-      doc.setLineWidth(1);
-      doc.line(M, y, W - M, y);
-      y += 14;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      milestones.forEach((m) => {
-        setText(OBSIDIAN);
-        doc.setFont("helvetica", "bold");
-        doc.text(m.label, colX[0], y);
-        doc.setFont("helvetica", "normal");
-        setText(CHARCOAL);
-        doc.text(m.accumulationValue ? "$" + formatMoney(m.accumulationValue) : "—", colX[1], y);
-        doc.text(m.incomeValue ? "$" + formatMoney(m.incomeValue) : "—", colX[2], y);
-        doc.text(m.deathBenefit ? "$" + formatMoney(m.deathBenefit) : "—", colX[3], y);
-        y += 16;
-      });
-      y += 14;
-
-      const xLabels = milestones.map((m) => m.label);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("PROJECTED VALUE OVER TIME", M, y);
-      y += 4;
-      drawLegend(doc, M + 175, y - 2.5, [
-        { label: "Accumulation Value", color: OBSIDIAN },
-        { label: "Income Value", color: GRAY, dashed: true },
-      ]);
-      y += 12;
-      drawLineChart(doc, {
-        x: M,
-        y,
-        width: W - 2 * M,
-        height: 120,
-        xLabels,
-        series: [
-          { values: milestones.map((m) => parseMoney(m.accumulationValue)), color: OBSIDIAN },
-          { values: milestones.map((m) => parseMoney(m.incomeValue)), color: GRAY, dashed: true },
-        ],
-      });
-      y += 140;
-    }
-
-    // Income rider — added 9/6 per Karina. Only shown when the annuity has one checked.
-    if (data.hasIncomeRider) {
-      // Conservative estimate (header + amount line + the wrapped tax-treatment note, which runs
-      // ~4-5 lines at this width/size) — same reasoning as the Policy Premium check above.
-      ensureSpace(120);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("Income Rider", M, y);
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      const timing =
-        data.incomeStartTiming === "deferred"
-          ? "Starts at age " + (data.incomeStartAge || "—")
-          : "Starts immediately";
-      const amount = data.incomeMonthlyAmount ? "$" + formatMoney(data.incomeMonthlyAmount) + "/mo" : "amount not entered";
-      doc.text(timing + ": " + amount, M, y);
-      y += 16;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(7.5);
-      setText(CHARCOAL);
-      const incomeNote = doc.splitTextToSize(
-        "Whatever accumulation value is left unused when the client passes goes to the beneficiary as a death benefit. Unlike a life insurance death benefit, though, this isn't automatically fully tax-free: only the return of principal passes tax-free, and any growth above that is taxed to the beneficiary as ordinary income (a qualified/IRA annuity is generally taxed in full). Confirm the specifics on the carrier's illustration and with a tax advisor for the client's situation.",
-        W - 2 * M
-      );
-      doc.text(incomeNote, M, y);
-      y += incomeNote.length * 10 + 10;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-    }
-
-    if (data.notes) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      setText(CHARCOAL);
-      const nl = doc.splitTextToSize(data.notes, W - 2 * M);
-      ensureSpace(nl.length * 12 + 10);
-      doc.text(nl, M, y);
-      y += nl.length * 12 + 10;
-    }
+    y = drawAnnuitySection(doc, data, y);
   }
 
   // This generator doesn't do real multi-section pagination — everything above just keeps

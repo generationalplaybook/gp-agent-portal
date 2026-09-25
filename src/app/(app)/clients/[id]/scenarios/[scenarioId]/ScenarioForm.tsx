@@ -1060,10 +1060,46 @@ export default function ScenarioForm({
         {data.kind === "annuity" && (
           <>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Details</h2>
-            <label className="mb-4 flex max-w-xs flex-col gap-1 text-xs text-[#666]">
-              Initial Premium
-              <DollarInput value={data.initialPremium} onChange={(v) => setData({ ...data, initialPremium: v })} className={inputClass} />
-            </label>
+            <div className="mb-5 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Initial Premium
+                <DollarInput value={data.initialPremium} onChange={(v) => setData({ ...data, initialPremium: v })} className={inputClass} />
+              </label>
+              {/* Term Length — added 9/25 per Karina: "we need a spot for how many year annuity it
+                  is." Free text since carriers sell the same FIA in several term variants (e.g.
+                  Athene Performance Elite 7 vs 10 vs 15) with different caps. */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Term Length
+                <input
+                  value={data.termLength ?? ""}
+                  onChange={(e) => setData({ ...data, termLength: e.target.value })}
+                  placeholder="e.g. 10-Year"
+                  className={inputClass}
+                />
+              </label>
+              {/* Cap Rate — added 9/25 per Karina: "also need to show the current cap rate." Shows
+                  as a disclosure line above the milestones table on the exported PDF, since the
+                  Accumulation Value numbers are driven by this assumption. Strategy name is
+                  optional — only the rate itself is required for the disclosure to appear. */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Current Cap Rate
+                <input
+                  value={data.capRate ?? ""}
+                  onChange={(e) => setData({ ...data, capRate: e.target.value })}
+                  placeholder="e.g. 9.75%"
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Cap Rate Strategy
+                <input
+                  value={data.capRateStrategy ?? ""}
+                  onChange={(e) => setData({ ...data, capRateStrategy: e.target.value })}
+                  placeholder="e.g. S&P 500 Annual Point-to-Point"
+                  className={inputClass}
+                />
+              </label>
+            </div>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
             <p className="mb-4 text-xs text-[#707070]">
               Accumulation value, income value (if there&rsquo;s an income rider), and death benefit at whichever
