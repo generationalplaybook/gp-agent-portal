@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import type { IllustrationData } from "./illustration";
 import { parseMoney, formatMoney } from "./illustration";
+import { LOGO_MARK_ASPECT, LOGO_MARK_PNG_BASE64 } from "./logo-mark-asset";
 
 type RGB = [number, number, number];
 
@@ -146,47 +147,31 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
   const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
   const setDraw = (c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
-  const setOpacity = (op: number) => doc.setGState(doc.GState({ opacity: op, "stroke-opacity": op }));
 
-  // Logo — ported from Logo.tsx's viewBox="0 0 560 100" full-lockup SVG, scaled to a 26pt-tall
-  // rendering (lx/ly convert a viewBox coordinate to an absolute PDF point at that scale). Base of
-  // 24 (was 10) is the "more breathing room at the top" fix — the whole header sits ~14pt lower.
+  // Logo — after 3 rounds of hand-redrawing this in jsPDF (moveTo/lineTo/stroke path math ported
+  // from Logo.tsx's SVG) kept producing subtle-but-real discrepancies that were hard to pin down —
+  // tapered/pointed stroke ends instead of flat-cut ones (fixed via setLineCap/setLineJoin), then a
+  // "lines are thinner" complaint on top of that — Karina sent the actual icon mark as a transparent
+  // PNG directly ("can you just use this in the places") and we switched to embedding that real
+  // asset instead of re-deriving it from path coordinates. See logo-mark-asset.ts. This guarantees
+  // pixel-for-pixel fidelity to the brand asset and ends the redraw-and-compare cycle for good.
+  // `lx/ly` still convert the OLD viewBox="0 0 560 100" coordinate space to PDF points, at the same
+  // 26pt-tall scale as before — kept only for positioning the wordmark text below, which was never
+  // the problem and didn't need to change.
   const logoH = 26;
   const s = logoH / 100;
   const lx = (vx: number) => M + vx * s;
   const ly = (vy: number) => 24 + vy * s;
 
-  setFill(OBSIDIAN);
-  setDraw(OBSIDIAN);
-  setOpacity(0.141);
-  doc.moveTo(lx(45.6), ly(15.3));
-  doc.lineTo(lx(63.5), ly(26.5));
-  doc.lineTo(lx(45.6), ly(37.7));
-  doc.lineTo(lx(27.8), ly(26.5));
-  doc.close();
-  doc.fill();
-
-  const chevrons: { pts: [number, number][]; w: number; op: number }[] = [
-    { pts: [[23.5, 35.2], [45.6, 51.2], [67.5, 35.2]], w: 5.0, op: 0.329 },
-    { pts: [[16.3, 47.6], [45.6, 67.3], [74.7, 47.6]], w: 5.5, op: 0.6 },
-    { pts: [[10.8, 59.3], [45.6, 82.8], [80.2, 59.3]], w: 6.1, op: 1 },
-  ];
-  // Explicit butt cap / miter join — ported from Logo.tsx's SVG, which sets strokeLinecap="butt"
-  // strokeLinejoin="miter" on these same polylines. Without calling these, jsPDF's stroke
-  // renderer was tapering each open end to a point instead of cutting it flat, which is what
-  // made the chevrons read as "arrows" instead of the source's flat, square-cut ends. Flagged by
-  // Karina, 9/25: "see how the section one is more like square, your version is more like arrows."
-  doc.setLineCap("butt");
-  doc.setLineJoin("miter");
-  chevrons.forEach((c) => {
-    setOpacity(c.op);
-    doc.setLineWidth(c.w * s);
-    doc.moveTo(lx(c.pts[0][0]), ly(c.pts[0][1]));
-    doc.lineTo(lx(c.pts[1][0]), ly(c.pts[1][1]));
-    doc.lineTo(lx(c.pts[2][0]), ly(c.pts[2][1]));
-    doc.stroke();
-  });
-  setOpacity(1);
+  // Icon image box, sized/positioned to land in the same visual spot the old vector icon did:
+  // 20pt tall (was ~17.55pt of visible content inside a nominal 26pt box), width derived from the
+  // asset's own aspect ratio so it's never stretched, vertically centered against the 2-line
+  // wordmark next to it (baselines at ly(42) and ly(72), i.e. roughly y 29–43).
+  const iconH = 20;
+  const iconW = iconH * LOGO_MARK_ASPECT;
+  const iconX = M;
+  const iconY = 36.2 - iconH / 2;
+  doc.addImage(LOGO_MARK_PNG_BASE64, "PNG", iconX, iconY, iconW, iconH);
 
   // Font sizes ported directly from the SVG's own font-size values (33 and 11, out of the
   // viewBox's 100-unit height), scaled by the same `s` factor as everything else — NOT an
