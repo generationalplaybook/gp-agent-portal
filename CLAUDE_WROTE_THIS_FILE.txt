@@ -1,0 +1,1 @@
+If you can see this file in Finder, this IS the folder Claude is writing to. Written at Fri Sep 25 02:56:24 UTC 2026.
