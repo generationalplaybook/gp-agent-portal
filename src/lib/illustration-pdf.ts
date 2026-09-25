@@ -437,7 +437,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       setText(CHARCOAL);
-      doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M + 280, y + 74);
+      doc.text("Convertible with exam until " + data.finalConversionDeadline, M + 280, y + 74);
     }
     y += termBoxHeight + 18;
 
@@ -1170,7 +1170,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
         setText(CHARCOAL);
-        doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M + 280, y + 74);
+        doc.text("Convertible with exam until " + data.finalConversionDeadline, M + 280, y + 74);
       }
       y += termBoxHeight + 18;
     } else {
@@ -1231,7 +1231,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
         setText(CHARCOAL);
-        doc.text("Exam required to convert after that, until " + data.finalConversionDeadline, M, y);
+        doc.text("Convertible with exam until " + data.finalConversionDeadline, M, y);
         y += 14;
       }
       if (data.conversionDeadline || data.finalConversionDeadline) y += 4;

@@ -985,7 +985,7 @@ export default function ScenarioForm({
               </div>
               <div className="max-w-xs flex-1">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Final Conversion Deadline <span className="font-normal text-[#999]">(max age, exam required)</span>
+                  Convertible With Exam Until
                   <input
                     value={data.finalConversionDeadline ?? ""}
                     onChange={(e) => setData({ ...data, finalConversionDeadline: e.target.value })}
