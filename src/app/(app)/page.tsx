@@ -49,12 +49,13 @@ export default async function HomePage() {
     // src/app/intake/[advisorId]/actions.ts and src/app/pre-intake/[advisorId]/actions.ts), and is
     // cleared via markClientReviewed (the "Mark Reviewed" button on a client's page) — it was just
     // never surfaced here, only on the Clients list (the "Needs Review" filter chip, same flag,
-    // same /clients?view=needs_review link used below) and on the individual client page.
+    // same /clients?view=needs_review link used below) and on the individual client page. Just
+    // `id` + `source` — the dashboard card shows a count grouped by form type, not names (Karina,
+    // 9/25: "we don't need people's names" once she saw it rendered).
     supabase
       .from("clients")
-      .select("id, full_name, source, created_at")
-      .eq("intake_pending_review", true)
-      .order("created_at", { ascending: false }),
+      .select("id, source")
+      .eq("intake_pending_review", true),
     supabase
       .from("client_meetings")
       .select("id, meeting_at, client_id, clients(id, full_name)")
@@ -184,9 +185,16 @@ export default async function HomePage() {
     outcomeCounts[outcome] += 1;
   });
 
-  // New Intake Submissions
+  // New Intake Submissions — grouped by which form they came through (Pre-Intake vs. full
+  // Intake) rather than listing names, per Karina, 9/25: "we don't need people's names," and
+  // shown as compact inline pills, same pattern as the outcome-count pills on the Time-Sensitive
+  // card right below it ("short and in line with the time sensitive").
   const newIntakeClients = pendingReviewClients ?? [];
-  const previewNewIntake = newIntakeClients.slice(0, 3);
+  const newIntakeBySource = new Map<string, number>();
+  newIntakeClients.forEach((c) => {
+    const label = c.source || "Intake form";
+    newIntakeBySource.set(label, (newIntakeBySource.get(label) ?? 0) + 1);
+  });
 
   const greetingName = profile?.first_name || "there";
 
@@ -231,18 +239,16 @@ export default async function HomePage() {
             <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{newIntakeClients.length}</span>
             <span className="text-sm text-[#555]">awaiting review</span>
           </div>
-          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">
-            {previewNewIntake.map((c) => (
-              <div key={c.id} className="py-1.5 text-xs sm:py-0">
-                <span className="font-semibold text-[#8B1A1A]">{c.full_name}</span>
-                <br />
-                <span className="text-[#666]">{c.source || "Intake form"}</span>
-              </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {Array.from(newIntakeBySource.entries()).map(([label, count]) => (
+              <span
+                key={label}
+                className="rounded-full border border-[#8B1A1A]/30 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#8B1A1A]"
+              >
+                {label}: {count}
+              </span>
             ))}
           </div>
-          {newIntakeClients.length > previewNewIntake.length && (
-            <span className="mt-3 text-xs text-[#666]">+{newIntakeClients.length - previewNewIntake.length} more</span>
-          )}
           <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
             Review submissions &rarr;
           </span>
