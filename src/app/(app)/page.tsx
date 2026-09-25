@@ -31,6 +31,7 @@ export default async function HomePage() {
   const [
     { data: profile },
     { data: clients },
+    { data: pendingReviewClients },
     { data: meetings },
     { data: reminders },
     { data: termProductsRaw, error: termProductsError },
@@ -42,6 +43,18 @@ export default async function HomePage() {
       .eq("id", user.id)
       .single(),
     supabase.from("clients").select("id, stage"),
+    // New Intake Submissions (Karina, 9/25: "there is no alert on the dashboard" for new intake
+    // forms coming in). The underlying flag/flow already existed — clients.intake_pending_review
+    // is set true whenever someone submits either the Pre-Intake or full Intake public form (see
+    // src/app/intake/[advisorId]/actions.ts and src/app/pre-intake/[advisorId]/actions.ts), and is
+    // cleared via markClientReviewed (the "Mark Reviewed" button on a client's page) — it was just
+    // never surfaced here, only on the Clients list (the "Needs Review" filter chip, same flag,
+    // same /clients?view=needs_review link used below) and on the individual client page.
+    supabase
+      .from("clients")
+      .select("id, full_name, source, created_at")
+      .eq("intake_pending_review", true)
+      .order("created_at", { ascending: false }),
     supabase
       .from("client_meetings")
       .select("id, meeting_at, client_id, clients(id, full_name)")
@@ -171,6 +184,10 @@ export default async function HomePage() {
     outcomeCounts[outcome] += 1;
   });
 
+  // New Intake Submissions
+  const newIntakeClients = pendingReviewClients ?? [];
+  const previewNewIntake = newIntakeClients.slice(0, 3);
+
   const greetingName = profile?.first_name || "there";
 
   // Getting Started progress — three real, live signals (never a stored flag, so there's nothing
@@ -191,6 +208,46 @@ export default async function HomePage() {
       </div>
 
       {showOnboardingBanner && <OnboardingBanner doneCount={onboardingDoneCount} totalCount={onboardingTotalSteps} />}
+
+      {/* New Intake Submissions — Karina, 9/25: "there is no alert on the dashboard" when a new
+          intake form comes in. Only rendered when there's actually something to review, so it
+          doesn't take up space on a normal day — same red-banner treatment as Time-Sensitive below
+          it, since a fresh submission is exactly the kind of thing that shouldn't sit unnoticed. */}
+      {newIntakeClients.length > 0 && (
+        <Link
+          href="/clients?view=needs_review"
+          className="mb-6 flex flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#8B1A1A]">
+              New Intake Submissions
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 12 6 8z" />
+              <path d="M10 19a2 2 0 0 0 4 0" />
+            </svg>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{newIntakeClients.length}</span>
+            <span className="text-sm text-[#555]">awaiting review</span>
+          </div>
+          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF] sm:grid sm:grid-cols-3 sm:gap-3 sm:divide-y-0">
+            {previewNewIntake.map((c) => (
+              <div key={c.id} className="py-1.5 text-xs sm:py-0">
+                <span className="font-semibold text-[#8B1A1A]">{c.full_name}</span>
+                <br />
+                <span className="text-[#666]">{c.source || "Intake form"}</span>
+              </div>
+            ))}
+          </div>
+          {newIntakeClients.length > previewNewIntake.length && (
+            <span className="mt-3 text-xs text-[#666]">+{newIntakeClients.length - previewNewIntake.length} more</span>
+          )}
+          <span className="mt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+            Review submissions &rarr;
+          </span>
+        </Link>
+      )}
 
       {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
           the adviser needs to immediately get to... so it doesn't get missed." A banner rather
