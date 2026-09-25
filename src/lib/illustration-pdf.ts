@@ -47,21 +47,10 @@ function formatTermLength(termLength: string): string {
 // Added 9/25 per Karina — advisors can now pick how the client pays (monthly/annual/semi-annual/
 // quarterly) instead of the premium always being shown as an unlabeled or silently-monthly
 // figure. Undefined (every scenario/illustration created before this) reads as "monthly" so
-// nothing already generated changes appearance. premiumFreqWord() is for Term's "$X level
-// premium (monthly)" phrasing; premiumFreqSuffix() is for Final Expense's terser "$X/mo" style,
-// which already had a slash-suffix convention before this change.
-function premiumFreqWord(freq?: string): string {
-  switch (freq) {
-    case "annual":
-      return "annual";
-    case "semi_annual":
-      return "every 6 months";
-    case "quarterly":
-      return "quarterly";
-    default:
-      return "monthly";
-  }
-}
+// nothing already generated changes appearance. Same terse "$X/mo" slash-suffix style everywhere
+// now (Karina, 9/25: "it should be $__ level premium/mo. /annual /quarter or whatever it is") —
+// Term reads "$X level premium/mo", Final Expense reads "$X/mo" (it never had the "level
+// premium" words in the first place).
 function premiumFreqSuffix(freq?: string): string {
   switch (freq) {
     case "annual":
@@ -120,6 +109,114 @@ export interface IllustrationPdfInput {
   advisor?: AdvisorInfo;
 }
 
+// Header — rebuilt 9/25 per Karina, after she saw a screenshot of the plain-text 9/13 header and
+// said "this feels plain i think the logo should be on it and meaybe hte clients name needs ot be
+// at hte top? lets rediesng before building show me a mock." Per that same "mock before building"
+// pattern the 9/13 header itself went through, I sent an HTML mock first; her only follow-ups were
+// "maybe the term life needs to be moved oteh right beause it feels heavily stakced on the left"
+// (product type moved into the header's top-right, next to the "Policy Illustration Summary"
+// label) and font/sizing tweaks on the mock, then she asked why the logo wasn't showing up on a
+// real generated PDF — the mock was only ever a preview, so this is that approved design finally
+// ported into the real jsPDF drawing calls:
+//   - The actual vector logo (Logo.tsx) instead of plain bold "GENERATIONAL PLAYBOOK" text. jsPDF
+//     can't render arbitrary SVG, so this is a manual redraw of the same 4 shapes (a diamond +
+//     3 chevron strokes) at Logo.tsx's exact pixel-sampled opacities, using jsPDF's moveTo/lineTo/
+//     close/fill/stroke path API and setGState for per-shape opacity — plus the Georgia-esque
+//     wordmark ("times" is jsPDF's built-in serif; there's no Georgia embedded in this doc).
+//   - "Policy Illustration Summary" + the product type, right-aligned in the header's top-right
+//     instead of stacked left under the wordmark — this is the "term life needs to be moved to the
+//     right" fix.
+//   - Client name promoted to a large heading (was previously small text inside the info card
+//     below) with a thin accent rule underneath in the same warm gray-gold Logo.tsx already uses
+//     for "PLAYBOOK" (GOLD above) — not a new invented color; see the "fully monochrome" note
+//     further down about why GREEN/BLUE/GOLD were retired from DATA-series color-coding — that was
+//     never about the logo's own two brand tones, which this header now reuses as-is.
+// Shared by both generateIllustrationPDF and generateScenarioIllustrationPDF (previously each had
+// its own copy of the old plain-text header, byte-identical) — returns the y position to resume
+// drawing the rest of the page from.
+function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
+  const W = 612;
+  const M = 50;
+  const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
+  const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+  const setDraw = (c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
+  const setOpacity = (op: number) => doc.setGState(doc.GState({ opacity: op, "stroke-opacity": op }));
+
+  // Logo — ported from Logo.tsx's viewBox="0 0 560 100" full-lockup SVG, scaled to a 26pt-tall
+  // rendering (lx/ly convert a viewBox coordinate to an absolute PDF point at that scale).
+  const logoH = 26;
+  const s = logoH / 100;
+  const lx = (vx: number) => M + vx * s;
+  const ly = (vy: number) => 10 + vy * s;
+
+  setFill(OBSIDIAN);
+  setDraw(OBSIDIAN);
+  setOpacity(0.141);
+  doc.moveTo(lx(45.6), ly(15.3));
+  doc.lineTo(lx(63.5), ly(26.5));
+  doc.lineTo(lx(45.6), ly(37.7));
+  doc.lineTo(lx(27.8), ly(26.5));
+  doc.close();
+  doc.fill();
+
+  const chevrons: { pts: [number, number][]; w: number; op: number }[] = [
+    { pts: [[23.5, 35.2], [45.6, 51.2], [67.5, 35.2]], w: 5.0, op: 0.329 },
+    { pts: [[16.3, 47.6], [45.6, 67.3], [74.7, 47.6]], w: 5.5, op: 0.6 },
+    { pts: [[10.8, 59.3], [45.6, 82.8], [80.2, 59.3]], w: 6.1, op: 1 },
+  ];
+  chevrons.forEach((c) => {
+    setOpacity(c.op);
+    doc.setLineWidth(c.w * s);
+    doc.moveTo(lx(c.pts[0][0]), ly(c.pts[0][1]));
+    doc.lineTo(lx(c.pts[1][0]), ly(c.pts[1][1]));
+    doc.lineTo(lx(c.pts[2][0]), ly(c.pts[2][1]));
+    doc.stroke();
+  });
+  setOpacity(1);
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(logoH * 0.66);
+  setText([27, 27, 27]);
+  doc.text("Generational", lx(104), ly(42));
+  doc.setFont("times", "normal");
+  doc.setFontSize(logoH * 0.22);
+  setText(GOLD);
+  doc.text("PLAYBOOK", lx(105), ly(72), { charSpace: 2.6 * s });
+
+  // Header-right — "Policy Illustration Summary" + product type, right-aligned.
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  setText(GRAY);
+  doc.text("POLICY ILLUSTRATION SUMMARY", W - M, 20, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  setText(OBSIDIAN);
+  doc.text(productTypeLabel(input), W - M, 36, { align: "right" });
+
+  setDraw(OBSIDIAN);
+  doc.setLineWidth(1.5);
+  doc.line(M, 50, W - M, 50);
+
+  // Client name — now the main heading, sans-serif to match the rest of the document (Karina, 9/25:
+  // "i want fonts to be as they are now" after seeing the mock's Georgia-serif client name).
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  setText(OBSIDIAN);
+  doc.text(input.clientName, M, 76);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  setText(CHARCOAL);
+  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M, 92);
+
+  setFill(GOLD);
+  setOpacity(0.55);
+  doc.roundedRect(M, 100, 44, 2.5, 1, 1, "F");
+  setOpacity(1);
+
+  return 122;
+}
+
 // Palette gone fully monochrome 9/7, fifth round. Karina noticed the previous round ("Not yet
 // done — the header rule color" below, now resolved) still left GREEN/BLUE/GOLD doing exactly the
 // thing that round had just fixed for the header: colors this document invented that aren't
@@ -147,6 +244,7 @@ const CHARCOAL: RGB = [78, 81, 83]; // body/secondary text, italic caveats
 const SAND: RGB = [229, 223, 211]; // hairline rules, muted borders — matches the site's beige swatch
 const GRAY: RGB = [155, 155, 152]; // de-emphasized labels, and now also the secondary/dashed line in any two-series chart or box pair
 const NEUTRAL_FILL: RGB = [244, 241, 235]; // light cream box fill — sampled from the site's own "Colors" screenshot, replaces every green/blue/gold-tinted box
+const GOLD: RGB = [154, 145, 132]; // #9A9184 — the same warm gray-gold used for "PLAYBOOK" in Logo.tsx; used here only for the small accent rule under the client's name
 
 function formatShort(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + "M";
@@ -280,55 +378,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     }
   }
 
-  // Header — rebuilt 9/13 (second pass) per Karina, after the plain "product name / client name
-  // on one line" header from earlier that same day read as too bare once she compared it against
-  // the other illustrations advisors already see: "why's it just so simple like that... it needs
-  // to match the other illustrations that we send out to clients." She sent a screenshot of an
-  // older branded header design and asked to see mockups before any of it got rebuilt for real —
-  // several rounds of previews later, this is the version she approved:
-  //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
-  //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
-  //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
-  //   - Product TYPE (not the specific product/carrier — see productTypeLabel above) directly
-  //     underneath, no rule between it and the tagline — Karina: "that lighter line should be
-  //     removed... final expense should go right underneath policy illustration summary" — then
-  //     the one heavier rule she said to keep ("that black line is good"). Client name is no
-  //     longer inline here; it moved into the info card below.
-  //   - A client info card with name + phone + email, so an advisor has the client's contact info
-  //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
-  //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
-  //     product name again... the products aren't listed underneath" — the product name is
-  //     already directly above, and for a multi-option Final Expense scenario this same card sits
-  //     above 2-3 different products, so a single carrier line here would be misleading anyway.
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  setText(OBSIDIAN);
-  doc.text("GENERATIONAL PLAYBOOK", M, 30);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(GRAY);
-  doc.text("Policy Illustration Summary", M, 43);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  setText(OBSIDIAN);
-  doc.text(productTypeLabel(input), M, 62);
-
-  doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
-  doc.setLineWidth(1.5);
-  doc.line(M, 74, W - M, 74);
-
-  setFill(NEUTRAL_FILL);
-  doc.roundedRect(M, 92, W - 2 * M, 50, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  setText(OBSIDIAN);
-  doc.text(input.clientName, M + 16, 116);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(CHARCOAL);
-  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M + 16, 132);
-  y = 160;
+  y = drawBrandedHeader(doc, input);
 
   const data = input.data;
 
@@ -457,7 +507,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     doc.setFontSize(11);
     setText(OBSIDIAN);
     if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
-    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 44);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium" + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 44);
     if (data.conversionDeadline) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -770,55 +820,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     }
   }
 
-  // Header — rebuilt 9/13 (second pass) per Karina, after the plain "product name / client name
-  // on one line" header from earlier that same day read as too bare once she compared it against
-  // the other illustrations advisors already see: "why's it just so simple like that... it needs
-  // to match the other illustrations that we send out to clients." She sent a screenshot of an
-  // older branded header design and asked to see mockups before any of it got rebuilt for real —
-  // several rounds of previews later, this is the version she approved:
-  //   - GENERATIONAL PLAYBOOK wordmark + "Policy Illustration Summary" tagline, restored up top
-  //     (this used to live only in the per-page footer per her 9/11 request — it now appears in
-  //     BOTH places; the footer keeps the site URL, the header doesn't repeat it).
-  //   - Product TYPE (not the specific product/carrier — see productTypeLabel above) directly
-  //     underneath, no rule between it and the tagline — Karina: "that lighter line should be
-  //     removed... final expense should go right underneath policy illustration summary" — then
-  //     the one heavier rule she said to keep ("that black line is good"). Client name is no
-  //     longer inline here; it moved into the info card below.
-  //   - A client info card with name + phone + email, so an advisor has the client's contact info
-  //     at a glance without leaving the PDF ("so that it's easily accessible to the advisor").
-  //     Deliberately does NOT repeat product/carrier here — Karina: "it doesn't need to say the
-  //     product name again... the products aren't listed underneath" — the product name is
-  //     already directly above, and for a multi-option Final Expense scenario this same card sits
-  //     above 2-3 different products, so a single carrier line here would be misleading anyway.
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  setText(OBSIDIAN);
-  doc.text("GENERATIONAL PLAYBOOK", M, 30);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(GRAY);
-  doc.text("Policy Illustration Summary", M, 43);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  setText(OBSIDIAN);
-  doc.text(productTypeLabel(input), M, 62);
-
-  doc.setDrawColor(OBSIDIAN[0], OBSIDIAN[1], OBSIDIAN[2]);
-  doc.setLineWidth(1.5);
-  doc.line(M, 74, W - M, 74);
-
-  setFill(NEUTRAL_FILL);
-  doc.roundedRect(M, 92, W - 2 * M, 50, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  setText(OBSIDIAN);
-  doc.text(input.clientName, M + 16, 116);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText(CHARCOAL);
-  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M + 16, 132);
-  y = 160;
+  y = drawBrandedHeader(doc, input);
 
   const data = input.data;
 
@@ -1200,7 +1202,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(11);
       setText(OBSIDIAN);
       if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
-      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 44);
+      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium" + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 44);
       if (data.conversionDeadline) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
@@ -1257,7 +1259,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFontSize(11);
         setText(OBSIDIAN);
         if (opt.term) doc.text(formatTermLength(opt.term) + " term", M + 280, y + 30);
-        if (opt.prem) doc.text("$" + formatMoney(opt.prem) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 48);
+        if (opt.prem) doc.text("$" + formatMoney(opt.prem) + " level premium" + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 48);
         y += rowH + (i < options.length - 1 ? rowGap : 18);
       });
 
