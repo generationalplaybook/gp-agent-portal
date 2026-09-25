@@ -112,25 +112,31 @@ export interface IllustrationPdfInput {
 // Header — rebuilt 9/25 per Karina, after she saw a screenshot of the plain-text 9/13 header and
 // said "this feels plain i think the logo should be on it and meaybe hte clients name needs ot be
 // at hte top? lets rediesng before building show me a mock." Per that same "mock before building"
-// pattern the 9/13 header itself went through, I sent an HTML mock first; her only follow-ups were
+// pattern the 9/13 header itself went through, I sent an HTML mock first; her follow-ups were
 // "maybe the term life needs to be moved oteh right beause it feels heavily stakced on the left"
 // (product type moved into the header's top-right, next to the "Policy Illustration Summary"
-// label) and font/sizing tweaks on the mock, then she asked why the logo wasn't showing up on a
-// real generated PDF — the mock was only ever a preview, so this is that approved design finally
-// ported into the real jsPDF drawing calls:
-//   - The actual vector logo (Logo.tsx) instead of plain bold "GENERATIONAL PLAYBOOK" text. jsPDF
-//     can't render arbitrary SVG, so this is a manual redraw of the same 4 shapes (a diamond +
-//     3 chevron strokes) at Logo.tsx's exact pixel-sampled opacities, using jsPDF's moveTo/lineTo/
-//     close/fill/stroke path API and setGState for per-shape opacity — plus the Georgia-esque
-//     wordmark ("times" is jsPDF's built-in serif; there's no Georgia embedded in this doc).
-//   - "Policy Illustration Summary" + the product type, right-aligned in the header's top-right
-//     instead of stacked left under the wordmark — this is the "term life needs to be moved to the
-//     right" fix.
-//   - Client name promoted to a large heading (was previously small text inside the info card
-//     below) with a thin accent rule underneath in the same warm gray-gold Logo.tsx already uses
-//     for "PLAYBOOK" (GOLD above) — not a new invented color; see the "fully monochrome" note
-//     further down about why GREEN/BLUE/GOLD were retired from DATA-series color-coding — that was
-//     never about the logo's own two brand tones, which this header now reuses as-is.
+// label), font/sizing tweaks on the mock, then after seeing it in a REAL generated PDF for the
+// first time she asked for 3 more changes in one message:
+//   1. Show the specific product + carrier (e.g. "ADDvantage Term (North American)"), not just the
+//      generic product type — she was explicit this is ALWAYS ONE product/carrier per illustration
+//      ("I don't ever want to put more than one carrier per illustration, I want to do a different
+//      illustration if it's a different product from a different carrier rather than mixing them
+//      onto one sheet") — so this is a single line in the client info card, never a per-option
+//      thing, and Term never needs the productName2/3-style carrier field Final Expense has.
+//   2. Revert the client name from a bare heading + accent-rule underline (my first pass at
+//      porting the mock) back to the ORIGINAL 9/13 treatment: name/phone/email inside the
+//      off-white NEUTRAL_FILL rounded box — "I still like the old format with the person's name
+//      being in that like off-white cream nude box rather than having that underline thing." The
+//      box now holds a 3rd line for product/carrier (item 1 above).
+//   3. More breathing room at the top and bottom of the page — the whole header shifted down
+//      ~14pt, and every bottom-of-page boundary (PAGE_MAX_Y, the disclaimer, the footer, the
+//      continued-page top margin) shifted to leave more clearance from the physical page edge.
+// What DID carry over from the mock: the actual vector logo instead of plain "GENERATIONAL
+// PLAYBOOK" text (jsPDF can't render arbitrary SVG, so this is a manual redraw of Logo.tsx's 4
+// shapes — a diamond + 3 chevron strokes — at its exact pixel-sampled opacities, via jsPDF's
+// moveTo/lineTo/close/fill/stroke path API and setGState for per-shape opacity, plus the
+// Georgia-esque wordmark — "times" is jsPDF's built-in serif, there's no Georgia embedded in this
+// doc), and "Policy Illustration Summary" + product type right-aligned in the top-right.
 // Shared by both generateIllustrationPDF and generateScenarioIllustrationPDF (previously each had
 // its own copy of the old plain-text header, byte-identical) — returns the y position to resume
 // drawing the rest of the page from.
@@ -143,11 +149,12 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
   const setOpacity = (op: number) => doc.setGState(doc.GState({ opacity: op, "stroke-opacity": op }));
 
   // Logo — ported from Logo.tsx's viewBox="0 0 560 100" full-lockup SVG, scaled to a 26pt-tall
-  // rendering (lx/ly convert a viewBox coordinate to an absolute PDF point at that scale).
+  // rendering (lx/ly convert a viewBox coordinate to an absolute PDF point at that scale). Base of
+  // 24 (was 10) is the "more breathing room at the top" fix — the whole header sits ~14pt lower.
   const logoH = 26;
   const s = logoH / 100;
   const lx = (vx: number) => M + vx * s;
-  const ly = (vy: number) => 10 + vy * s;
+  const ly = (vy: number) => 24 + vy * s;
 
   setFill(OBSIDIAN);
   setDraw(OBSIDIAN);
@@ -183,38 +190,41 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
   setText(GOLD);
   doc.text("PLAYBOOK", lx(105), ly(72), { charSpace: 2.6 * s });
 
-  // Header-right — "Policy Illustration Summary" + product type, right-aligned.
+  // Header-right — "Policy Illustration Summary" + product type, right-aligned. Baselines 34/50
+  // (were 20/36) — shifted down the same ~14pt as the logo, to stay level with it.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   setText(GRAY);
-  doc.text("POLICY ILLUSTRATION SUMMARY", W - M, 20, { align: "right" });
+  doc.text("POLICY ILLUSTRATION SUMMARY", W - M, 34, { align: "right" });
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   setText(OBSIDIAN);
-  doc.text(productTypeLabel(input), W - M, 36, { align: "right" });
+  doc.text(productTypeLabel(input), W - M, 50, { align: "right" });
 
   setDraw(OBSIDIAN);
   doc.setLineWidth(1.5);
-  doc.line(M, 50, W - M, 50);
+  doc.line(M, 64, W - M, 64);
 
-  // Client name — now the main heading, sans-serif to match the rest of the document (Karina, 9/25:
-  // "i want fonts to be as they are now" after seeing the mock's Georgia-serif client name).
+  // Client info card — reverted to the original 9/13 boxed treatment per Karina, 9/25: "I still
+  // like the old format with the person's name being in that like off-white cream nude box rather
+  // than having that underline thing." Now 3 lines instead of 2 — name, phone/email, and the
+  // specific product + carrier (Karina, same message: "it should say like advantage nine North
+  // American term life... I don't ever want to put more than one carrier per illustration" — one
+  // product/carrier for the whole sheet, reusing the same withCarrier() formatting Final Expense's
+  // option rows already use elsewhere in this file).
+  setFill(NEUTRAL_FILL);
+  doc.roundedRect(M, 82, W - 2 * M, 64, 4, 4, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
+  doc.setFontSize(14);
   setText(OBSIDIAN);
-  doc.text(input.clientName, M, 76);
-
+  doc.text(input.clientName, M + 16, 106);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   setText(CHARCOAL);
-  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M, 92);
+  doc.text([input.clientPhone, input.clientEmail].filter(Boolean).join("   ·   ") || "—", M + 16, 122);
+  doc.text(withCarrier(input.productName, input.carrier), M + 16, 138);
 
-  setFill(GOLD);
-  setOpacity(0.55);
-  doc.roundedRect(M, 100, 44, 2.5, 1, 1, "F");
-  setOpacity(1);
-
-  return 122;
+  return 164;
 }
 
 // Palette gone fully monochrome 9/7, fifth round. Karina noticed the previous round ("Not yet
@@ -244,7 +254,7 @@ const CHARCOAL: RGB = [78, 81, 83]; // body/secondary text, italic caveats
 const SAND: RGB = [229, 223, 211]; // hairline rules, muted borders — matches the site's beige swatch
 const GRAY: RGB = [155, 155, 152]; // de-emphasized labels, and now also the secondary/dashed line in any two-series chart or box pair
 const NEUTRAL_FILL: RGB = [244, 241, 235]; // light cream box fill — sampled from the site's own "Colors" screenshot, replaces every green/blue/gold-tinted box
-const GOLD: RGB = [154, 145, 132]; // #9A9184 — the same warm gray-gold used for "PLAYBOOK" in Logo.tsx; used here only for the small accent rule under the client's name
+const GOLD: RGB = [154, 145, 132]; // #9A9184 — the same warm gray-gold Logo.tsx uses for "PLAYBOOK" in the wordmark; used here only to redraw that same wordmark text, nowhere else
 
 function formatShort(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + "M";
@@ -370,11 +380,13 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   // knowable ahead of drawing it (boxes, tables, charts) — if it wouldn't fit in what's left on the
   // current page, it starts a fresh page for that whole block instead of letting it spill across
   // the boundary and get cut off.
-  const PAGE_MAX_Y = 770;
+  // 752/68 (were 770/60) — more top/bottom breathing room per Karina, 9/25: "we need to have a
+  // little bit more breathing room at the top and at the bottom of the page."
+  const PAGE_MAX_Y = 752;
   function ensureSpace(needed: number) {
     if (y + needed > PAGE_MAX_Y) {
       doc.addPage();
-      y = 60;
+      y = 68;
     }
   }
 
@@ -749,7 +761,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
   doc.text(
     "Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration, not a formal projection. Actual premiums and underwriting results vary and aren't guaranteed. Neither the advisor nor Generational Playbook is liable for differences from the carrier's final offer.",
     M,
-    758,
+    745,
     { maxWidth: 612 - 2 * M }
   );
 
@@ -776,7 +788,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(OBSIDIAN);
-    doc.text("GenerationalPlaybook.com", W / 2, 778, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 768, { align: "center" });
   }
 
   if (action === "view") {
@@ -812,11 +824,13 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   // knowable ahead of drawing it (boxes, tables, charts) — if it wouldn't fit in what's left on the
   // current page, it starts a fresh page for that whole block instead of letting it spill across
   // the boundary and get cut off.
-  const PAGE_MAX_Y = 770;
+  // 752/68 (were 770/60) — more top/bottom breathing room per Karina, 9/25: "we need to have a
+  // little bit more breathing room at the top and at the bottom of the page."
+  const PAGE_MAX_Y = 752;
   function ensureSpace(needed: number) {
     if (y + needed > PAGE_MAX_Y) {
       doc.addPage();
-      y = 60;
+      y = 68;
     }
   }
 
@@ -1560,9 +1574,9 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   // short/typical 3-milestone cash_value scenario (measured around y≈727 with the new two-part
   // table+legend) now spills the advisor/disclaimer block onto its own second page — that's a
   // real, expected side effect of the added content, not a bug to chase away with tighter spacing.
-  if (y > 705) {
+  if (y > 690) {
     doc.addPage();
-    y = 60;
+    y = 68;
   }
 
   if (input.advisor && (input.advisor.name || input.advisor.phone || input.advisor.email)) {
@@ -1589,7 +1603,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   doc.text(
     "Figures shown are illustrative, entered by the advisor from the carrier's own policy illustration, not a formal projection. Actual premiums and underwriting results vary and aren't guaranteed. Neither the advisor nor Generational Playbook is liable for differences from the carrier's final offer.",
     M,
-    Math.max(758, y + 14),
+    Math.max(745, y + 14),
     { maxWidth: 612 - 2 * M }
   );
 
@@ -1602,7 +1616,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(OBSIDIAN);
-    doc.text("GenerationalPlaybook.com", W / 2, 778, { align: "center" });
+    doc.text("GenerationalPlaybook.com", W / 2, 768, { align: "center" });
   }
 
   if (action === "view") {
