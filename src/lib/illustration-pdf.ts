@@ -451,7 +451,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       data.riders.forEach((r) => {
-        doc.text("— " + r, M, y);
+        doc.text("• " + r, M, y);
         y += 14;
       });
       doc.setFont("helvetica", "italic");
@@ -504,7 +504,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFontSize(9);
       setText(CHARCOAL);
       data.riders.forEach((r) => {
-        doc.text("— " + r, M, y);
+        doc.text("• " + r, M, y);
         y += 14;
       });
       doc.setFont("helvetica", "italic");
@@ -1257,7 +1257,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       data.riders.forEach((r) => {
-        doc.text("— " + r, M, y);
+        doc.text("• " + r, M, y);
         y += 14;
       });
       doc.setFont("helvetica", "italic");
@@ -1376,7 +1376,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(9);
       setText(CHARCOAL);
       data.riders.forEach((r) => {
-        doc.text("— " + r, M, y);
+        doc.text("• " + r, M, y);
         y += 14;
       });
       doc.setFont("helvetica", "italic");
