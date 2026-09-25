@@ -454,7 +454,12 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         doc.text("— " + r, M, y);
         y += 14;
       });
-      y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GRAY);
+      doc.text("Riders shown are subject to underwriting approval and are not guaranteed at issue.", M, y);
+      doc.setFont("helvetica", "normal");
+      y += 18;
     }
 
     if (data.notes) {
@@ -502,7 +507,12 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
         doc.text("— " + r, M, y);
         y += 14;
       });
-      y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GRAY);
+      doc.text("Riders shown are subject to underwriting approval and are not guaranteed at issue.", M, y);
+      doc.setFont("helvetica", "normal");
+      y += 18;
     }
 
     if (data.notes) {
@@ -1250,7 +1260,12 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.text("— " + r, M, y);
         y += 14;
       });
-      y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GRAY);
+      doc.text("Riders shown are subject to underwriting approval and are not guaranteed at issue.", M, y);
+      doc.setFont("helvetica", "normal");
+      y += 18;
     }
 
     if (data.notes) {
@@ -1364,7 +1379,12 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.text("— " + r, M, y);
         y += 14;
       });
-      y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(GRAY);
+      doc.text("Riders shown are subject to underwriting approval and are not guaranteed at issue.", M, y);
+      doc.setFont("helvetica", "normal");
+      y += 18;
     }
 
     if (data.notes) {
