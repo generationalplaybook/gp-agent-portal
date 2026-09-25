@@ -44,6 +44,37 @@ function formatTermLength(termLength: string): string {
   return trimmed;
 }
 
+// Added 9/25 per Karina — advisors can now pick how the client pays (monthly/annual/semi-annual/
+// quarterly) instead of the premium always being shown as an unlabeled or silently-monthly
+// figure. Undefined (every scenario/illustration created before this) reads as "monthly" so
+// nothing already generated changes appearance. premiumFreqWord() is for Term's "$X level
+// premium (monthly)" phrasing; premiumFreqSuffix() is for Final Expense's terser "$X/mo" style,
+// which already had a slash-suffix convention before this change.
+function premiumFreqWord(freq?: string): string {
+  switch (freq) {
+    case "annual":
+      return "annual";
+    case "semi_annual":
+      return "every 6 months";
+    case "quarterly":
+      return "quarterly";
+    default:
+      return "monthly";
+  }
+}
+function premiumFreqSuffix(freq?: string): string {
+  switch (freq) {
+    case "annual":
+      return "/yr";
+    case "semi_annual":
+      return "/6mo";
+    case "quarterly":
+      return "/qtr";
+    default:
+      return "/mo";
+  }
+}
+
 // The header's big title used to just be input.productName — added 9/14 per Karina, after she
 // saw the header showing the specific product's name/carrier (e.g. "Final Expense Whole Life —
 // Banner Life," carried over from whatever the advisor typed into that scenario's product name
@@ -426,7 +457,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
     doc.setFontSize(11);
     setText(OBSIDIAN);
     if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
-    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
+    if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 44);
     if (data.conversionDeadline) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -486,7 +517,7 @@ export function generateIllustrationPDF(input: IllustrationPdfInput, action: "do
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
       setText(OBSIDIAN);
-      doc.text("$" + formatMoney(data.levelPremium) + "/mo", M + 280, y + 34);
+      doc.text("$" + formatMoney(data.levelPremium) + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 34);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       setText(CHARCOAL);
@@ -1169,7 +1200,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
       doc.setFontSize(11);
       setText(OBSIDIAN);
       if (data.termLength) doc.text(formatTermLength(data.termLength) + " term", M + 280, y + 26);
-      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium", M + 280, y + 44);
+      if (data.levelPremium) doc.text("$" + formatMoney(data.levelPremium) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 44);
       if (data.conversionDeadline) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
@@ -1226,7 +1257,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFontSize(11);
         setText(OBSIDIAN);
         if (opt.term) doc.text(formatTermLength(opt.term) + " term", M + 280, y + 30);
-        if (opt.prem) doc.text("$" + formatMoney(opt.prem) + " level premium", M + 280, y + 48);
+        if (opt.prem) doc.text("$" + formatMoney(opt.prem) + " level premium (" + premiumFreqWord(data.premiumFrequency) + ")", M + 280, y + 48);
         y += rowH + (i < options.length - 1 ? rowGap : 18);
       });
 
@@ -1301,7 +1332,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.setFont("helvetica", "bold");
         doc.setFontSize(20);
         setText(OBSIDIAN);
-        doc.text("$" + formatMoney(data.levelPremium) + "/mo", M + 280, y + 34);
+        doc.text("$" + formatMoney(data.levelPremium) + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 34);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         setText(CHARCOAL);
@@ -1356,7 +1387,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
           doc.setFont("helvetica", "bold");
           doc.setFontSize(18);
           setText(OBSIDIAN);
-          doc.text("$" + formatMoney(opt.prem) + "/mo", M + 280, y + 44);
+          doc.text("$" + formatMoney(opt.prem) + premiumFreqSuffix(data.premiumFrequency), M + 280, y + 44);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(9);
           setText(CHARCOAL);

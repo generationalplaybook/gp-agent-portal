@@ -10,6 +10,8 @@ import {
   type IllustrationData,
   type CashValueMilestone,
   type AnnuityMilestone,
+  type TermIllustration,
+  type FinalExpenseIllustration,
 } from "@/lib/illustration";
 import { generateIllustrationPDF, type AdvisorInfo } from "@/lib/illustration-pdf";
 import { saveIllustration } from "../actions";
@@ -316,6 +318,23 @@ export default function IllustrationForm({
                   className={inputClass}
                 />
               </label>
+              {/* Added 9/25 per Karina: "we should make an option on the portal for the advisor to
+                  pick monthly, annual, semi-annual and quarterly." Mirrors the same select in
+                  ScenarioForm.tsx's Term section and the annuity_contribution_frequency select on
+                  ProductRow.tsx. Sixth field in this grid so it still lines up two-per-row. */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Premium Frequency
+                <select
+                  value={data.premiumFrequency ?? "monthly"}
+                  onChange={(e) => setData({ ...data, premiumFrequency: e.target.value as TermIllustration["premiumFrequency"] })}
+                  className={inputClass}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
+              </label>
             </div>
             <div className="mt-4">
               <div className="mb-2 text-xs font-semibold text-[#666]">Living Benefits &amp; Riders</div>
@@ -339,6 +358,21 @@ export default function IllustrationForm({
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Guaranteed Level Premium
                 <DollarInput value={data.levelPremium} onChange={(v) => setData({ ...data, levelPremium: v })} className={inputClass} />
+              </label>
+              {/* Added 9/25 per Karina — see the matching field on the Term section above for the
+                  full comment. Undefined reads as monthly, matching the old hardcoded "/mo". */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Premium Frequency
+                <select
+                  value={data.premiumFrequency ?? "monthly"}
+                  onChange={(e) => setData({ ...data, premiumFrequency: e.target.value as FinalExpenseIllustration["premiumFrequency"] })}
+                  className={inputClass}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
               </label>
             </div>
             <div className="mt-4">

@@ -397,14 +397,14 @@ function TermOptionsEditor({
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Term Length{" "}
-              <span className="font-normal normal-case text-[#8b8b8b]">(optional: leave blank to match the term length above)</span>
+              Term Length
               <input
                 value={data.termLength2 ?? ""}
                 onChange={(e) => setData({ ...data, termLength2: e.target.value })}
                 placeholder="e.g. 30"
                 className={inputClass + " w-full"}
               />
+              <span className="font-normal normal-case text-[#8b8b8b]">Optional: leave blank to match the term length above</span>
             </label>
           </div>
         </div>
@@ -436,14 +436,14 @@ function TermOptionsEditor({
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Term Length{" "}
-              <span className="font-normal normal-case text-[#8b8b8b]">(optional: leave blank to match the term length above)</span>
+              Term Length
               <input
                 value={data.termLength3 ?? ""}
                 onChange={(e) => setData({ ...data, termLength3: e.target.value })}
                 placeholder="e.g. 30"
                 className={inputClass + " w-full"}
               />
+              <span className="font-normal normal-case text-[#8b8b8b]">Optional: leave blank to match the term length above</span>
             </label>
           </div>
         </div>
@@ -965,6 +965,25 @@ export default function ScenarioForm({
               Add up to 2 more death benefit/premium/term options below so a client can see a few budget tiers
               side by side, e.g. $500,000 vs. $1,000,000.
             </p>
+            {/* Added 9/25 per Karina: "we should make an option on the portal for the advisor to pick
+                monthly, annual, semi-annual and quarterly" — one frequency for the whole scenario, not
+                per option, since every option here is the same policy just quoted a few ways. Mirrors
+                the annuity_contribution_frequency select on ProductRow.tsx (same values/labels). */}
+            <div className="mb-4 max-w-xs">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Premium Frequency
+                <select
+                  value={data.premiumFrequency ?? "monthly"}
+                  onChange={(e) => setData({ ...data, premiumFrequency: e.target.value as TermIllustration["premiumFrequency"] })}
+                  className={inputClass}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
+              </label>
+            </div>
             <TermOptionsEditor data={data} setData={setData} />
             {/* Two-tier conversion window, mirroring the same conversion_deadline / final_conversion_deadline
                 split already used for Outreach milestones (see getNextOutreachMilestone in lib/products.ts) —
@@ -1012,6 +1031,24 @@ export default function ScenarioForm({
               different product/carrier entirely (e.g. comparing TruStage vs. Living Promise vs. Banner Life side
               by side) so a client can glance at all of it at once.
             </p>
+            {/* Added 9/25 per Karina — see the matching Premium Frequency select on the Term section
+                above for the full comment; same field, same reasoning, mirrored here since Final
+                Expense is its own kind. Undefined reads as monthly, matching the old hardcoded "/mo". */}
+            <div className="mb-4 max-w-xs">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Premium Frequency
+                <select
+                  value={data.premiumFrequency ?? "monthly"}
+                  onChange={(e) => setData({ ...data, premiumFrequency: e.target.value as FinalExpenseIllustration["premiumFrequency"] })}
+                  className={inputClass}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi_annual">Every 6 months</option>
+                  <option value="annual">Annually</option>
+                </select>
+              </label>
+            </div>
             <FinalExpenseOptionsEditor data={data} setData={setData} />
             <div className="mt-4">
               <div className="mb-2 text-xs font-semibold text-[#666]">Riders</div>

@@ -125,7 +125,17 @@ export interface TermIllustration {
   deathBenefit3?: string;
   levelPremium3?: string;
   termLength3?: string;
+  // Added 9/25 per Karina: the level premium was always shown with no payment-frequency label
+  // (or, on Final Expense below, silently assumed monthly), but plenty of clients pay annually,
+  // semi-annually, or quarterly instead. One frequency applies to every option on the
+  // illustration/scenario (they're all the same policy, just quoted a few ways), not per-option.
+  // Optional/additive — undefined on every existing scenario/illustration, and the PDF renderer
+  // treats undefined the same as "monthly" so nothing already generated changes appearance.
+  premiumFrequency?: PremiumFrequency;
 }
+
+// Added 9/25 — see the comment on TermIllustration.premiumFrequency above.
+export type PremiumFrequency = "monthly" | "annual" | "semi_annual" | "quarterly";
 
 // Final Expense Whole Life is guaranteed- or simplified-issue and permanent from day one — the
 // premium and death benefit are both locked for life. Unlike an IUL (where the credited value
@@ -157,6 +167,10 @@ export interface FinalExpenseIllustration {
   productName3?: string;
   riders: string[];
   notes: string;
+  // See the comment on TermIllustration.premiumFrequency above — same field, same meaning, just
+  // mirrored here since Final Expense is its own interface. Undefined = monthly, matching the
+  // "/mo" that was hardcoded here before.
+  premiumFrequency?: PremiumFrequency;
 }
 
 export interface AnnuityIllustration {
