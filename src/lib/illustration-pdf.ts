@@ -171,6 +171,13 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
     { pts: [[16.3, 47.6], [45.6, 67.3], [74.7, 47.6]], w: 5.5, op: 0.6 },
     { pts: [[10.8, 59.3], [45.6, 82.8], [80.2, 59.3]], w: 6.1, op: 1 },
   ];
+  // Explicit butt cap / miter join — ported from Logo.tsx's SVG, which sets strokeLinecap="butt"
+  // strokeLinejoin="miter" on these same polylines. Without calling these, jsPDF's stroke
+  // renderer was tapering each open end to a point instead of cutting it flat, which is what
+  // made the chevrons read as "arrows" instead of the source's flat, square-cut ends. Flagged by
+  // Karina, 9/25: "see how the section one is more like square, your version is more like arrows."
+  doc.setLineCap("butt");
+  doc.setLineJoin("miter");
   chevrons.forEach((c) => {
     setOpacity(c.op);
     doc.setLineWidth(c.w * s);
@@ -181,12 +188,20 @@ function drawBrandedHeader(doc: jsPDF, input: IllustrationPdfInput): number {
   });
   setOpacity(1);
 
-  doc.setFont("times", "bold");
-  doc.setFontSize(logoH * 0.66);
+  // Font sizes ported directly from the SVG's own font-size values (33 and 11, out of the
+  // viewBox's 100-unit height), scaled by the same `s` factor as everything else — NOT an
+  // arbitrary multiplier. An earlier version used logoH * 0.66 / logoH * 0.22 here, which came out
+  // roughly 2x too large and, combined with wrongly using "bold" for "Generational" (the real
+  // wordmark is normal weight — Logo.tsx sets no fontWeight), produced an oversized, overly heavy
+  // wordmark that swamped the icon and threw off the icon/text vertical balance the real lockup
+  // has. Flagged by Karina, 9/25: "the logo is incorrect... I don't know why you changed the shape
+  // of it" — the icon shape itself was always correct; it was the text next to it that was wrong.
+  doc.setFont("times", "normal");
+  doc.setFontSize(33 * s);
   setText([27, 27, 27]);
   doc.text("Generational", lx(104), ly(42));
   doc.setFont("times", "normal");
-  doc.setFontSize(logoH * 0.22);
+  doc.setFontSize(11 * s);
   setText(GOLD);
   doc.text("PLAYBOOK", lx(105), ly(72), { charSpace: 2.6 * s });
 
