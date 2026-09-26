@@ -428,7 +428,11 @@ function CashValueBudgetsSection({
     setBudgets(budgets.map((b, i) => (i === index ? updated : b)));
   }
   function addBudget() {
-    setBudgets([...budgets, emptyCashValueBudget(`Budget ${budgets.length + 1}`)]);
+    // Blank label, not a pre-filled "Budget N" — Karina, 9/26: she had to delete that text before
+    // typing her own budget name. The name input's placeholder (below) already shows "Budget N" as
+    // a hint, and both the PDF and this editor fall back to that same default whenever label is
+    // empty, so nothing is lost — she just isn't forced to clear real text first.
+    setBudgets([...budgets, emptyCashValueBudget("")]);
   }
   function removeBudget(index: number) {
     setBudgets(budgets.filter((_, i) => i !== index));

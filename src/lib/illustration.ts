@@ -300,7 +300,14 @@ export function getCashValueBudgets(data: CashValueIllustration): CashValueBudge
   return [
     {
       id: "legacy-budget-1",
-      label: "Budget 1",
+      // Blank, not "Budget 1" — Karina, 9/26: a new budget's name field was pre-filled with real
+      // text she had to delete before typing her own, instead of showing "Budget 1"/"Budget 2" as
+      // a placeholder hint. Left blank here too (not just on newly-added budgets — see
+      // ScenarioForm.tsx's addBudget) so every budget behaves the same way: the editor's name
+      // input always falls back to "Budget N" as a placeholder (see CashValueBudgetsSection), and
+      // the PDF falls back the same way via `budget.label || \`Budget ${i + 1}\`` — this empty
+      // string never actually prints anywhere on its own.
+      label: "",
       monthlyPremium: data.monthlyPremium ?? "",
       minimumPremium: data.minimumPremium ?? "",
       minimumPremiumIncreasing: data.minimumPremiumIncreasing ?? "",
