@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { IllustrationData, AnnuityIllustration, CashValueBudget } from "./illustration";
-import { parseMoney, formatMoney, getCashValueBudgets } from "./illustration";
+import { parseMoney, formatMoney, formatPercent, getCashValueBudgets } from "./illustration";
 import { LOGO_MARK_ASPECT, LOGO_MARK_PNG_BASE64 } from "./logo-mark-asset";
 
 type RGB = [number, number, number];
@@ -266,13 +266,20 @@ function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: numbe
   // it right above the numbers it explains (same placement Karina picked for the IUL side's
   // equivalent assumption line). Cap rates reset periodically and are never guaranteed, hence the
   // explicit "not guaranteed" language rather than presenting it as a fixed fact.
+  //
+  // formatPercent(), not the raw value — added 9/26, alongside PercentInput.tsx replacing the
+  // field's plain-text input: Karina typed "9.75" without a "%" and this sentence printed "...
+  // assume a 9.75 current cap rate" with no percent sign. PercentInput's stored value never
+  // contains "%" itself (mirrors DollarInput never storing "$" — the symbol is a visual overlay),
+  // so it has to be added back here for display; formatPercent is idempotent, so an older record
+  // that already has "%" typed into it (saved before PercentInput existed) isn't doubled up.
   if (data.capRate) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8.5);
     setText(GRAY);
     const strategyPart = data.capRateStrategy ? ` on the ${data.capRateStrategy} strategy` : "";
     const capNote = doc.splitTextToSize(
-      `Values assume a ${data.capRate} current cap rate${strategyPart}. Cap rates are declared periodically and are not guaranteed.`,
+      `Values assume a ${formatPercent(data.capRate)} current cap rate${strategyPart}. Cap rates are declared periodically and are not guaranteed.`,
       W - 2 * M
     );
     doc.text(capNote, M, y);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DollarInput from "../../DollarInput";
+import PercentInput from "../../PercentInput";
 import RidersField from "../../RidersField";
 import {
   emptyCashValueMilestone,
@@ -1151,10 +1152,10 @@ export default function ScenarioForm({
                   optional — only the rate itself is required for the disclosure to appear. */}
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Current Cap Rate
-                <input
+                <PercentInput
                   value={data.capRate ?? ""}
-                  onChange={(e) => setData({ ...data, capRate: e.target.value })}
-                  placeholder="e.g. 9.75%"
+                  onChange={(v) => setData({ ...data, capRate: v })}
+                  placeholder="e.g. 9.75"
                   className={inputClass}
                 />
               </label>

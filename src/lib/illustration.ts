@@ -363,3 +363,17 @@ export function formatMoney(str: string | undefined | null): string {
   const n = parseMoney(str);
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// Ensures a value reads with a trailing "%" — added 9/26 alongside PercentInput.tsx, for the same
+// reason formatMoney exists: PercentInput's stored value never itself contains "%" (mirrors
+// DollarInput, whose stored value never contains "$" — the symbol is a visual overlay the input
+// draws, not part of the data), so whatever displays a percent-ish field outside that input (the
+// Annuity Cap Rate disclosure sentence on the PDF) needs to add the "%" back. Idempotent — a value
+// that already ends in "%" (an older record, saved back when Cap Rate was plain free text before
+// this component existed) is left as-is rather than doubled up.
+export function formatPercent(str: string | undefined | null): string {
+  if (!str) return "";
+  const trimmed = String(str).trim();
+  if (!trimmed) return "";
+  return trimmed.endsWith("%") ? trimmed : trimmed + "%";
+}
