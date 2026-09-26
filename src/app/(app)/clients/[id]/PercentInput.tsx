@@ -42,6 +42,14 @@ export default function PercentInput({
   }
 
   return (
+    // w-full on the input — added 9/26, same day, after the "%" rendered floating past the box's
+    // right edge instead of inside it. Root cause: this wrapping div (a plain block, not a flex/
+    // grid container) stretches to fill the label's width just fine, but the <input> nested
+    // inside it does NOT automatically inherit that — left to its own default browser width, it
+    // renders narrower than the div around it. A LEFT-anchored overlay (DollarInput's "$") still
+    // lands correctly regardless, since the div and the input always share the same left edge —
+    // but a RIGHT-anchored one only lands inside the visible box when the input's own right edge
+    // actually reaches the div's right edge, which "w-full" here guarantees.
     <div className="relative">
       <input
         value={local}
@@ -54,7 +62,7 @@ export default function PercentInput({
         placeholder={placeholder}
         inputMode="decimal"
         style={{ paddingRight: "1.5rem" }}
-        className={className}
+        className={(className ? className + " " : "") + "w-full"}
       />
       <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-[#707070]">%</span>
     </div>

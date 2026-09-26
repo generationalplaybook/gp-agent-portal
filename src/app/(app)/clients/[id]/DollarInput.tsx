@@ -60,6 +60,14 @@ export default function DollarInput({
   }
 
   return (
+    // w-full on the input — added 9/26 (found while fixing the same gap on the new PercentInput):
+    // this wrapping div stretches to fill the label's width, but the plain <input> nested inside
+    // it does NOT inherit that on its own, so left to its default browser width it renders
+    // narrower than the div/column around it. Invisible for the "$" here specifically, since a
+    // LEFT-anchored overlay always lands correctly regardless (the div and input always share the
+    // same left edge) — but the box itself was quietly narrower than its neighboring fields in the
+    // same grid row this whole time. w-full closes that gap so every field in a row is actually
+    // the same width, not just the ones without an overlay symbol.
     <div className="relative">
       <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-[#707070]">$</span>
       <input
@@ -83,7 +91,7 @@ export default function DollarInput({
         placeholder={placeholder}
         inputMode="decimal"
         style={{ paddingLeft: "1.35rem" }}
-        className={className}
+        className={(className ? className + " " : "") + "w-full"}
       />
     </div>
   );
