@@ -1562,3 +1562,16 @@ create trigger presentations_set_updated_at
 -- ─────────────────────────────────────────────────────────────
 alter table public.clients add column if not exists stage_entered_quoted_at timestamptz;
 alter table public.clients add column if not exists quoted_reminder_ids uuid[] not null default '{}';
+
+-- ─────────────────────────────────────────────────────────────
+-- 56. Automatic weekly check-in reminders for recruit pipeline stages (added 9/26) — same idea as
+-- sections 53/55's client-side stage batches, applied to Team/Recruits. Karina wanted the same
+-- kind of automatic nudge, but on a slower, weekly cadence (day 7/14/21) rather than clients'
+-- 3/7/10[/14]-day rhythm — recruiting (especially studying for a license) plays out over weeks,
+-- not days. Unlike clients, a recruit is only ever in one of Lead/Studying/Licensed at a time and
+-- every stage gets the identical cadence, so one generic entered-at + reminder-ids pair covers
+-- "the current stage's live batch" rather than three separate, always-in-lockstep columns. See
+-- createRecruitStageBatch/clearRecruitStageBatch in src/app/(app)/team/actions.ts.
+-- ─────────────────────────────────────────────────────────────
+alter table public.recruits add column if not exists stage_entered_at timestamptz;
+alter table public.recruits add column if not exists stage_reminder_ids uuid[] not null default '{}';

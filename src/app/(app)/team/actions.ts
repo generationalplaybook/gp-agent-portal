@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import type { RecruitStage } from "@/lib/types";
+import { addReminder } from "../reminders/actions";
 
 async function requireUser() {
   const supabase = await createSupabaseClient();
@@ -12,6 +13,71 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return { supabase, user: user! };
+}
+
+// Automatic weekly check-in reminders for recruit stages — added 9/26 per Karina, once the home
+// dashboard's Team Follow-ups card asked for the same kind of nudge clients already get on
+// Pending/Approved/Quoted (see STAGE_CHECKIN_DAYS/createStageBatch in clients/actions.ts). Slower
+// cadence here (day 7/14/21, not 3/7/10) since recruiting — especially studying for a license —
+// plays out over weeks, not days. Every stage gets the identical cadence and a recruit is only
+// ever in one stage at a time, so (unlike clients' three separate per-stage columns) one generic
+// stage_entered_at/stage_reminder_ids pair on `recruits` is enough — see schema.sql section 56.
+const RECRUIT_CHECKIN_DAYS = [7, 14, 21] as const;
+
+function recruitStageBatchMessages(stage: RecruitStage, fullName: string): string[] {
+  if (stage === "lead") {
+    return [
+      `Check in: follow up with ${fullName} about joining (week 1)`,
+      `Check in: follow up with ${fullName} about joining (week 2)`,
+      `⚠️ URGENT — ${fullName} has been a lead for 3 weeks with no update. Follow up or move them along.`,
+    ];
+  }
+  if (stage === "studying") {
+    return [
+      `Check in: see how ${fullName} is doing with their licensing study (week 1)`,
+      `Check in: see how ${fullName} is doing with their licensing study (week 2)`,
+      `⚠️ URGENT — ${fullName} has been studying for 3 weeks with no update. Check in on their progress.`,
+    ];
+  }
+  // licensed
+  return [
+    `Check in: welcome ${fullName} and confirm next onboarding steps (week 1)`,
+    `Check in: follow up on ${fullName}'s onboarding (week 2)`,
+    `⚠️ URGENT — ${fullName} was licensed 3 weeks ago with no onboarding follow-up logged.`,
+  ];
+}
+
+// Creates the day-7/14/21 reminders for a recruit entering a new stage, returning the patch
+// fields (entered-at timestamp + the new reminder ids) to write onto the recruit row. Mirrors
+// createStageBatch in clients/actions.ts.
+async function createRecruitStageBatch(recruitId: string, fullName: string, stage: RecruitStage): Promise<Record<string, unknown>> {
+  const messages = recruitStageBatchMessages(stage, fullName);
+  const ids: string[] = [];
+  for (let i = 0; i < RECRUIT_CHECKIN_DAYS.length; i++) {
+    const remindAt = new Date();
+    remindAt.setDate(remindAt.getDate() + RECRUIT_CHECKIN_DAYS[i]);
+    ids.push(await addReminder({ recruitId }, remindAt.toISOString(), messages[i]));
+  }
+  return { stage_entered_at: new Date().toISOString(), stage_reminder_ids: ids };
+}
+
+// Deletes whichever check-in reminders are currently live on this recruit and clears the batch
+// fields — called from every path that can move a recruit to a different stage, so a stage change
+// doesn't leave a stale "check on this" reminder behind for the stage they just left. Safe to call
+// unconditionally (deleting an empty set of ids is a no-op). Mirrors clearStageBatches in
+// clients/actions.ts.
+async function clearRecruitStageBatch(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  recruitId: string
+): Promise<Record<string, unknown>> {
+  const { data: current } = await supabase.from("recruits").select("stage_reminder_ids").eq("id", recruitId).single();
+
+  const ids = current?.stage_reminder_ids ?? [];
+  if (ids.length > 0) {
+    await supabase.from("reminders").delete().in("id", ids);
+  }
+
+  return { stage_entered_at: null, stage_reminder_ids: [] };
 }
 
 export async function createRecruit(formData: FormData) {
@@ -37,15 +103,43 @@ export async function createRecruit(formData: FormData) {
     redirect("/team/new?error=" + encodeURIComponent(error?.message || "Could not create recruit."));
   }
 
+  // Kicks off the same day-7/14/21 check-in batch a later stage change would — a brand-new
+  // recruit sitting in whichever stage it was created at (usually Lead) shouldn't need an actual
+  // stage change to start getting nudged.
+  const batchPatch = await createRecruitStageBatch(data!.id, full_name, stage);
+  await supabase.from("recruits").update(batchPatch).eq("id", data!.id);
+
   revalidatePath("/team");
   redirect(`/team/${data!.id}`);
 }
 
 export async function updateRecruitStage(recruitId: string, stage: RecruitStage) {
   const { supabase } = await requireUser();
-  await supabase.from("recruits").update({ stage }).eq("id", recruitId);
+
+  const { data: current } = await supabase
+    .from("recruits")
+    .select("stage, full_name, stage_reminder_ids")
+    .eq("id", recruitId)
+    .single();
+
+  // Already in this stage with a live batch — don't stack a second one on top (this dropdown
+  // only fires on an actual change, so this mainly guards against being called some other way).
+  // Same reasoning as clients' updateStage.
+  const alreadyInStageWithBatch = stage === current?.stage && (current?.stage_reminder_ids?.length ?? 0) > 0;
+
+  const { error } = await supabase.from("recruits").update({ stage }).eq("id", recruitId);
+  if (error) throw new Error(error.message);
+
+  if (!alreadyInStageWithBatch) {
+    let patch = await clearRecruitStageBatch(supabase, recruitId);
+    patch = { ...patch, ...(await createRecruitStageBatch(recruitId, current?.full_name ?? "recruit", stage)) };
+    await supabase.from("recruits").update(patch).eq("id", recruitId);
+  }
+
   revalidatePath(`/team/${recruitId}`);
   revalidatePath("/team");
+  revalidatePath("/reminders");
+  revalidatePath("/");
 }
 
 export async function updateRecruitContactInfo(formData: FormData) {

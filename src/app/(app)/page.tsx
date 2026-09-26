@@ -208,6 +208,14 @@ export default async function HomePage() {
   ].filter(Boolean).length;
   const showOnboardingBanner = !profile?.onboarding_dismissed_at && onboardingDoneCount < onboardingTotalSteps;
 
+  // Card order — reordered 9/26 per Karina ("we need to reorder this page"), from the original
+  // New Intake/Time-Sensitive-then-everything-else split into a single "urgent-first" flow:
+  // New Intake, Reminders Due, Time-Sensitive, Team Follow-ups, Client Pipeline, Upcoming
+  // Meetings. Anything that needs action now leads; the two overview cards (Client Pipeline,
+  // Upcoming Meetings) trail. Used below to make the LAST card span full width when New Intake
+  // is hidden (an odd number of cards otherwise leaves one alone, half-width, at the end).
+  const hasNewIntake = newIntakeClients.length > 0;
+
   return (
     <div>
       <div className="mb-6">
@@ -217,12 +225,13 @@ export default async function HomePage() {
 
       {showOnboardingBanner && <OnboardingBanner doneCount={onboardingDoneCount} totalCount={onboardingTotalSteps} />}
 
-      {/* New Intake Submissions + Time-Sensitive — side by side like the four cards below
-          ("stacked side by side like the ones below so it's all even," Karina 9/25), rather than
-          each as its own full-width banner. New Intake only renders when there's something to
-          review, so on a normal day this row collapses to just Time-Sensitive, full width. */}
-      <div className={`mb-6 grid gap-6 ${newIntakeClients.length > 0 ? "sm:grid-cols-2" : ""}`}>
-        {newIntakeClients.length > 0 && (
+      {/* Single flowing grid, urgent-first (see hasNewIntake/card-order comment above) — merged
+          9/26 from what used to be two separate grid containers (a New Intake/Time-Sensitive row,
+          then a second row for the other four) once the requested order interleaved cards that
+          used to live in different rows. New Intake only renders when there's something to
+          review, so on a normal day this just starts at Reminders Due. */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        {hasNewIntake && (
           <Link
             href="/clients?view=needs_review"
             className="flex flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
@@ -255,6 +264,42 @@ export default async function HomePage() {
             </span>
           </Link>
         )}
+
+        {/* Reminders Due — moved up to lead, alongside New Intake, per the urgent-first reorder
+            above; unchanged otherwise. */}
+        <Link
+          href="/reminders"
+          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Reminders Due</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 12 6 8z" />
+              <path d="M10 19a2 2 0 0 0 4 0" />
+            </svg>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{clientReminders.length}</span>
+            {overdueClientReminders.length > 0 && (
+              <span className="text-sm font-semibold text-[#B23B3B]">{overdueClientReminders.length} overdue</span>
+            )}
+            {overdueClientReminders.length === 0 && <span className="text-sm text-[#555]">pending</span>}
+          </div>
+          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF]">
+            {previewClientReminders.length === 0 && <p className="py-1 text-xs text-[#555]">No reminders due.</p>}
+            {previewClientReminders.map((r) => {
+              const overdue = new Date(r.remind_at) < now;
+              return (
+                <div key={r.id} className={`truncate py-1.5 text-xs ${overdue ? "font-semibold text-[#B23B3B]" : "text-[#1C1C1C]"}`}>
+                  {r.message || "Follow up"} &mdash; {r.clientName}
+                </div>
+              );
+            })}
+          </div>
+          <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+            View all reminders &rarr;
+          </span>
+        </Link>
 
         {/* Time-Sensitive — Karina, 9/4: "it should also show up on the dashboard as things
             the adviser needs to immediately get to... so it doesn't get missed." Broadened 9/7
@@ -326,9 +371,39 @@ export default async function HomePage() {
             View outreach queue &rarr;
           </span>
         </Link>
-      </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
+        {/* Team Follow-ups — moved up next to the other action-needed cards per the urgent-first
+            reorder above; unchanged otherwise. */}
+        <Link
+          href="/team"
+          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Team Follow-ups</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" />
+              <line x1="18" y1="8" x2="18" y2="14" />
+              <line x1="15" y1="11" x2="21" y2="11" />
+            </svg>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{recruitReminders.length}</span>
+            <span className="text-sm text-[#555]">due follow-ups</span>
+          </div>
+          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF]">
+            {previewRecruitReminders.length === 0 && <p className="py-1 text-xs text-[#555]">No recruiting follow-ups due.</p>}
+            {previewRecruitReminders.map((r) => (
+              <div key={r.id} className="truncate py-1.5 text-xs text-[#1C1C1C]">
+                {r.message || "Follow up"} &mdash; {r.recruitName}
+              </div>
+            ))}
+          </div>
+          <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
+            View team &rarr;
+          </span>
+        </Link>
+
         {/* Client Pipeline — now a shared client component (ClientPipelineCard.tsx) so the
             whole card can be clickable/hoverable like the other three below (9/16, Karina:
             "Client pipeline does nothing... needs to be a clickable box as well"), while still
@@ -336,10 +411,13 @@ export default async function HomePage() {
             move out of this server component. */}
         <ClientPipelineCard totalClients={totalClients} stageCounts={stageCounts} />
 
-        {/* Upcoming Meetings */}
+        {/* Upcoming Meetings — last in the new order, so it's the one that gets full width
+            (sm:col-span-2) on the odd-card-count day New Intake is hidden. */}
         <Link
           href="/meetings"
-          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+          className={`flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C] ${
+            hasNewIntake ? "" : "sm:col-span-2"
+          }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Upcoming Meetings</span>
@@ -370,72 +448,6 @@ export default async function HomePage() {
           </div>
           <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
             View all meetings &rarr;
-          </span>
-        </Link>
-
-        {/* Reminders Due */}
-        <Link
-          href="/reminders"
-          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Reminders Due</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 12 6 8z" />
-              <path d="M10 19a2 2 0 0 0 4 0" />
-            </svg>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{clientReminders.length}</span>
-            {overdueClientReminders.length > 0 && (
-              <span className="text-sm font-semibold text-[#B23B3B]">{overdueClientReminders.length} overdue</span>
-            )}
-            {overdueClientReminders.length === 0 && <span className="text-sm text-[#555]">pending</span>}
-          </div>
-          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF]">
-            {previewClientReminders.length === 0 && <p className="py-1 text-xs text-[#555]">No reminders due.</p>}
-            {previewClientReminders.map((r) => {
-              const overdue = new Date(r.remind_at) < now;
-              return (
-                <div key={r.id} className={`truncate py-1.5 text-xs ${overdue ? "font-semibold text-[#B23B3B]" : "text-[#1C1C1C]"}`}>
-                  {r.message || "Follow up"} &mdash; {r.clientName}
-                </div>
-              );
-            })}
-          </div>
-          <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-            View all reminders &rarr;
-          </span>
-        </Link>
-
-        {/* Team Follow-ups */}
-        <Link
-          href="/team"
-          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Team Follow-ups</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="8" r="3.5" />
-              <path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" />
-              <line x1="18" y1="8" x2="18" y2="14" />
-              <line x1="15" y1="11" x2="21" y2="11" />
-            </svg>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-4xl font-bold text-[#1C1C1C]">{recruitReminders.length}</span>
-            <span className="text-sm text-[#555]">due follow-ups</span>
-          </div>
-          <div className="mt-4 flex flex-col divide-y divide-[#EDE8DF]">
-            {previewRecruitReminders.length === 0 && <p className="py-1 text-xs text-[#555]">No recruiting follow-ups due.</p>}
-            {previewRecruitReminders.map((r) => (
-              <div key={r.id} className="truncate py-1.5 text-xs text-[#1C1C1C]">
-                {r.message || "Follow up"} &mdash; {r.recruitName}
-              </div>
-            ))}
-          </div>
-          <span className="mt-auto pt-4 text-xs font-semibold text-[#1C1C1C] underline underline-offset-2">
-            View team &rarr;
           </span>
         </Link>
       </div>

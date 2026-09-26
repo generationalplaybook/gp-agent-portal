@@ -114,6 +114,12 @@ export interface Recruit {
   // Optional cross-reference to an existing Client who wants to become an agent. This links the
   // two records without merging them — the client's own history stays exactly as it was.
   client_id: string | null;
+  // Automatic weekly (day 7/14/21) stage check-in batch — added 9/26, see schema.sql section 56
+  // and createRecruitStageBatch/clearRecruitStageBatch in team/actions.ts. One generic pair covers
+  // whichever of Lead/Studying/Licensed the recruit currently sits in, since a recruit is only
+  // ever in one stage at a time and every stage uses the same cadence.
+  stage_entered_at: string | null;
+  stage_reminder_ids: string[];
   created_at: string;
   updated_at: string;
 }
