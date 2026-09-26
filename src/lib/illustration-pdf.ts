@@ -248,10 +248,14 @@ function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: numbe
   // Initial Premium + term length on one line — termLength added 9/25 per Karina: "we need a spot
   // for how many year annuity it is" (carriers commonly sell the same FIA in several term-length
   // variants — Athene Performance Elite 7 vs 10 vs 15 — with different caps, so this is part of
-  // identifying which variant is being illustrated, not just trivia).
+  // identifying which variant is being illustrated, not just trivia). Run through the same
+  // formatTermLength() helper Term Life uses, and labeled the same way ("N-year term") — fixed
+  // 9/26 per Karina, after a bare "7" typed into the field (instead of the "10-Year" placeholder
+  // hint) rendered as a lone, unlabeled "7" next to Initial Premium on the summary: "this should
+  // say term 7 year or soemthing not jsut a random 7."
   const premiumParts = [
     data.initialPremium ? "Initial Premium: $" + formatMoney(data.initialPremium) : null,
-    data.termLength || null,
+    data.termLength ? formatTermLength(data.termLength) + " term" : null,
   ].filter(Boolean);
   if (premiumParts.length) {
     doc.setFont("helvetica", "bold");
