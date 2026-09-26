@@ -266,12 +266,13 @@ function CashValueBudgetEditor({
 }) {
   return (
     <>
+      {/* "Minimum to Avoid Lapse" (Level/Increasing) removed 9/26 per Karina: "we dont need that
+          section... just have the actual premium section only that say monthly premium." The
+          underlying minimumPremium/minimumPremiumIncreasing fields stay on CashValueBudget (see
+          the comment in lib/illustration.ts) so nothing already saved is lost, they're just no
+          longer shown or editable here. */}
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
-      <p className="mb-2 text-xs text-[#707070]">
-        What the client actually pays, and the bare minimum that keeps this policy from lapsing. The
-        minimum to avoid lapse differs by election, since cost of insurance isn&rsquo;t the same under Level vs.
-        Increasing, so enter both from the carrier&rsquo;s illustration. All optional.
-      </p>
+      <p className="mb-2 text-xs text-[#707070]">What the client actually pays each month. Optional.</p>
       <label className="mb-5 flex max-w-xs flex-col gap-1 text-xs text-[#666]">
         Monthly Premium
         <DollarInput
@@ -280,40 +281,6 @@ function CashValueBudgetEditor({
           className={inputClass}
         />
       </label>
-      <div className="mb-1.5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
-        <label className="flex flex-col gap-1 text-xs text-[#666]">
-          <span className="flex flex-col gap-1">
-            <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-              Level
-            </span>
-          </span>
-          <DollarInput
-            value={budget.minimumPremium ?? ""}
-            onChange={(v) => onChange({ ...budget, minimumPremium: v })}
-            className={inputClass + " w-full"}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-[#666]">
-          <span className="flex flex-col gap-1">
-            <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-              Increasing
-            </span>
-          </span>
-          <DollarInput
-            value={budget.minimumPremiumIncreasing ?? ""}
-            onChange={(v) => onChange({ ...budget, minimumPremiumIncreasing: v })}
-            className={inputClass + " w-full"}
-          />
-        </label>
-      </div>
-      <p className="mb-5 max-w-md text-[11px] text-[#8b6a00]">
-        Increasing keeps the death benefit&rsquo;s full face amount at risk for life, so cost of insurance is
-        higher and this minimum typically keeps climbing every year. Level&rsquo;s net amount at risk shrinks
-        as cash value grows, which can help offset that rise, though it isn&rsquo;t a guarantee it stops climbing;
-        confirm the actual year-by-year schedule on the carrier&rsquo;s illustration.
-      </p>
 
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
       <p className="mb-2 text-xs text-[#707070]">

@@ -417,12 +417,14 @@ function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: numbe
 // budget on the scenario (it's bound to the scenario's own top-level notes, not this data), so the
 // caller renders that once, after every budget section, instead of per-budget here. Owns its own
 // page-break bookkeeping (PAGE_MAX_Y/ensureSpace), same reasoning as drawAnnuitySection above.
-// isIUL gates the "(may increase yearly)" callout below — added 9/25 per Karina: "for the avoid
-// lapse we should say may increase yearly... it should be for al IUL's." Whole Life and Other don't
-// share IUL's rising-cost-of-insurance dynamic the same way, so this stays IUL-specific via
-// input.productType === "IUL" at the call site, same literal check used elsewhere in this app (see
-// PERMANENT_PRODUCT_TYPES/PRODUCT_TYPE_OPTIONS in lib/types.ts).
-function drawCashValueBudgetSection(doc: jsPDF, budget: CashValueBudget, startY: number, isIUL: boolean): number {
+//
+// 9/26: Policy Premium used to also show "Minimum to Avoid Lapse" (Level/Increasing) with its own
+// disclaimer paragraph and an IUL-only "(may increase yearly)" callout — Karina: "we dont need
+// that section... just have the actual premium section only that say monthly premium." Removed;
+// Policy Premium is Monthly Premium alone now. minimumPremium/minimumPremiumIncreasing stay on
+// CashValueBudget/CashValueIllustration (optional/additive, same as everywhere else in this file)
+// so nothing already saved is lost, but nothing reads them here anymore.
+function drawCashValueBudgetSection(doc: jsPDF, budget: CashValueBudget, startY: number): number {
   const W = 612;
   const M = 50;
   const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
@@ -436,16 +438,9 @@ function drawCashValueBudgetSection(doc: jsPDF, budget: CashValueBudget, startY:
     }
   }
 
-  const lapseSuffix = isIUL ? " (may increase yearly)" : "";
-
   const hasMonthlyPremium = !!(budget.monthlyPremium && budget.monthlyPremium.trim());
-  const hasMinimumPremiumLevel = !!(budget.minimumPremium && budget.minimumPremium.trim());
-  const hasMinimumPremiumIncreasing = !!(budget.minimumPremiumIncreasing && budget.minimumPremiumIncreasing.trim());
-  if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
-    // Rough upper-bound estimate (header + up to 3 dollar lines + the wrapped Increasing note +
-    // trailing gap) — doesn't need to be exact like the boxes/table/chart checks below, just
-    // enough to keep this whole block from starting so close to the bottom that it'd split.
-    ensureSpace(140);
+  if (hasMonthlyPremium) {
+    ensureSpace(40);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     setText(OBSIDIAN);
@@ -454,50 +449,8 @@ function drawCashValueBudgetSection(doc: jsPDF, budget: CashValueBudget, startY:
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     setText(OBSIDIAN);
-    if (hasMonthlyPremium) {
-      doc.text("Monthly Premium: $" + formatMoney(budget.monthlyPremium) + "/mo", M, y);
-      y += 14;
-    }
-    // Minimum to avoid lapse varies by election (cost of insurance differs between Level and
-    // Increasing) — label each line with its election whenever at least one side is filled in,
-    // same two-part convention as everywhere else in this rework, so the number is never
-    // ambiguous about which election it belongs to.
-    if (hasMinimumPremiumLevel) {
-      doc.text("Minimum to Avoid Lapse (Level): $" + formatMoney(budget.minimumPremium) + "/mo" + lapseSuffix, M, y);
-      y += 14;
-    }
-    if (hasMinimumPremiumIncreasing) {
-      doc.text(
-        "Minimum to Avoid Lapse (Increasing): $" + formatMoney(budget.minimumPremiumIncreasing) + "/mo" + lapseSuffix,
-        M,
-        y
-      );
-      y += 14;
-      // Karina, 9/5: asked whether this minimum actually climbs over time under Increasing —
-      // researched (Option A/Level's net amount at risk shrinks as cash value grows, so its
-      // cost of insurance can be partly offset; Option B/Increasing's net amount at risk stays
-      // at the full face amount for life, and COI rates also rise with attained age regardless
-      // of election, so the two compound and this minimum typically keeps climbing).
-      // Karina, 9/6: asked us to re-verify this before trusting it — re-researched against
-      // additional independent sources (confirmed the mechanism), then asked to soften the
-      // Level side of the wording since "levels off" overstated what Level actually guarantees
-      // (underperforming cash value or no such offset at all can still leave Level climbing
-      // too — Level just has a mechanism that CAN offset it, not a promise that it will).
-      // Flagged on the PDF so a client doesn't read this single number as fixed either way.
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(7.5);
-      setText(CHARCOAL);
-      const nl = doc.splitTextToSize(
-        "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops. Confirm the year-by-year schedule on the carrier's illustration.",
-        W - 2 * M
-      );
-      doc.text(nl, M, y);
-      y += nl.length * 10;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      setText(OBSIDIAN);
-    }
-    y += 10;
+    doc.text("Monthly Premium: $" + formatMoney(budget.monthlyPremium) + "/mo", M, y);
+    y += 24;
   }
 
   // Initial Death Benefit — Level and Increasing each get their own box, side by side
@@ -1222,7 +1175,6 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // old flat fields — so this loop draws exactly one section for the common single-budget case,
     // unchanged from before, and stacks additional sections (each with its own budget-label
     // heading and a divider rule) only when an advisor has actually added more.
-    const isIUL = input.productType === "IUL";
     const budgets = getCashValueBudgets(data);
     budgets.forEach((budget, i) => {
       if (budgets.length > 1) {
@@ -1239,7 +1191,7 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
         doc.text(budget.label || `Budget ${i + 1}`, M, y);
         y += 20;
       }
-      y = drawCashValueBudgetSection(doc, budget, y, isIUL);
+      y = drawCashValueBudgetSection(doc, budget, y);
     });
 
     if (data.notes) {
