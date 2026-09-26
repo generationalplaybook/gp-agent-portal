@@ -57,6 +57,18 @@ export interface CashValueIllustration {
   kind: "cash_value";
   milestones: CashValueMilestone[];
   notes: string;
+  // Cap Rate + Illustrated Rate — added 9/26 per Karina, mirroring AnnuityIllustration's own
+  // capRate/capRateStrategy/illustratedRate below (see that comment for the full reasoning: a cap
+  // is a ceiling, not what's actually projected). IUL indexed strategies work the same way as an
+  // indexed annuity's — a cap per strategy, but the cash-value milestones above are driven by
+  // whatever average rate was actually illustrated, which is often well under the cap and (per
+  // AG 49/49-A) is itself capped by regulation regardless of what the index has historically
+  // returned. Scenario-level, not per-budget — a scenario's budgets are different premium/death-
+  // benefit options on the SAME policy/strategy, so one rate assumption applies across all of
+  // them, the same reasoning `notes` already stays out of CashValueBudget for. Optional/additive.
+  capRate?: string;
+  capRateStrategy?: string;
+  illustratedRate?: string;
   // Age the death benefit starts stepping up (common on some IUL designs — juvenile policies in
   // particular). Optional and additive: the original per-product Illustration flow never sets or
   // reads this, so existing records are unaffected. Only the Illustration Scenarios editor uses it.
@@ -239,6 +251,17 @@ export interface AnnuityIllustration {
   // note, but capRate is the number that actually needs disclosing. Both optional/additive.
   capRate?: string;
   capRateStrategy?: string;
+  // illustratedRate added 9/26 per Karina, after running several real illustrations at different
+  // assumed rates (7-ish%, 4.5%, etc.) depending on how conservative she wants to be for a given
+  // client: "the cap is 9.75%, that's the most they can earn, but the illustration numbers that
+  // I'm running are at like seven-something percent... people are gonna assume they're getting
+  // 9.75% when that's the cap." capRate was only ever the ceiling for the strategy; it was never
+  // meant to describe what actually drove the milestone numbers on the page, and until now there
+  // was nowhere to record that separately. illustratedRate is that number — the assumed average
+  // annual return the Accumulation Value milestones actually use — and gets its own disclosure
+  // line, distinct from the cap-rate ceiling note, so a client can't mistake one for the other.
+  // Optional/additive, same as capRate/capRateStrategy above.
+  illustratedRate?: string;
 }
 
 export type IllustrationData = CashValueIllustration | TermIllustration | FinalExpenseIllustration | AnnuityIllustration;

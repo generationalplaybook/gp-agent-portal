@@ -3,6 +3,7 @@ import ReminderRow from "../ReminderRow";
 import AddReminderButton from "./AddReminderButton";
 import RemindersTabs from "./RemindersTabs";
 import type { ReminderOwner } from "./actions";
+import type { ClientStage } from "@/lib/types";
 
 export default async function RemindersPage() {
   const supabase = await createClient();
@@ -57,7 +58,13 @@ export default async function RemindersPage() {
     const pendingIds = client?.pending_reminder_ids ?? [];
     const pendingExtend = client?.stage === "pending" && pendingIds.length > 0 && pendingIds[pendingIds.length - 1] === r.id;
     if (client) {
-      return { owner, subjectName: client.full_name, subjectHref: `/clients/${client.id}`, pendingExtend };
+      return {
+        owner,
+        subjectName: client.full_name,
+        subjectHref: `/clients/${client.id}`,
+        pendingExtend,
+        stage: client.stage as ClientStage,
+      };
     }
     if (recruit) {
       return { owner, subjectName: `${recruit.full_name} (Recruit)`, subjectHref: `/team/${recruit.id}` };

@@ -379,6 +379,56 @@ function CashValueBudgetEditor({
 // visibly changes) without a separate migration step. The budget name input and Remove button only
 // show once there's more than one budget — with just one, this looks and behaves exactly like the
 // original single-budget section always did.
+// Cap Rate + Illustrated Rate — added 9/26 per Karina, mirroring the Annuity Policy Details fields
+// below (Current Cap Rate / Cap Rate Strategy / Illustrated Rate of Return) since IUL indexed
+// strategies have the same cap-vs-assumed-average distinction annuities do. Scenario-level (reads
+// off `data` directly, not a per-budget CashValueBudget) since one rate assumption applies across
+// every budget on the scenario — see the field comment on CashValueIllustration in
+// lib/illustration.ts. Rendered above the budgets so the assumption reads before the numbers it
+// explains, same placement as the Annuity section.
+function CashValueRateSection({
+  data,
+  setData,
+}: {
+  data: CashValueIllustration;
+  setData: (d: CashValueIllustration) => void;
+}) {
+  return (
+    <div className="mb-6 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Current Cap Rate
+        <PercentInput
+          value={data.capRate ?? ""}
+          onChange={(v) => setData({ ...data, capRate: v })}
+          placeholder="e.g. 9.75"
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Cap Rate Strategy
+        <input
+          value={data.capRateStrategy ?? ""}
+          onChange={(e) => setData({ ...data, capRateStrategy: e.target.value })}
+          placeholder="e.g. S&P 500 Annual Point-to-Point"
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Illustrated Rate of Return
+        <PercentInput
+          value={data.illustratedRate ?? ""}
+          onChange={(v) => setData({ ...data, illustratedRate: v })}
+          placeholder="e.g. 6.5"
+          className={inputClass}
+        />
+        <span className="font-normal normal-case text-[#8b8b8b]">
+          The assumed average annual return actually driving the milestone numbers below — not the cap above.
+        </span>
+      </label>
+    </div>
+  );
+}
+
 function CashValueBudgetsSection({
   data,
   setData,
@@ -1025,7 +1075,12 @@ export default function ScenarioForm({
       </div>
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-        {data.kind === "cash_value" && <CashValueBudgetsSection data={data} setData={setData} />}
+        {data.kind === "cash_value" && (
+          <>
+            <CashValueRateSection data={data} setData={setData} />
+            <CashValueBudgetsSection data={data} setData={setData} />
+          </>
+        )}
 
         {data.kind === "term" && (
           <>
@@ -1167,6 +1222,25 @@ export default function ScenarioForm({
                   placeholder="e.g. S&P 500 Annual Point-to-Point"
                   className={inputClass}
                 />
+              </label>
+              {/* Illustrated Rate of Return — added 9/26 per Karina, after running real
+                  illustrations at different assumed rates (7-ish%, 4.5%, etc.) depending on the
+                  client: "the cap is 9.75%, that's the most they can earn, but the illustration
+                  numbers that I'm running are at like seven-something percent... people are gonna
+                  assume they're getting 9.75% when that's the cap." This is the number that
+                  actually drives the Accumulation Value milestones below — the cap above is just
+                  the ceiling. Both get their own, separate sentence in the PDF disclosure. */}
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Illustrated Rate of Return
+                <PercentInput
+                  value={data.illustratedRate ?? ""}
+                  onChange={(v) => setData({ ...data, illustratedRate: v })}
+                  placeholder="e.g. 7.25"
+                  className={inputClass}
+                />
+                <span className="font-normal normal-case text-[#8b8b8b]">
+                  The assumed average annual return actually driving the milestones below — not the cap above.
+                </span>
               </label>
             </div>
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ReminderRow from "../ReminderRow";
 import type { ReminderOwner } from "./actions";
+import { CLIENT_STAGES, type ClientStage } from "@/lib/types";
 
 type Bucket = "overdue" | "today" | "tomorrow" | "week" | "later";
 
@@ -16,6 +17,10 @@ const BUCKET_LABELS: Record<Bucket, string> = {
 const UPCOMING_BUCKETS: Bucket[] = ["overdue", "today", "tomorrow"];
 const LATER_BUCKETS: Bucket[] = ["week", "later"];
 
+// "all" (default) and "recruit" (a reminder tied to a Team/Recruit, which has no pipeline stage)
+// sit alongside the real ClientStage values.
+type StageFilter = ClientStage | "all" | "recruit";
+
 interface ReminderLike {
   id: string;
   remind_at: string;
@@ -28,6 +33,9 @@ interface RowProps {
   subjectName?: string;
   subjectHref?: string;
   pendingExtend?: boolean;
+  // Undefined for a recruit-owned reminder (recruits have no pipeline stage) — see StageFilter's
+  // "recruit" pseudo-value above, which is how those get filtered instead.
+  stage?: ClientStage;
 }
 
 interface Item {
@@ -53,8 +61,61 @@ interface Section {
 //    (UTC in this deployment); computing "today"/"tomorrow" boundaries there used the server's
 //    calendar day, not the advisor's. Same root cause LocalDateTime.tsx exists to fix for a
 //    single timestamp — this just needed the same fix applied to calendar-day boundaries.
+// Stage filter — added 9/26 per Karina, once automatic reminders started generating for Quoted
+// too (on top of the existing Pending/Approved batches): with pipeline-stage reminders now
+// interleaved across three stages plus manual ones, the time-only bucketing above no longer let
+// an advisor isolate "just my quoted follow-ups" from everything else due that same day. Filters
+// `items` by the owning client's stage BEFORE bucketing, so the Upcoming/Later counts and buckets
+// above always reflect the current filter, not the whole list. "All" (default) and "Recruits"
+// (reminders with no pipeline stage at all) sit alongside the real pipeline stages, reusing
+// CLIENT_STAGES' own labels/colors for visual consistency with the stage pill on the Clients list.
+function StageFilterBar({ value, onChange, counts }: { value: StageFilter; onChange: (v: StageFilter) => void; counts: Record<string, number> }) {
+  const options: { value: StageFilter; label: string; color?: string }[] = [
+    { value: "all", label: "All" },
+    ...CLIENT_STAGES.map((s) => ({ value: s.value, label: s.label, color: s.color })),
+    { value: "recruit", label: "Recruits" },
+  ];
+  return (
+    <div className="mb-3 flex flex-wrap gap-1.5">
+      {options.map((opt) => {
+        const count = counts[opt.value] ?? 0;
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              active ? "text-white" : "border border-[#D9CFBA] bg-white text-[#666] hover:border-[#1C1C1C]"
+            }`}
+            style={active ? { backgroundColor: opt.color ?? "#1C1C1C" } : undefined}
+          >
+            {opt.label}
+            {count > 0 ? ` · ${count}` : ""}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function RemindersTabs({ items }: { items: Item[] }) {
   const [tab, setTab] = useState<"upcoming" | "later">("upcoming");
+  const [stageFilter, setStageFilter] = useState<StageFilter>("all");
+
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: items.length };
+    for (const item of items) {
+      const key = item.rowProps.stage ?? "recruit";
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    if (stageFilter === "all") return items;
+    return items.filter((item) => (item.rowProps.stage ?? "recruit") === stageFilter);
+  }, [items, stageFilter]);
 
   const { upcomingSections, laterSections, laterCount, upcomingCount } = useMemo(() => {
     function startOfDay(d: Date): Date {
@@ -80,7 +141,7 @@ export default function RemindersTabs({ items }: { items: Item[] }) {
     }
 
     const grouped: Record<Bucket, Item[]> = { overdue: [], today: [], tomorrow: [], week: [], later: [] };
-    for (const item of items) {
+    for (const item of filteredItems) {
       grouped[bucketFor(item.reminder.remind_at)].push(item);
     }
 
@@ -94,12 +155,13 @@ export default function RemindersTabs({ items }: { items: Item[] }) {
       laterCount: grouped.week.length + grouped.later.length,
       upcomingCount: grouped.overdue.length + grouped.today.length + grouped.tomorrow.length,
     };
-  }, [items]);
+  }, [filteredItems]);
 
   const sections = tab === "upcoming" ? upcomingSections : laterSections;
 
   return (
     <div>
+      <StageFilterBar value={stageFilter} onChange={setStageFilter} counts={stageCounts} />
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-[#D9CFBA]">
         <button
           type="button"

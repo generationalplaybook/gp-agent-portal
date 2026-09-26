@@ -45,6 +45,30 @@ function formatTermLength(termLength: string): string {
   return trimmed;
 }
 
+// Shared between Annuity (drawAnnuitySection) and Cash Value/IUL (generateScenarioIllustrationPDF's
+// cash_value branch) — added 9/26 per Karina, after she pointed out that a bare cap-rate
+// disclosure lets a client conflate two different numbers: "the cap is 9.75%, that's the most
+// they can earn, but the illustration numbers that I'm running are at like seven-something
+// percent... people are gonna assume they're getting 9.75% when that's the cap." illustratedRate
+// is the actual assumed average annual return driving the milestone numbers on the page and is
+// now the headline figure; capRate (if entered) is disclosed separately, explicitly labeled as a
+// ceiling rather than a projection. Falls back to the original cap-only sentence when no
+// illustratedRate is on record, so every existing Annuity scenario/illustration (all of which
+// predate this field) reads exactly as it did before.
+function buildRateDisclosure(data: { capRate?: string; capRateStrategy?: string; illustratedRate?: string }): string {
+  const strategyPart = data.capRateStrategy ? ` on the ${data.capRateStrategy} strategy` : "";
+  if (data.illustratedRate) {
+    const capPart = data.capRate
+      ? ` This strategy's cap rate is ${formatPercent(data.capRate)} — the maximum potential credited rate in any single period, not a projection of actual performance, and subject to change.`
+      : "";
+    return `Values assume a ${formatPercent(data.illustratedRate)} illustrated average annual return${strategyPart}, which is not guaranteed.${capPart}`;
+  }
+  if (data.capRate) {
+    return `Values assume a ${formatPercent(data.capRate)} current cap rate${strategyPart}. Cap rates are declared periodically and are not guaranteed.`;
+  }
+  return "";
+}
+
 // Added 9/25 per Karina — advisors can now pick how the client pays (monthly/annual/semi-annual/
 // quarterly) instead of the premium always being shown as an unlabeled or silently-monthly
 // figure. Undefined (every scenario/illustration created before this) reads as "monthly" so
@@ -265,27 +289,16 @@ function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: numbe
     y += 22;
   }
 
-  // Cap rate disclosure — added 9/25 per Karina. The Accumulation Value milestones below are
-  // driven by an assumed index crediting rate the client otherwise never sees, so this discloses
-  // it right above the numbers it explains (same placement Karina picked for the IUL side's
-  // equivalent assumption line). Cap rates reset periodically and are never guaranteed, hence the
-  // explicit "not guaranteed" language rather than presenting it as a fixed fact.
-  //
-  // formatPercent(), not the raw value — added 9/26, alongside PercentInput.tsx replacing the
-  // field's plain-text input: Karina typed "9.75" without a "%" and this sentence printed "...
-  // assume a 9.75 current cap rate" with no percent sign. PercentInput's stored value never
-  // contains "%" itself (mirrors DollarInput never storing "$" — the symbol is a visual overlay),
-  // so it has to be added back here for display; formatPercent is idempotent, so an older record
-  // that already has "%" typed into it (saved before PercentInput existed) isn't doubled up.
-  if (data.capRate) {
+  // Rate disclosure — added 9/25 per Karina (cap rate only at the time), extended 9/26 to also
+  // cover illustratedRate via the shared buildRateDisclosure() above. The Accumulation Value
+  // milestones below are driven by an assumed rate the client otherwise never sees, so this
+  // discloses it right above the numbers it explains (same placement Karina picked for the IUL
+  // side's equivalent assumption line, see the cash_value branch of generateScenarioIllustrationPDF).
+  if (buildRateDisclosure(data)) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8.5);
     setText(GRAY);
-    const strategyPart = data.capRateStrategy ? ` on the ${data.capRateStrategy} strategy` : "";
-    const capNote = doc.splitTextToSize(
-      `Values assume a ${formatPercent(data.capRate)} current cap rate${strategyPart}. Cap rates are declared periodically and are not guaranteed.`,
-      W - 2 * M
-    );
+    const capNote = doc.splitTextToSize(buildRateDisclosure(data), W - 2 * M);
     doc.text(capNote, M, y);
     y += capNote.length * 10 + 10;
   }
@@ -1186,6 +1199,22 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
     // old flat fields — so this loop draws exactly one section for the common single-budget case,
     // unchanged from before, and stacks additional sections (each with its own budget-label
     // heading and a divider rule) only when an advisor has actually added more.
+    // Rate disclosure — added 9/26 per Karina, same conversation and same buildRateDisclosure()
+    // helper as the Annuity side above: a cap rate is a ceiling, not what actually drove the
+    // budgets' milestone numbers below, so the illustrated rate (if entered) is the headline
+    // figure and the cap (if any) is called out separately as the max. Scenario-level, drawn once
+    // above every budget rather than per-budget — see the capRate/capRateStrategy/illustratedRate
+    // comment on CashValueIllustration in lib/illustration.ts for why this isn't per-budget.
+    if (buildRateDisclosure(data)) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8.5);
+      setText(GRAY);
+      const rateNote = doc.splitTextToSize(buildRateDisclosure(data), W - 2 * M);
+      ensureSpace(rateNote.length * 10 + 10);
+      doc.text(rateNote, M, y);
+      y += rateNote.length * 10 + 10;
+    }
+
     const budgets = getCashValueBudgets(data);
     budgets.forEach((budget, i) => {
       if (budgets.length > 1) {

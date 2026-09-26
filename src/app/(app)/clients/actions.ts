@@ -123,12 +123,20 @@ export async function createClientRecord(formData: FormData) {
 // other stage change; existing Pending clients are simply read under Pending's new meaning (the
 // carrier-underwriting cadence, with Extend) going forward.
 const STAGE_CHECKIN_DAYS = [3, 7, 10, 14] as const;
+// Quoted's own, shorter cadence — added 9/26. Unlike Pending (waiting on the carrier) or Approved
+// (waiting on payment), Quoted has no external clock at all — it's purely on the advisor to
+// follow up — so this stops at day 10 instead of stretching to day 14 the way a carrier-
+// underwriting wait reasonably can. Karina's own instinct going in was "3, 7, and 10 maybe,"
+// which also keeps day 3 consistent with Pending/Approved's existing rhythm rather than
+// introducing a fourth different cadence to learn.
+const QUOTED_CHECKIN_DAYS = [3, 7, 10] as const;
 
-type StageBatchKind = "pending" | "approved";
+type StageBatchKind = "pending" | "approved" | "quoted";
 
-const STAGE_BATCH_FIELDS: Record<StageBatchKind, { enteredAt: string; reminderIds: string }> = {
-  pending: { enteredAt: "stage_entered_pending_at", reminderIds: "pending_reminder_ids" },
-  approved: { enteredAt: "stage_entered_approved_at", reminderIds: "approved_reminder_ids" },
+const STAGE_BATCH_FIELDS: Record<StageBatchKind, { enteredAt: string; reminderIds: string; days: readonly number[] }> = {
+  pending: { enteredAt: "stage_entered_pending_at", reminderIds: "pending_reminder_ids", days: STAGE_CHECKIN_DAYS },
+  approved: { enteredAt: "stage_entered_approved_at", reminderIds: "approved_reminder_ids", days: STAGE_CHECKIN_DAYS },
+  quoted: { enteredAt: "stage_entered_quoted_at", reminderIds: "quoted_reminder_ids", days: QUOTED_CHECKIN_DAYS },
 };
 
 function stageBatchMessages(kind: StageBatchKind, fullName: string): string[] {
@@ -140,16 +148,27 @@ function stageBatchMessages(kind: StageBatchKind, fullName: string): string[] {
       `${fullName} still with the carrier for underwriting — day 14 of this cycle. Extend if it's not resolved yet.`,
     ];
   }
+  if (kind === "approved") {
+    return [
+      `Check in: ${fullName} approved, still awaiting payment (day 3)`,
+      `Check in: ${fullName} still awaiting payment (day 7)`,
+      `Check in: ${fullName} still awaiting payment (day 10)`,
+      `⚠️ URGENT — ${fullName} approved 14 days, still unpaid. Close this out before it lapses.`,
+    ];
+  }
+  // Quoted — added 9/26. Same "check in, then escalate" shape as Pending/Approved, but reads as a
+  // follow-up nudge to the advisor rather than a status update on an external wait, since nothing
+  // outside the advisor's own outreach is actually keeping this moving.
   return [
-    `Check in: ${fullName} approved, still awaiting payment (day 3)`,
-    `Check in: ${fullName} still awaiting payment (day 7)`,
-    `Check in: ${fullName} still awaiting payment (day 10)`,
-    `⚠️ URGENT — ${fullName} approved 14 days, still unpaid. Close this out before it lapses.`,
+    `Check in: follow up with ${fullName} on their quote (day 3)`,
+    `Check in: follow up with ${fullName} on their quote (day 7)`,
+    `⚠️ URGENT — ${fullName}'s quote is 10 days old with no follow-up. Reach out before it goes cold.`,
   ];
 }
 
-// Creates the four day-3/7/10/14 reminders for a client entering Pending or Approved, returning
-// the patch fields (entered-at timestamp + the new reminder ids) to write onto the client row.
+// Creates the check-in reminders for a client entering Pending, Approved, or Quoted (day 3/7/10/14
+// for the first two, day 3/7/10 for Quoted — see QUOTED_CHECKIN_DAYS above), returning the patch
+// fields (entered-at timestamp + the new reminder ids) to write onto the client row.
 async function createStageBatch(
   clientId: string,
   fullName: string,
@@ -158,9 +177,9 @@ async function createStageBatch(
   const fields = STAGE_BATCH_FIELDS[kind];
   const messages = stageBatchMessages(kind, fullName);
   const ids: string[] = [];
-  for (let i = 0; i < STAGE_CHECKIN_DAYS.length; i++) {
+  for (let i = 0; i < fields.days.length; i++) {
     const remindAt = new Date();
-    remindAt.setDate(remindAt.getDate() + STAGE_CHECKIN_DAYS[i]);
+    remindAt.setDate(remindAt.getDate() + fields.days[i]);
     ids.push(await addReminder({ clientId }, remindAt.toISOString(), messages[i]));
   }
   return { [fields.enteredAt]: new Date().toISOString(), [fields.reminderIds]: ids };
@@ -178,11 +197,15 @@ async function clearStageBatches(
 ): Promise<Record<string, unknown>> {
   const { data: current } = await supabase
     .from("clients")
-    .select("pending_reminder_ids, approved_reminder_ids")
+    .select("pending_reminder_ids, approved_reminder_ids, quoted_reminder_ids")
     .eq("id", clientId)
     .single();
 
-  const allIds = [...(current?.pending_reminder_ids ?? []), ...(current?.approved_reminder_ids ?? [])];
+  const allIds = [
+    ...(current?.pending_reminder_ids ?? []),
+    ...(current?.approved_reminder_ids ?? []),
+    ...(current?.quoted_reminder_ids ?? []),
+  ];
   if (allIds.length > 0) {
     await supabase.from("reminders").delete().in("id", allIds);
   }
@@ -192,6 +215,8 @@ async function clearStageBatches(
     pending_reminder_ids: [],
     stage_entered_approved_at: null,
     approved_reminder_ids: [],
+    stage_entered_quoted_at: null,
+    quoted_reminder_ids: [],
   };
 }
 
@@ -230,26 +255,28 @@ export async function updateStage(clientId: string, stage: ClientStage) {
 
   const { data: current } = await supabase
     .from("clients")
-    .select("stage, pending_reminder_ids, approved_reminder_ids, full_name")
+    .select("stage, pending_reminder_ids, approved_reminder_ids, quoted_reminder_ids, full_name")
     .eq("id", clientId)
     .single();
 
-  // Already in Pending or Approved with a live batch AND staying in that same stage — don't stack
-  // a second batch on top of it (the Stage dropdown only fires on an actual change, so this mainly
-  // guards against this action being called some other way). Everything else about the row is
-  // untouched either way.
+  // Already in Pending, Approved, or Quoted with a live batch AND staying in that same stage —
+  // don't stack a second batch on top of it (the Stage dropdown only fires on an actual change, so
+  // this mainly guards against this action being called some other way). Everything else about
+  // the row is untouched either way.
   //
-  // Bug fixed 9/13 (Pending-only at the time; same shape kept here for Approved): Karina — "I
-  // undid a client's pipeline from pending to quoted and then put it back to pending, and still no
-  // reminder has been set." Root cause: this check only looked at the CURRENT stage/batch, never
-  // the stage being moved TO, so a real transition out of Pending could read as "already
-  // pending" and skip the clear. Checking that `stage` (the target) matches `current?.stage` here
-  // means this shortcut only fires on a redundant same-stage call — any real transition, in or out
-  // of either stage, always goes through the create-batch or clear-batch branch as intended.
+  // Bug fixed 9/13 (Pending-only at the time; same shape kept here for Approved and, 9/26, Quoted):
+  // Karina — "I undid a client's pipeline from pending to quoted and then put it back to pending,
+  // and still no reminder has been set." Root cause: this check only looked at the CURRENT
+  // stage/batch, never the stage being moved TO, so a real transition out of Pending could read as
+  // "already pending" and skip the clear. Checking that `stage` (the target) matches
+  // `current?.stage` here means this shortcut only fires on a redundant same-stage call — any real
+  // transition, in or out of any of the three stages, always goes through the create-batch or
+  // clear-batch branch as intended.
   const alreadyInStageWithBatch =
     stage === current?.stage &&
     ((stage === "pending" && (current?.pending_reminder_ids?.length ?? 0) > 0) ||
-      (stage === "approved" && (current?.approved_reminder_ids?.length ?? 0) > 0));
+      (stage === "approved" && (current?.approved_reminder_ids?.length ?? 0) > 0) ||
+      (stage === "quoted" && (current?.quoted_reminder_ids?.length ?? 0) > 0));
 
   // 9/18 — bug found live (Karina: "i changed a client to approved and it doesnt change the
   // status", then a screenshot full of duplicated day-3/7/10/14 reminders): this used to build
@@ -267,10 +294,10 @@ export async function updateStage(clientId: string, stage: ClientStage) {
 
   if (!alreadyInStageWithBatch) {
     let patch: Record<string, unknown> = {};
-    if (current?.stage === "pending" || current?.stage === "approved") {
+    if (current?.stage === "pending" || current?.stage === "approved" || current?.stage === "quoted") {
       patch = { ...patch, ...(await clearStageBatches(supabase, clientId)) };
     }
-    if (stage === "pending" || stage === "approved") {
+    if (stage === "pending" || stage === "approved" || stage === "quoted") {
       patch = { ...patch, ...(await createStageBatch(clientId, current?.full_name ?? "client", stage)) };
     }
     if (Object.keys(patch).length > 0) {

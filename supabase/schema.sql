@@ -1547,3 +1547,18 @@ drop trigger if exists presentations_set_updated_at on public.presentations;
 create trigger presentations_set_updated_at
   before update on public.presentations
   for each row execute procedure public.set_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
+-- 55. Automatic check-in reminders for the Quoted stage (added 9/26) — same idea as section 53's
+-- Pending/Approved batch, extended to a third stage. Karina, discussing whether a quote going
+-- cold needed the same kind of nudge: yes, since there's no external clock on Quoted the way
+-- there is on Pending (carrier underwriting) or Approved (waiting on payment) — it's purely on
+-- the advisor to follow up, so it's the one most likely to be silently forgotten. Given a shorter
+-- 3/7/10-day arc rather than Pending/Approved's 3/7/10/14 — a quote should progress or go cold
+-- well before two weeks — with day 10 (the last one) marked urgent, same plain "⚠️ URGENT" prefix
+-- convention as Approved's day 14 (see ReminderRow.tsx). 'quoted' has been a valid client_stage
+-- value since the original enum (line 50 above), so unlike Approved, there's no `alter type`
+-- step needed here. See createStageBatch/STAGE_BATCH_FIELDS in src/app/(app)/clients/actions.ts.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists stage_entered_quoted_at timestamptz;
+alter table public.clients add column if not exists quoted_reminder_ids uuid[] not null default '{}';
