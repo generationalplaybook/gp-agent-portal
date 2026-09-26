@@ -91,6 +91,43 @@ export interface CashValueIllustration {
   // Optional/additive: undefined on every existing scenario; the editor shows 2 blank rows to
   // start (Karina confirmed 2 as the default) but lets an advisor add more.
   deathBenefitTargets?: DeathBenefitTarget[];
+  // Multiple budgets — added 9/25 per Karina: "i am doing 3 different budgets for the same
+  // product... add additional budget section that opens up another section for the same
+  // illustration for all of the same numbers to be inputted." She confirmed with a fully-filled-
+  // out real scenario (Policy Premium, Initial Death Benefit, Death Benefit Increase, Death
+  // Benefit Milestones, and the main Milestones table) that she wants ALL of that — everything
+  // above except `milestones`/`notes` at the top level, plus `milestones` itself — duplicated per
+  // budget, capped at 3 ("i think up two 3 budgets is enough"). `notes` deliberately stays OUT of
+  // CashValueBudget and shared across every budget on the scenario: the Illustration Scenarios
+  // editor's Notes field is actually bound to the scenario's own top-level notes column, not this
+  // one, so there's no per-budget notes concept to preserve.
+  //
+  // Every field above this comment (milestones through deathBenefitTargets) is the ORIGINAL single-
+  // budget shape and stays exactly as-is — this is additive, not a replacement. When `budgets` is
+  // unset or empty (every scenario/illustration created before 9/25), those flat fields ARE "Budget
+  // 1"; see getCashValueBudgets() below, which is what the PDF renderer and the editor UI actually
+  // read from so this backward-compat mapping only has to live in one place. Once an advisor adds a
+  // 2nd/3rd budget, `budgets` gets populated (budget 1's values copied in from the flat fields) and
+  // becomes the sole source of truth going forward; the flat fields are left as they were at that
+  // point (unread afterward) rather than cleared, so nothing is destructively lost.
+  budgets?: CashValueBudget[];
+}
+
+// One full budget's worth of cash-value inputs — see the `budgets` comment on CashValueIllustration
+// above for why this exists and what's deliberately excluded (notes). Mirrors CashValueIllustration's
+// own field shape (minus kind/notes) exactly so getCashValueBudgets() below can map old flat-field
+// records onto this with no data loss.
+export interface CashValueBudget {
+  id: string;
+  label: string; // e.g. "Budget 1" (auto default) or something custom like "$150/mo" — advisor-editable either way
+  monthlyPremium?: string;
+  minimumPremium?: string;
+  minimumPremiumIncreasing?: string;
+  initialDeathBenefit?: string;
+  initialDeathBenefitIncreasing?: string;
+  dbIncreaseAge?: string;
+  deathBenefitTargets?: DeathBenefitTarget[];
+  milestones: CashValueMilestone[];
 }
 
 // Term has no cash value to chart — what matters is the flat death benefit, the term itself,
@@ -236,6 +273,47 @@ export function emptyAnnuityMilestone(): AnnuityMilestone {
 
 export function emptyDeathBenefitTarget(): DeathBenefitTarget {
   return { id: newId(), targetAmount: "", levelAge: "", increasingAge: "" };
+}
+
+export function emptyCashValueBudget(label: string): CashValueBudget {
+  return {
+    id: newId(),
+    label,
+    monthlyPremium: "",
+    minimumPremium: "",
+    minimumPremiumIncreasing: "",
+    initialDeathBenefit: "",
+    initialDeathBenefitIncreasing: "",
+    dbIncreaseAge: "",
+    deathBenefitTargets: [emptyDeathBenefitTarget(), emptyDeathBenefitTarget()],
+    milestones: [emptyCashValueMilestone()],
+  };
+}
+
+// The single source of truth for "what budgets does this cash_value illustration have" — both the
+// Illustration Scenarios editor and the PDF renderer read through this rather than ever touching
+// `data.budgets` directly, so the backward-compat fallback (treat pre-9/25 flat fields as an
+// implicit "Budget 1") only has to be right in one place. Returns `data.budgets` unchanged when
+// it's populated; otherwise wraps the legacy flat fields into a single-item array.
+export function getCashValueBudgets(data: CashValueIllustration): CashValueBudget[] {
+  if (data.budgets && data.budgets.length > 0) return data.budgets;
+  return [
+    {
+      id: "legacy-budget-1",
+      label: "Budget 1",
+      monthlyPremium: data.monthlyPremium ?? "",
+      minimumPremium: data.minimumPremium ?? "",
+      minimumPremiumIncreasing: data.minimumPremiumIncreasing ?? "",
+      initialDeathBenefit: data.initialDeathBenefit ?? "",
+      initialDeathBenefitIncreasing: data.initialDeathBenefitIncreasing ?? "",
+      dbIncreaseAge: data.dbIncreaseAge ?? "",
+      deathBenefitTargets:
+        data.deathBenefitTargets && data.deathBenefitTargets.length > 0
+          ? data.deathBenefitTargets
+          : [emptyDeathBenefitTarget(), emptyDeathBenefitTarget()],
+      milestones: data.milestones.length > 0 ? data.milestones : [emptyCashValueMilestone()],
+    },
+  ];
 }
 
 export function emptyIllustrationFor(productType: string | null | undefined): IllustrationData {

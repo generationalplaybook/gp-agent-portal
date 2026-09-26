@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
-import type { IllustrationData, AnnuityIllustration } from "./illustration";
-import { parseMoney, formatMoney } from "./illustration";
+import type { IllustrationData, AnnuityIllustration, CashValueBudget } from "./illustration";
+import { parseMoney, formatMoney, getCashValueBudgets } from "./illustration";
 import { LOGO_MARK_ASPECT, LOGO_MARK_PNG_BASE64 } from "./logo-mark-asset";
 
 type RGB = [number, number, number];
@@ -401,6 +401,320 @@ function drawAnnuitySection(doc: jsPDF, data: AnnuityIllustration, startY: numbe
     ensureSpace(nl.length * 12 + 10);
     doc.text(nl, M, y);
     y += nl.length * 12 + 10;
+  }
+
+  return y;
+}
+
+// One cash-value BUDGET's worth of section — extracted 9/25 per Karina: "i am doing 3 different
+// budgets for the same product... add additional budget section." Used only by
+// generateScenarioIllustrationPDF (the per-product Illustration flow's cash_value layout is the
+// older, simpler Age/Cash Value/Death Benefit table with no Policy Premium/Initial Death
+// Benefit/Death Benefit Milestones section at all — see the comment on generateScenarioIllustrationPDF
+// itself for why that stays separate). Called once per budget in getCashValueBudgets(data) order;
+// the caller draws a budget-label heading between calls when there's more than one. Deliberately
+// does NOT render `notes` — the Illustration Scenarios editor's Notes field is shared across every
+// budget on the scenario (it's bound to the scenario's own top-level notes, not this data), so the
+// caller renders that once, after every budget section, instead of per-budget here. Owns its own
+// page-break bookkeeping (PAGE_MAX_Y/ensureSpace), same reasoning as drawAnnuitySection above.
+// isIUL gates the "(may increase yearly)" callout below — added 9/25 per Karina: "for the avoid
+// lapse we should say may increase yearly... it should be for al IUL's." Whole Life and Other don't
+// share IUL's rising-cost-of-insurance dynamic the same way, so this stays IUL-specific via
+// input.productType === "IUL" at the call site, same literal check used elsewhere in this app (see
+// PERMANENT_PRODUCT_TYPES/PRODUCT_TYPE_OPTIONS in lib/types.ts).
+function drawCashValueBudgetSection(doc: jsPDF, budget: CashValueBudget, startY: number, isIUL: boolean): number {
+  const W = 612;
+  const M = 50;
+  const setFill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
+  const setText = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+  const PAGE_MAX_Y = 752;
+  let y = startY;
+  function ensureSpace(needed: number) {
+    if (y + needed > PAGE_MAX_Y) {
+      doc.addPage();
+      y = 68;
+    }
+  }
+
+  const lapseSuffix = isIUL ? " (may increase yearly)" : "";
+
+  const hasMonthlyPremium = !!(budget.monthlyPremium && budget.monthlyPremium.trim());
+  const hasMinimumPremiumLevel = !!(budget.minimumPremium && budget.minimumPremium.trim());
+  const hasMinimumPremiumIncreasing = !!(budget.minimumPremiumIncreasing && budget.minimumPremiumIncreasing.trim());
+  if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
+    // Rough upper-bound estimate (header + up to 3 dollar lines + the wrapped Increasing note +
+    // trailing gap) — doesn't need to be exact like the boxes/table/chart checks below, just
+    // enough to keep this whole block from starting so close to the bottom that it'd split.
+    ensureSpace(140);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(OBSIDIAN);
+    doc.text("POLICY PREMIUM", M, y);
+    y += 14;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    setText(OBSIDIAN);
+    if (hasMonthlyPremium) {
+      doc.text("Monthly Premium: $" + formatMoney(budget.monthlyPremium) + "/mo", M, y);
+      y += 14;
+    }
+    // Minimum to avoid lapse varies by election (cost of insurance differs between Level and
+    // Increasing) — label each line with its election whenever at least one side is filled in,
+    // same two-part convention as everywhere else in this rework, so the number is never
+    // ambiguous about which election it belongs to.
+    if (hasMinimumPremiumLevel) {
+      doc.text("Minimum to Avoid Lapse (Level): $" + formatMoney(budget.minimumPremium) + "/mo" + lapseSuffix, M, y);
+      y += 14;
+    }
+    if (hasMinimumPremiumIncreasing) {
+      doc.text(
+        "Minimum to Avoid Lapse (Increasing): $" + formatMoney(budget.minimumPremiumIncreasing) + "/mo" + lapseSuffix,
+        M,
+        y
+      );
+      y += 14;
+      // Karina, 9/5: asked whether this minimum actually climbs over time under Increasing —
+      // researched (Option A/Level's net amount at risk shrinks as cash value grows, so its
+      // cost of insurance can be partly offset; Option B/Increasing's net amount at risk stays
+      // at the full face amount for life, and COI rates also rise with attained age regardless
+      // of election, so the two compound and this minimum typically keeps climbing).
+      // Karina, 9/6: asked us to re-verify this before trusting it — re-researched against
+      // additional independent sources (confirmed the mechanism), then asked to soften the
+      // Level side of the wording since "levels off" overstated what Level actually guarantees
+      // (underperforming cash value or no such offset at all can still leave Level climbing
+      // too — Level just has a mechanism that CAN offset it, not a promise that it will).
+      // Flagged on the PDF so a client doesn't read this single number as fixed either way.
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      setText(CHARCOAL);
+      const nl = doc.splitTextToSize(
+        "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops. Confirm the year-by-year schedule on the carrier's illustration.",
+        W - 2 * M
+      );
+      doc.text(nl, M, y);
+      y += nl.length * 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      setText(OBSIDIAN);
+    }
+    y += 10;
+  }
+
+  // Initial Death Benefit — Level and Increasing each get their own box, side by side
+  // when both are filled in (a carrier can quote a different starting face amount for each
+  // election), full-width when only one is (keeps older, single-election scenarios looking the
+  // same as before this split).
+  const hasInitialDbLevel = !!(budget.initialDeathBenefit && budget.initialDeathBenefit.trim());
+  const hasInitialDbIncreasing = !!(budget.initialDeathBenefitIncreasing && budget.initialDeathBenefitIncreasing.trim());
+  if (hasInitialDbLevel || hasInitialDbIncreasing) {
+    ensureSpace(62); // exact height of this block, see the trailing `y += 62` below
+    const both = hasInitialDbLevel && hasInitialDbIncreasing;
+    const boxW = both ? (W - 2 * M - 12) / 2 : W - 2 * M;
+    const drawInitialDbBox = (x: number, amount: string, label: string) => {
+      // Re-set the fill immediately before each rect, not once up front: jsPDF's text draws
+      // (setText below) use the same underlying fill color as shapes, so drawing this box's own
+      // label text would otherwise clobber NEUTRAL_FILL before the second box gets to use it —
+      // bit us on the first render of this two-box layout (second box came out near-black, the
+      // leftover CHARCOAL label-text color from the first box's draw).
+      setFill(NEUTRAL_FILL);
+      doc.roundedRect(x, y, boxW, 50, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(both ? 15 : 18);
+      setText(OBSIDIAN);
+      doc.text("$" + formatMoney(amount), x + 14, y + 30);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      setText(CHARCOAL);
+      doc.text(label, x + 14, y + 42);
+    };
+    if (hasInitialDbLevel) {
+      drawInitialDbBox(M, budget.initialDeathBenefit as string, both ? "Initial Death Benefit (Level)" : "Initial Death Benefit (Face Value)");
+    }
+    if (hasInitialDbIncreasing) {
+      drawInitialDbBox(
+        both ? M + boxW + 12 : M,
+        budget.initialDeathBenefitIncreasing as string,
+        both ? "Initial Death Benefit (Increasing)" : "Initial Death Benefit (Increasing, Face Value)"
+      );
+    }
+    y += 62;
+  }
+
+  if (budget.dbIncreaseAge && budget.dbIncreaseAge.trim()) {
+    // 66, not 52 — Karina, 9/7: the "If cash value is left untouched..." box needed more room
+    // below it before Death Benefit Milestones starts ("it's too close to that box"). Box itself
+    // is still 40pt tall; the extra 14pt is trailing whitespace, matched here and in the trailing
+    // `y += 66` below so pagination still reserves exactly what this block now uses.
+    ensureSpace(66);
+    setFill(NEUTRAL_FILL);
+    doc.roundedRect(M, y, W - 2 * M, 40, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text(
+      "If cash value is left untouched, death benefit begins increasing at age " + budget.dbIncreaseAge.trim() + ".",
+      M + 12,
+      y + 16
+    );
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    setText(CHARCOAL);
+    doc.text(
+      "This can be changed at any time by calling the carrier. We recommend periodic policy reviews, which we schedule as part of our service.",
+      M + 12,
+      y + 29
+    );
+    y += 66;
+  }
+
+  // Death Benefit Milestones — see the comment on this same block in the (now-retired) inline
+  // version of this section for the full history; unchanged here apart from `data.` -> `budget.`.
+  const dbTargets = (budget.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
+  if (dbTargets.length > 0) {
+    const twoUp = dbTargets.length > 1;
+    const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
+    const dbBoxH = 68;
+    const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
+    // Exact height: the section header (8) plus every row of boxes — computed up front so the
+    // header and its boxes are guaranteed to land on the same page rather than the header
+    // printing at the very bottom of one page with its boxes stranded on the next.
+    ensureSpace(8 + dbRows * (dbBoxH + 10));
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(OBSIDIAN);
+    doc.text("DEATH BENEFIT MILESTONES", M, y);
+    y += 8;
+    const drawAgeMarker = (x: number, markerY: number, color: RGB, dashed: boolean, label: string) => {
+      doc.setDrawColor(color[0], color[1], color[2]);
+      doc.setLineWidth(2);
+      if (dashed) doc.setLineDashPattern([2, 1.5], 0);
+      doc.line(x, markerY, x + 12, markerY);
+      doc.setLineDashPattern([], 0);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      setText(CHARCOAL);
+      doc.text(label, x + 16, markerY + 2.5);
+    };
+    dbTargets.forEach((t, i) => {
+      const col = twoUp ? i % 2 : 0;
+      const row = twoUp ? Math.floor(i / 2) : i;
+      const boxX = col === 0 ? M : M + dbBoxW + 12;
+      const boxY = y + row * (dbBoxH + 10);
+      // Re-set the fill immediately before each box for the same reason as drawInitialDbBox
+      // above — text draws in between would otherwise clobber the fill color for the next box.
+      setFill(NEUTRAL_FILL);
+      doc.roundedRect(boxX, boxY, dbBoxW, dbBoxH, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      setText(OBSIDIAN);
+      doc.text("$" + formatMoney(t.targetAmount), boxX + 14, boxY + 22);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      setText(CHARCOAL);
+      doc.text("Death Benefit Reached", boxX + 14, boxY + 33);
+      const levelLabel = "Level: " + (t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—");
+      const increasingLabel =
+        "Increasing: " + (t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—");
+      drawAgeMarker(boxX + 14, boxY + 44, OBSIDIAN, false, levelLabel);
+      drawAgeMarker(boxX + 14, boxY + 53, GRAY, true, increasingLabel);
+    });
+    y += dbRows * (dbBoxH + 10) + 22;
+  }
+
+  const milestones = budget.milestones.filter((m) => m.label.trim());
+  if (milestones.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    setText(GRAY);
+    doc.text("No milestones entered yet.", M, y);
+    y += 20;
+  } else {
+    // A track (Level / Increasing) only gets a line on the chart (and a legend entry) if at
+    // least one milestone actually has a number for it.
+    const hasAnyValue = (values: (string | undefined)[]) => values.some((v) => !!(v && String(v).trim()));
+    const cvLevelHas = hasAnyValue(milestones.map((m) => m.cvNonGuaranteed));
+    const cvIncHas = hasAnyValue(milestones.map((m) => m.cvIncreasing));
+    const dbLevelHas = hasAnyValue(milestones.map((m) => m.dbGuaranteed));
+    const dbIncHas = hasAnyValue(milestones.map((m) => m.dbIncreasing));
+
+    // Table — two-part Level vs. Increasing, same column layout as the original per-product
+    // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width).
+    ensureSpace(20 + 14 + milestones.length * 16 + 14);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(OBSIDIAN);
+    const colX = [M, M + 105, M + 220, M + 335, M + 450];
+    const colMaxW = 110;
+    const headers = ["Age", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
+    headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: colMaxW }));
+    y += 20;
+    doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
+    doc.setLineWidth(1);
+    doc.line(M, y, W - M, y);
+    y += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    milestones.forEach((m) => {
+      setText(OBSIDIAN);
+      doc.setFont("helvetica", "bold");
+      doc.text(m.label, colX[0], y);
+      doc.setFont("helvetica", "normal");
+      setText(CHARCOAL);
+      doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
+      doc.text(m.cvIncreasing ? "$" + formatMoney(m.cvIncreasing) : "—", colX[2], y);
+      doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
+      doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
+      y += 16;
+    });
+    y += 26;
+
+    const xLabels = milestones.map((m) => m.label);
+
+    // Cash value chart — Level solid, Increasing dashed.
+    ensureSpace(146);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text("CASH VALUE OVER TIME", M, y);
+    y += 4;
+    const cvLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
+    const cvSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
+    if (cvLevelHas) {
+      cvLegend.push({ label: "Level", color: OBSIDIAN });
+      cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: OBSIDIAN });
+    }
+    if (cvIncHas) {
+      cvLegend.push({ label: "Increasing", color: GRAY, dashed: true });
+      cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: GRAY, dashed: true });
+    }
+    drawLegend(doc, M + 150, y - 2.5, cvLegend);
+    y += 12;
+    drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: cvSeries });
+    y += 142;
+
+    // Death benefit chart — same Level/Increasing split.
+    ensureSpace(146);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(OBSIDIAN);
+    doc.text("DEATH BENEFIT OVER TIME", M, y);
+    y += 4;
+    const dbLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
+    const dbSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
+    if (dbLevelHas) {
+      dbLegend.push({ label: "Level", color: OBSIDIAN });
+      dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: OBSIDIAN });
+    }
+    if (dbIncHas) {
+      dbLegend.push({ label: "Increasing", color: GRAY, dashed: true });
+      dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: GRAY, dashed: true });
+    }
+    drawLegend(doc, M + 150, y - 2.5, dbLegend);
+    y += 12;
+    drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: dbSeries });
+    y += 130;
   }
 
   return y;
@@ -902,336 +1216,31 @@ export function generateScenarioIllustrationPDF(input: IllustrationPdfInput, act
   const data = input.data;
 
   if (data.kind === "cash_value") {
-    const hasMonthlyPremium = !!(data.monthlyPremium && data.monthlyPremium.trim());
-    const hasMinimumPremiumLevel = !!(data.minimumPremium && data.minimumPremium.trim());
-    const hasMinimumPremiumIncreasing = !!(data.minimumPremiumIncreasing && data.minimumPremiumIncreasing.trim());
-    if (hasMonthlyPremium || hasMinimumPremiumLevel || hasMinimumPremiumIncreasing) {
-      // Rough upper-bound estimate (header + up to 3 dollar lines + the wrapped Increasing note +
-      // trailing gap) — doesn't need to be exact like the boxes/table/chart checks below, just
-      // enough to keep this whole block from starting so close to the bottom that it'd split.
-      ensureSpace(140);
-      // Recolored 9/7, fourth round, per Karina: "the polciy premium should be black and bold" —
-      // was GRAY (already bold). Matches the DEATH BENEFIT MILESTONES label below for consistency.
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(OBSIDIAN);
-      doc.text("POLICY PREMIUM", M, y);
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      setText(OBSIDIAN);
-      if (hasMonthlyPremium) {
-        doc.text("Monthly Premium: $" + formatMoney(data.monthlyPremium) + "/mo", M, y);
-        y += 14;
-      }
-      // Minimum to avoid lapse varies by election (cost of insurance differs between Level and
-      // Increasing) — label each line with its election whenever at least one side is filled in,
-      // same two-part convention as everywhere else in this rework, so the number is never
-      // ambiguous about which election it belongs to.
-      if (hasMinimumPremiumLevel) {
-        doc.text("Minimum to Avoid Lapse (Level): $" + formatMoney(data.minimumPremium) + "/mo", M, y);
-        y += 14;
-      }
-      if (hasMinimumPremiumIncreasing) {
-        doc.text(
-          "Minimum to Avoid Lapse (Increasing): $" + formatMoney(data.minimumPremiumIncreasing) + "/mo",
-          M,
-          y
-        );
-        y += 14;
-        // Karina, 9/5: asked whether this minimum actually climbs over time under Increasing —
-        // researched (Option A/Level's net amount at risk shrinks as cash value grows, so its
-        // cost of insurance can be partly offset; Option B/Increasing's net amount at risk stays
-        // at the full face amount for life, and COI rates also rise with attained age regardless
-        // of election, so the two compound and this minimum typically keeps climbing).
-        // Karina, 9/6: asked us to re-verify this before trusting it — re-researched against
-        // additional independent sources (confirmed the mechanism), then asked to soften the
-        // Level side of the wording since "levels off" overstated what Level actually guarantees
-        // (underperforming cash value or no such offset at all can still leave Level climbing
-        // too — Level just has a mechanism that CAN offset it, not a promise that it will).
-        // Flagged on the PDF so a client doesn't read this single number as fixed either way.
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(7.5);
-        setText(CHARCOAL);
-        const nl = doc.splitTextToSize(
-          "Increasing keeps the full face amount at risk for life, so this minimum typically keeps climbing every year. Level's net amount at risk shrinks as cash value grows, which can help offset that rise but isn't a guarantee it stops. Confirm the year-by-year schedule on the carrier's illustration.",
-          W - 2 * M
-        );
-        doc.text(nl, M, y);
-        y += nl.length * 10;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        setText(OBSIDIAN);
-      }
-      y += 10;
-    }
-
-    // Initial Death Benefit — Level and Increasing each get their own box, side by side
-    // when both are filled in (a carrier can quote a different starting face amount for each
-    // election), full-width when only one is (keeps older, single-election scenarios looking the
-    // same as before this split).
-    const hasInitialDbLevel = !!(data.initialDeathBenefit && data.initialDeathBenefit.trim());
-    const hasInitialDbIncreasing = !!(data.initialDeathBenefitIncreasing && data.initialDeathBenefitIncreasing.trim());
-    if (hasInitialDbLevel || hasInitialDbIncreasing) {
-      ensureSpace(62); // exact height of this block, see the trailing `y += 62` below
-      const both = hasInitialDbLevel && hasInitialDbIncreasing;
-      const boxW = both ? (W - 2 * M - 12) / 2 : W - 2 * M;
-      const drawInitialDbBox = (x: number, amount: string, label: string) => {
-        // Re-set the fill immediately before each rect, not once up front: jsPDF's text draws
-        // (setText below) use the same underlying fill color as shapes, so drawing this box's own
-        // label text would otherwise clobber NEUTRAL_FILL before the second box gets to use it —
-        // bit us on the first render of this two-box layout (second box came out near-black, the
-        // leftover CHARCOAL label-text color from the first box's draw).
-        // Colors retired entirely 9/7, fifth round (see the palette comment at the top of this
-        // file) — this box used to be blue (death-benefit boxes were blue, Cash Value was green);
-        // now every box in this document, regardless of what it's about, uses the same neutral
-        // cream fill and the same black text, per Karina's "fully monochrome" call.
-        setFill(NEUTRAL_FILL);
-        doc.roundedRect(x, y, boxW, 50, 4, 4, "F");
+    // Multiple budgets — added 9/25 per Karina: "i am doing 3 different budgets for the same
+    // product... add additional budget section." getCashValueBudgets() returns either the real
+    // `budgets` array or, for every scenario saved before 9/25, a single-item array built from the
+    // old flat fields — so this loop draws exactly one section for the common single-budget case,
+    // unchanged from before, and stacks additional sections (each with its own budget-label
+    // heading and a divider rule) only when an advisor has actually added more.
+    const isIUL = input.productType === "IUL";
+    const budgets = getCashValueBudgets(data);
+    budgets.forEach((budget, i) => {
+      if (budgets.length > 1) {
+        ensureSpace(30);
+        if (i > 0) {
+          doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
+          doc.setLineWidth(1);
+          doc.line(M, y, W - M, y);
+          y += 20;
+        }
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(both ? 15 : 18);
+        doc.setFontSize(11);
         setText(OBSIDIAN);
-        doc.text("$" + formatMoney(amount), x + 14, y + 30);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        setText(CHARCOAL);
-        doc.text(label, x + 14, y + 42);
-      };
-      if (hasInitialDbLevel) {
-        drawInitialDbBox(M, data.initialDeathBenefit as string, both ? "Initial Death Benefit (Level)" : "Initial Death Benefit (Face Value)");
+        doc.text(budget.label || `Budget ${i + 1}`, M, y);
+        y += 20;
       }
-      if (hasInitialDbIncreasing) {
-        drawInitialDbBox(
-          both ? M + boxW + 12 : M,
-          data.initialDeathBenefitIncreasing as string,
-          both ? "Initial Death Benefit (Increasing)" : "Initial Death Benefit (Increasing, Face Value)"
-        );
-      }
-      y += 62;
-    }
-
-    if (data.dbIncreaseAge && data.dbIncreaseAge.trim()) {
-      // 66, not 52 — Karina, 9/7: the "If cash value is left untouched..." box needed more room
-      // below it before Death Benefit Milestones starts ("it's too close to that box"). Box itself
-      // is still 40pt tall; the extra 14pt is trailing whitespace, matched here and in the trailing
-      // `y += 66` below so pagination still reserves exactly what this block now uses.
-      ensureSpace(66);
-      setFill(NEUTRAL_FILL);
-      doc.roundedRect(M, y, W - 2 * M, 40, 4, 4, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text(
-        "If cash value is left untouched, death benefit begins increasing at age " + data.dbIncreaseAge.trim() + ".",
-        M + 12,
-        y + 16
-      );
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      setText(CHARCOAL);
-      doc.text(
-        "This can be changed at any time by calling the carrier. We recommend periodic policy reviews, which we schedule as part of our service.",
-        M + 12,
-        y + 29
-      );
-      y += 66;
-    }
-
-    // Death Benefit Milestones — added 9/7 per Karina: a quick "hits $X at age Y" highlight,
-    // separate from the detailed age-by-age table below. Only targets with an amount actually
-    // filled in are shown; an age left blank on one side (Level vs. Increasing) prints as "—"
-    // rather than being silently dropped, so it's clear that side just wasn't entered.
-    // Reworked 9/7, same day, per Karina: "can the death benefit milestones be more visual in
-    // layout?" — the plain text-line version blended into the page next to the Initial Death
-    // Benefit boxes above it. Now each target gets its own box, two per row (matching the Initial
-    // Death Benefit boxes' side-by-side pattern), with Level as a solid marker and Increasing as a
-    // dashed one, same dash convention as the Death Benefit Over Time chart's legend further down
-    // this same page, so a client can visually connect the two sections. (This box, and the
-    // Initial Death Benefit boxes above it, used to also share a blue fill/text color to make that
-    // connection — retired 9/7, fifth round, along with every other color in this document; see
-    // the palette comment up top. The dashed-vs-solid convention alone still does that job.)
-    const dbTargets = (data.deathBenefitTargets ?? []).filter((t) => t.targetAmount && t.targetAmount.trim());
-    if (dbTargets.length > 0) {
-      const twoUp = dbTargets.length > 1;
-      const dbBoxW = twoUp ? (W - 2 * M - 12) / 2 : W - 2 * M;
-      // 68, not 58 — Karina, 9/7: "the blue boxes need more space at the bottom like the green
-      // ones." The green Initial Death Benefit boxes (50pt tall) have their last text baseline 8pt
-      // above the bottom edge; these boxes stack 4 lines instead of 2, so at the old 58pt they only
-      // had 5pt below the last line — tighter than the green boxes despite having more content.
-      const dbBoxH = 68;
-      const dbRows = twoUp ? Math.ceil(dbTargets.length / 2) : dbTargets.length;
-      // Exact height: the section header (8) plus every row of boxes — computed up front so the
-      // header and its boxes are guaranteed to land on the same page rather than the header
-      // printing at the very bottom of one page with its boxes stranded on the next.
-      ensureSpace(8 + dbRows * (dbBoxH + 10));
-
-      // Recolored 9/7, fourth round — same as POLICY PREMIUM above, matching section-label pattern.
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(OBSIDIAN);
-      doc.text("DEATH BENEFIT MILESTONES", M, y);
-      // 8, not 12 — Karina, 9/7, same round as the extra space above: the label should sit closer
-      // to its own boxes below it, not float between the note box above and the boxes below.
-      y += 8;
-      const drawAgeMarker = (x: number, markerY: number, color: RGB, dashed: boolean, label: string) => {
-        doc.setDrawColor(color[0], color[1], color[2]);
-        doc.setLineWidth(2);
-        if (dashed) doc.setLineDashPattern([2, 1.5], 0);
-        doc.line(x, markerY, x + 12, markerY);
-        doc.setLineDashPattern([], 0);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        setText(CHARCOAL);
-        doc.text(label, x + 16, markerY + 2.5);
-      };
-      dbTargets.forEach((t, i) => {
-        const col = twoUp ? i % 2 : 0;
-        const row = twoUp ? Math.floor(i / 2) : i;
-        const boxX = col === 0 ? M : M + dbBoxW + 12;
-        const boxY = y + row * (dbBoxH + 10);
-        // Re-set the fill immediately before each box for the same reason as drawInitialDbBox
-        // above — text draws in between would otherwise clobber the fill color for the next box.
-        setFill(NEUTRAL_FILL);
-        doc.roundedRect(boxX, boxY, dbBoxW, dbBoxH, 4, 4, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(15);
-        setText(OBSIDIAN);
-        doc.text("$" + formatMoney(t.targetAmount), boxX + 14, boxY + 22);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        setText(CHARCOAL);
-        doc.text("Death Benefit Reached", boxX + 14, boxY + 33);
-        const levelLabel = "Level: " + (t.levelAge && t.levelAge.trim() ? "age " + t.levelAge.trim() : "—");
-        const increasingLabel =
-          "Increasing: " + (t.increasingAge && t.increasingAge.trim() ? "age " + t.increasingAge.trim() : "—");
-        drawAgeMarker(boxX + 14, boxY + 44, OBSIDIAN, false, levelLabel);
-        drawAgeMarker(boxX + 14, boxY + 53, GRAY, true, increasingLabel);
-      });
-      // 22, not 4 — Karina, 9/7: "the stuff that is under those blue boxes they're too close to
-      // the boxes." The old 4pt gap put the milestones table header almost flush against the
-      // bottom of the boxes; this gives it real breathing room before the next section starts.
-      y += dbRows * (dbBoxH + 10) + 22;
-    }
-
-    const milestones = data.milestones.filter((m) => m.label.trim());
-    if (milestones.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(10);
-      setText(GRAY);
-      doc.text("No milestones entered yet.", M, y);
-      y += 20;
-    } else {
-      // A track (Level / Increasing) only gets a line on the chart (and a legend entry) if at
-      // least one milestone actually has a number for it — added 9/2. Bug found while testing: an
-      // entirely-blank track used to still draw as a flat line sitting at $0 with its label in the
-      // legend, which reads to a client as "Level pays $0" rather than "we didn't enter this
-      // side." Doesn't affect the table — a blank cell there already showed a plain "—", which was
-      // always clear.
-      const hasAnyValue = (values: (string | undefined)[]) => values.some((v) => !!(v && String(v).trim()));
-      const cvLevelHas = hasAnyValue(milestones.map((m) => m.cvNonGuaranteed));
-      const cvIncHas = hasAnyValue(milestones.map((m) => m.cvIncreasing));
-      const dbLevelHas = hasAnyValue(milestones.map((m) => m.dbGuaranteed));
-      const dbIncHas = hasAnyValue(milestones.map((m) => m.dbIncreasing));
-
-      // Table — two-part Level vs. Increasing, same column layout as the original per-product
-      // Illustration's Guaranteed/Non-Guaranteed table (proven to fit at this width).
-      // Exact height: header row (20) + rule gap (14) + one line per milestone (16 each) + trailing
-      // gap before the chart (14) — keeps the header from landing alone at the bottom of a page
-      // with its rows stranded on the next.
-      ensureSpace(20 + 14 + milestones.length * 16 + 14);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(OBSIDIAN);
-      const colX = [M, M + 105, M + 220, M + 335, M + 450];
-      const colMaxW = 110;
-      // "Age" heading fixed 9/7 per Karina: this column used to have no header, and the row below
-      // separately prepended "Age " to whatever the advisor typed as the milestone label — since
-      // that label is usually already something like "Age 65" (CashValueMilestone.label's own
-      // doc comment gives that as the first example), the two together printed "Age Age 65" on
-      // the PDF. Now "Age" is the column heading, same as the other four, and the row below prints
-      // whatever was typed as-is — no more forced prefix.
-      const headers = ["Age", "Cash Value\n(Level)", "Cash Value\n(Increasing)", "Death Benefit\n(Level)", "Death Benefit\n(Increasing)"];
-      headers.forEach((h, i) => doc.text(h, colX[i], y, { maxWidth: colMaxW }));
-      y += 20;
-      doc.setDrawColor(SAND[0], SAND[1], SAND[2]);
-      doc.setLineWidth(1);
-      doc.line(M, y, W - M, y);
-      y += 14;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      milestones.forEach((m) => {
-        setText(OBSIDIAN);
-        doc.setFont("helvetica", "bold");
-        doc.text(m.label, colX[0], y);
-        doc.setFont("helvetica", "normal");
-        setText(CHARCOAL);
-        doc.text(m.cvNonGuaranteed ? "$" + formatMoney(m.cvNonGuaranteed) : "—", colX[1], y);
-        doc.text(m.cvIncreasing ? "$" + formatMoney(m.cvIncreasing) : "—", colX[2], y);
-        doc.text(m.dbGuaranteed ? "$" + formatMoney(m.dbGuaranteed) : "—", colX[3], y);
-        doc.text(m.dbIncreasing ? "$" + formatMoney(m.dbIncreasing) : "—", colX[4], y);
-        y += 16;
-      });
-      // 26, not 14 — Karina, 9/7: "the cash value over time, I feel like there needs to be a
-      // little bit more space, so it's pushed down." Same treatment for the Death Benefit chart's
-      // own lead-in below.
-      y += 26;
-
-      // Same "Age Age 65" fix as the table above — the chart's x-axis tick labels no longer
-      // double up the "Age " prefix on top of whatever's already in the milestone label.
-      const xLabels = milestones.map((m) => m.label);
-
-      // Cash value chart — Level solid, Increasing dashed — same legend pattern as the original
-      // per-product Illustration's Guaranteed/Non-Guaranteed charts, plus each track above only
-      // appears here if it actually has data (see hasAnyValue).
-      // This is the block that was actually getting clipped before 9/7's page-break fix — a
-      // title-height chart runs ~146pt (title + legend gap + the 110pt chart itself), so this
-      // guarantees the whole chart, not just its title, starts on a page with room for it.
-      ensureSpace(146);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("CASH VALUE OVER TIME", M, y);
-      y += 4;
-      const cvLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
-      const cvSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
-      if (cvLevelHas) {
-        cvLegend.push({ label: "Level", color: OBSIDIAN });
-        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvNonGuaranteed)), color: OBSIDIAN });
-      }
-      if (cvIncHas) {
-        cvLegend.push({ label: "Increasing", color: GRAY, dashed: true });
-        cvSeries.push({ values: milestones.map((m) => parseMoney(m.cvIncreasing)), color: GRAY, dashed: true });
-      }
-      drawLegend(doc, M + 150, y - 2.5, cvLegend);
-      y += 12;
-      drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: cvSeries });
-      // 142, not 130 — same "pushed down" request as the Cash Value chart's lead-in above, applied
-      // to the Death Benefit chart too.
-      y += 142;
-
-      // Death benefit chart — same Level/Increasing split.
-      ensureSpace(146); // same reasoning as the Cash Value chart's check above
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(OBSIDIAN);
-      doc.text("DEATH BENEFIT OVER TIME", M, y);
-      y += 4;
-      const dbLegend: { label: string; color: RGB; dashed?: boolean }[] = [];
-      const dbSeries: { values: number[]; color: RGB; dashed?: boolean }[] = [];
-      if (dbLevelHas) {
-        dbLegend.push({ label: "Level", color: OBSIDIAN });
-        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbGuaranteed)), color: OBSIDIAN });
-      }
-      if (dbIncHas) {
-        dbLegend.push({ label: "Increasing", color: GRAY, dashed: true });
-        dbSeries.push({ values: milestones.map((m) => parseMoney(m.dbIncreasing)), color: GRAY, dashed: true });
-      }
-      drawLegend(doc, M + 150, y - 2.5, dbLegend);
-      y += 12;
-      drawLineChart(doc, { x: M, y, width: W - 2 * M, height: 110, xLabels, series: dbSeries });
-      y += 130;
-    }
+      y = drawCashValueBudgetSection(doc, budget, y, isIUL);
+    });
 
     if (data.notes) {
       doc.setFont("helvetica", "normal");

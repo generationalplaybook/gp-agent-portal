@@ -8,10 +8,14 @@ import {
   emptyCashValueMilestone,
   emptyAnnuityMilestone,
   emptyDeathBenefitTarget,
+  emptyCashValueBudget,
+  getCashValueBudgets,
   type IllustrationData,
   type CashValueMilestone,
   type AnnuityMilestone,
   type DeathBenefitTarget,
+  type CashValueIllustration,
+  type CashValueBudget,
   type FinalExpenseIllustration,
   type TermIllustration,
 } from "@/lib/illustration";
@@ -25,6 +29,9 @@ const MAX_CASH_VALUE_MILESTONES = 5;
 // not another full table.
 const MAX_DEATH_BENEFIT_TARGETS = 4;
 const MIN_DEATH_BENEFIT_TARGETS = 2;
+// Multiple budgets — added 9/25 per Karina: "i think up two 3 budgets is enough" (comparing the
+// same product across 3 different premium levels for the same client).
+const MAX_CASH_VALUE_BUDGETS = 3;
 import { saveScenario, markScenarioChosen, undoScenarioChosen, deleteScenario } from "../actions";
 
 interface Scenario {
@@ -238,6 +245,232 @@ function DeathBenefitTargetsEditor({
         </button>
       ) : (
         <p className="text-xs text-[#707070]">Maximum of {MAX_DEATH_BENEFIT_TARGETS} targets.</p>
+      )}
+    </div>
+  );
+}
+
+// One full budget's worth of the cash_value editing surface — extracted 9/25 per Karina: "i am
+// doing 3 different budgets for the same product... add additional budget section that opens up
+// another section for the same illustration for all of the same numbers to be inputted." Same
+// fields and copy as the original single-budget section, just scoped to one CashValueBudget
+// instead of the top-level IllustrationData so it can render once per budget. `notes` is
+// deliberately NOT part of this — see the comment on CashValueIllustration.budgets in
+// lib/illustration.ts for why Notes stays shared/scenario-level instead of per-budget.
+function CashValueBudgetEditor({
+  budget,
+  onChange,
+}: {
+  budget: CashValueBudget;
+  onChange: (b: CashValueBudget) => void;
+}) {
+  return (
+    <>
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
+      <p className="mb-2 text-xs text-[#707070]">
+        What the client actually pays, and the bare minimum that keeps this policy from lapsing. The
+        minimum to avoid lapse differs by election, since cost of insurance isn&rsquo;t the same under Level vs.
+        Increasing, so enter both from the carrier&rsquo;s illustration. All optional.
+      </p>
+      <label className="mb-5 flex max-w-xs flex-col gap-1 text-xs text-[#666]">
+        Monthly Premium
+        <DollarInput
+          value={budget.monthlyPremium ?? ""}
+          onChange={(v) => onChange({ ...budget, monthlyPremium: v })}
+          className={inputClass}
+        />
+      </label>
+      <div className="mb-1.5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          <span className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+              Level
+            </span>
+          </span>
+          <DollarInput
+            value={budget.minimumPremium ?? ""}
+            onChange={(v) => onChange({ ...budget, minimumPremium: v })}
+            className={inputClass + " w-full"}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          <span className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+              Increasing
+            </span>
+          </span>
+          <DollarInput
+            value={budget.minimumPremiumIncreasing ?? ""}
+            onChange={(v) => onChange({ ...budget, minimumPremiumIncreasing: v })}
+            className={inputClass + " w-full"}
+          />
+        </label>
+      </div>
+      <p className="mb-5 max-w-md text-[11px] text-[#8b6a00]">
+        Increasing keeps the death benefit&rsquo;s full face amount at risk for life, so cost of insurance is
+        higher and this minimum typically keeps climbing every year. Level&rsquo;s net amount at risk shrinks
+        as cash value grows, which can help offset that rise, though it isn&rsquo;t a guarantee it stops climbing;
+        confirm the actual year-by-year schedule on the carrier&rsquo;s illustration.
+      </p>
+
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
+      <p className="mb-2 text-xs text-[#707070]">
+        The policy&rsquo;s starting face amount at issue under each election: separate from the
+        Level/Increasing numbers entered per milestone below, which show what it grows (or steps up) to at
+        each age. Carriers can quote a different starting face amount for Level vs. Increasing even though
+        both work toward the same eventual target.
+      </p>
+      <div className="mb-5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          <span className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+              Level
+            </span>
+          </span>
+          <DollarInput
+            value={budget.initialDeathBenefit ?? ""}
+            onChange={(v) => onChange({ ...budget, initialDeathBenefit: v })}
+            className={inputClass + " w-full"}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#666]">
+          <span className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+              Increasing
+            </span>
+          </span>
+          <DollarInput
+            value={budget.initialDeathBenefitIncreasing ?? ""}
+            onChange={(v) => onChange({ ...budget, initialDeathBenefitIncreasing: v })}
+            className={inputClass + " w-full"}
+          />
+        </label>
+      </div>
+
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
+      <p className="mb-1 text-xs text-[#707070]">
+        On a Level death benefit, if cash value is left untouched the policy is required to step the death
+        benefit up at a certain age (common on some IUL designs, especially juvenile policies); note that
+        age here so it&rsquo;s called out on the summary. If the client starts taking withdrawals, the death
+        benefit stays level instead. It does not step up. Leave blank if it doesn&rsquo;t apply.
+      </p>
+      <p className="mb-2 text-xs text-[#707070]">
+        Either way, the Level/Increasing election itself can be changed at any time by calling the
+        carrier. We recommend periodic policy reviews, which we schedule as part of our service regardless.
+      </p>
+      <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
+        Age it increases (optional)
+        <input
+          value={budget.dbIncreaseAge ?? ""}
+          onChange={(e) => onChange({ ...budget, dbIncreaseAge: e.target.value.replace(/[^0-9]/g, "") })}
+          placeholder="e.g. 20"
+          inputMode="numeric"
+          className={inputClass}
+        />
+      </label>
+
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Milestones</h2>
+      <p className="mb-4 text-xs text-[#707070]">
+        A quick highlight for the client: at what age does the death benefit reach a target amount, like
+        $500,000 or $1,000,000? Since Level and Increasing grow into a target differently, the age can be
+        different for each; leave one blank if it doesn&rsquo;t apply. This is separate from the detailed
+        age-by-age table below.
+      </p>
+      <DeathBenefitTargetsEditor
+        targets={
+          budget.deathBenefitTargets && budget.deathBenefitTargets.length > 0
+            ? budget.deathBenefitTargets
+            : [emptyDeathBenefitTarget(), emptyDeathBenefitTarget()]
+        }
+        onChange={(deathBenefitTargets) => onChange({ ...budget, deathBenefitTargets })}
+      />
+
+      <h2 className="mb-1 mt-5 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
+      <p className="mb-4 text-xs text-[#707070]">
+        For each age that matters, enter the illustrated numbers under both death benefit options, Level
+        and Increasing, pulled straight from the carrier&rsquo;s side-by-side illustration, so the client can
+        see exactly how they compare.
+      </p>
+      <CashValueMilestonesEditor
+        milestones={budget.milestones}
+        onChange={(milestones) => onChange({ ...budget, milestones })}
+      />
+    </>
+  );
+}
+
+// Wraps 1-3 CashValueBudgetEditor sections — added 9/25, same conversation as the component above.
+// getCashValueBudgets(data) is the single source of truth for what budgets exist (falls back to
+// the pre-9/25 flat fields as an implicit "Budget 1" for every existing scenario) — this component
+// always writes back through `data.budgets`, so the first edit made anywhere on a legacy
+// single-budget scenario quietly upgrades it to the new shape (still just the one budget, nothing
+// visibly changes) without a separate migration step. The budget name input and Remove button only
+// show once there's more than one budget — with just one, this looks and behaves exactly like the
+// original single-budget section always did.
+function CashValueBudgetsSection({
+  data,
+  setData,
+}: {
+  data: CashValueIllustration;
+  setData: (d: CashValueIllustration) => void;
+}) {
+  const budgets = getCashValueBudgets(data);
+  const multi = budgets.length > 1;
+
+  function setBudgets(next: CashValueBudget[]) {
+    setData({ ...data, budgets: next });
+  }
+  function updateBudget(index: number, updated: CashValueBudget) {
+    setBudgets(budgets.map((b, i) => (i === index ? updated : b)));
+  }
+  function addBudget() {
+    setBudgets([...budgets, emptyCashValueBudget(`Budget ${budgets.length + 1}`)]);
+  }
+  function removeBudget(index: number) {
+    setBudgets(budgets.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {budgets.map((budget, i) => (
+        <div key={budget.id} className={multi ? "rounded-md border border-[#D9CFBA] p-4" : undefined}>
+          {multi && (
+            <div className="mb-4 flex items-end justify-between gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Budget name
+                <input
+                  value={budget.label}
+                  onChange={(e) => updateBudget(i, { ...budget, label: e.target.value })}
+                  placeholder={`Budget ${i + 1}`}
+                  className={inputClass + " max-w-[220px] font-semibold"}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => removeBudget(i)}
+                className="mb-1.5 text-xs text-[#8B1A1A] underline hover:text-[#6b1414]"
+              >
+                Remove budget
+              </button>
+            </div>
+          )}
+          <CashValueBudgetEditor budget={budget} onChange={(b) => updateBudget(i, b)} />
+        </div>
+      ))}
+      {budgets.length < MAX_CASH_VALUE_BUDGETS ? (
+        <button
+          type="button"
+          onClick={addBudget}
+          className="self-start rounded-md border border-[#D9CFBA] px-3 py-1.5 text-xs font-semibold text-[#2E2E2E] hover:bg-[#EDE8DF]"
+        >
+          + Add Budget
+        </button>
+      ) : (
+        <p className="text-xs text-[#707070]">Maximum of {MAX_CASH_VALUE_BUDGETS} budgets.</p>
       )}
     </div>
   );
@@ -820,143 +1053,7 @@ export default function ScenarioForm({
       </div>
 
       <div className="rounded-lg border border-[#D9CFBA] bg-white p-6">
-        {data.kind === "cash_value" && (
-          <>
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Policy Premium</h2>
-            <p className="mb-2 text-xs text-[#707070]">
-              What the client actually pays, and the bare minimum that keeps this policy from lapsing. The
-              minimum to avoid lapse differs by election, since cost of insurance isn&rsquo;t the same under Level vs.
-              Increasing, so enter both from the carrier&rsquo;s illustration. All optional.
-            </p>
-            <label className="mb-5 flex max-w-xs flex-col gap-1 text-xs text-[#666]">
-              Monthly Premium
-              <DollarInput
-                value={data.monthlyPremium ?? ""}
-                onChange={(v) => setData({ ...data, monthlyPremium: v })}
-                className={inputClass}
-              />
-            </label>
-            <div className="mb-1.5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-                    Level
-                  </span>
-                </span>
-                <DollarInput
-                  value={data.minimumPremium ?? ""}
-                  onChange={(v) => setData({ ...data, minimumPremium: v })}
-                  className={inputClass + " w-full"}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Minimum to Avoid Lapse</span>
-                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-                    Increasing
-                  </span>
-                </span>
-                <DollarInput
-                  value={data.minimumPremiumIncreasing ?? ""}
-                  onChange={(v) => setData({ ...data, minimumPremiumIncreasing: v })}
-                  className={inputClass + " w-full"}
-                />
-              </label>
-            </div>
-            <p className="mb-5 max-w-md text-[11px] text-[#8b6a00]">
-              Increasing keeps the death benefit&rsquo;s full face amount at risk for life, so cost of insurance is
-              higher and this minimum typically keeps climbing every year. Level&rsquo;s net amount at risk shrinks
-              as cash value grows, which can help offset that rise, though it isn&rsquo;t a guarantee it stops climbing;
-              confirm the actual year-by-year schedule on the carrier&rsquo;s illustration.
-            </p>
-
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Initial Death Benefit</h2>
-            <p className="mb-2 text-xs text-[#707070]">
-              The policy&rsquo;s starting face amount at issue under each election: separate from the
-              Level/Increasing numbers entered per milestone below, which show what it grows (or steps up) to at
-              each age. Carriers can quote a different starting face amount for Level vs. Increasing even though
-              both work toward the same eventual target.
-            </p>
-            <div className="mb-5 grid max-w-md grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-                    Level
-                  </span>
-                </span>
-                <DollarInput
-                  value={data.initialDeathBenefit ?? ""}
-                  onChange={(v) => setData({ ...data, initialDeathBenefit: v })}
-                  className={inputClass + " w-full"}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                <span className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-                  <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
-                    Increasing
-                  </span>
-                </span>
-                <DollarInput
-                  value={data.initialDeathBenefitIncreasing ?? ""}
-                  onChange={(v) => setData({ ...data, initialDeathBenefitIncreasing: v })}
-                  className={inputClass + " w-full"}
-                />
-              </label>
-            </div>
-
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Increase</h2>
-            <p className="mb-1 text-xs text-[#707070]">
-              On a Level death benefit, if cash value is left untouched the policy is required to step the death
-              benefit up at a certain age (common on some IUL designs, especially juvenile policies); note that
-              age here so it&rsquo;s called out on the summary. If the client starts taking withdrawals, the death
-              benefit stays level instead. It does not step up. Leave blank if it doesn&rsquo;t apply.
-            </p>
-            <p className="mb-2 text-xs text-[#707070]">
-              Either way, the Level/Increasing election itself can be changed at any time by calling the
-              carrier. We recommend periodic policy reviews, which we schedule as part of our service regardless.
-            </p>
-            <label className="mb-5 flex max-w-[200px] flex-col gap-1 text-xs text-[#666]">
-              Age it increases (optional)
-              <input
-                value={data.dbIncreaseAge ?? ""}
-                onChange={(e) => setData({ ...data, dbIncreaseAge: e.target.value.replace(/[^0-9]/g, "") })}
-                placeholder="e.g. 20"
-                inputMode="numeric"
-                className={inputClass}
-              />
-            </label>
-
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#555]">Death Benefit Milestones</h2>
-            <p className="mb-4 text-xs text-[#707070]">
-              A quick highlight for the client: at what age does the death benefit reach a target amount, like
-              $500,000 or $1,000,000? Since Level and Increasing grow into a target differently, the age can be
-              different for each; leave one blank if it doesn&rsquo;t apply. This is separate from the detailed
-              age-by-age table below.
-            </p>
-            <DeathBenefitTargetsEditor
-              targets={
-                data.deathBenefitTargets && data.deathBenefitTargets.length > 0
-                  ? data.deathBenefitTargets
-                  : [emptyDeathBenefitTarget(), emptyDeathBenefitTarget()]
-              }
-              onChange={(deathBenefitTargets) => setData({ ...data, deathBenefitTargets })}
-            />
-
-            <h2 className="mb-1 mt-5 text-sm font-semibold uppercase tracking-wide text-[#555]">Milestones</h2>
-            <p className="mb-4 text-xs text-[#707070]">
-              For each age that matters, enter the illustrated numbers under both death benefit options, Level
-              and Increasing, pulled straight from the carrier&rsquo;s side-by-side illustration, so the client can
-              see exactly how they compare.
-            </p>
-            <CashValueMilestonesEditor
-              milestones={data.milestones}
-              onChange={(milestones) => setData({ ...data, milestones })}
-            />
-          </>
-        )}
+        {data.kind === "cash_value" && <CashValueBudgetsSection data={data} setData={setData} />}
 
         {data.kind === "term" && (
           <>
