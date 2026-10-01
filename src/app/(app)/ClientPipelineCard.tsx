@@ -30,7 +30,7 @@ export default function ClientPipelineCard({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") router.push("/clients");
       }}
-      className="flex cursor-pointer flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+      className="flex min-w-0 cursor-pointer flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Client Pipeline</span>

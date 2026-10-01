@@ -229,12 +229,25 @@ export default async function HomePage() {
           9/26 from what used to be two separate grid containers (a New Intake/Time-Sensitive row,
           then a second row for the other four) once the requested order interleaved cards that
           used to live in different rows. New Intake only renders when there's something to
-          review, so on a normal day this just starts at Reminders Due. */}
+          review, so on a normal day this just starts at Reminders Due.
+          min-w-0 on every card (below, and on ClientPipelineCard's own root) — fixed 9/27, Karina
+          sent mobile screenshots showing every card sliced off at the right edge with a horizontal
+          scrollbar. Root cause: a grid track with no explicit width (this container is one column
+          below the `sm:` breakpoint) sizes itself off the widest "automatic minimum size" of its
+          items, and a flex/grid item's automatic minimum defaults to its CONTENT's min-content
+          size unless min-width is set. The Reminders Due/Team Follow-ups reminder lines and the
+          Upcoming Meetings client name both use `truncate` (white-space: nowrap), so their
+          un-wrapped text width was winning that calculation and dragging the whole single-column
+          grid — every card, not just the ones with long text — wider than the phone screen.
+          min-w-0 on each card overrides that automatic minimum back to 0, letting the grid track
+          size to the actual viewport and letting `truncate` finally do its job (ellipsis) instead
+          of forcing overflow. Desktop (`sm:grid-cols-2` and up) was never affected — two fixed
+          columns don't hit this "auto" track-sizing path the same way. */}
       <div className="grid gap-6 sm:grid-cols-2">
         {hasNewIntake && (
           <Link
             href="/clients?view=needs_review"
-            className="flex flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
+            className="flex min-w-0 flex-col rounded-lg border border-[#8B1A1A] bg-[#FFF5F5] p-6 hover:border-[#1C1C1C]"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#8B1A1A]">
@@ -269,7 +282,7 @@ export default async function HomePage() {
             above; unchanged otherwise. */}
         <Link
           href="/reminders"
-          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+          className="flex min-w-0 flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Reminders Due</span>
@@ -306,7 +319,7 @@ export default async function HomePage() {
             beyond term policies — see the comment on the termProductsRaw query above. */}
         <Link
           href="/clients?view=outreach"
-          className={`flex flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
+          className={`flex min-w-0 flex-col rounded-lg border p-6 hover:border-[#1C1C1C] ${
             urgentTermProducts.length > 0 ? "border-[#8B1A1A] bg-[#FFF5F5]" : "border-[#D9CFBA] bg-white"
           }`}
         >
@@ -376,7 +389,7 @@ export default async function HomePage() {
             reorder above; unchanged otherwise. */}
         <Link
           href="/team"
-          className="flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
+          className="flex min-w-0 flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C]"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-[#555]">Team Follow-ups</span>
@@ -415,7 +428,7 @@ export default async function HomePage() {
             (sm:col-span-2) on the odd-card-count day New Intake is hidden. */}
         <Link
           href="/meetings"
-          className={`flex flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C] ${
+          className={`flex min-w-0 flex-col rounded-lg border border-[#D9CFBA] bg-white p-6 hover:border-[#1C1C1C] ${
             hasNewIntake ? "" : "sm:col-span-2"
           }`}
         >
@@ -442,7 +455,7 @@ export default async function HomePage() {
                     options={{ weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }}
                   />
                 </span>
-                <span className="truncate font-semibold text-[#1C1C1C]">{m.clientName}</span>
+                <span className="min-w-0 truncate font-semibold text-[#1C1C1C]">{m.clientName}</span>
               </div>
             ))}
           </div>
