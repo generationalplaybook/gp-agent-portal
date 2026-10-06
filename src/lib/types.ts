@@ -400,6 +400,13 @@ export interface ClientProduct {
   // alternate path to conversion_deadline/final_conversion_deadline below, for a straight
   // non-convertible term. See getNextOutreachMilestone in lib/products.ts.
   term_end_date: string | null;
+  // How many years the term is (10/15/20/25/30, typically) — added 10/6 per Karina, purely so the
+  // Add/Edit Product form can calculate term_end_date from issue_date + this instead of the agent
+  // doing the year math themselves (see addYearsToDateOnly in lib/dates.ts). Also shown on the
+  // read-only product card ("20-year term") once set. Nothing downstream (Outreach, Time-Sensitive,
+  // getNextOutreachMilestone) reads this — term_end_date stays the one authoritative date field;
+  // this is just where that date came from.
+  term_length_years: number | null;
   // Manual, per-product "I've reached out to this client" timestamp for the Outreach view — not
   // cron-managed. Set together with outreach_outcome below (added 9/8) via markOutreachOutcome in
   // clients/actions.ts — a null outreach_outcome with this set is only possible for a row

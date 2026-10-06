@@ -14,7 +14,7 @@ import {
 } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { getProductStatus, getTermUrgency, OUTREACH_OUTCOME_LABELS, type OutreachOutcome } from "@/lib/products";
-import { formatDateOnly } from "@/lib/dates";
+import { formatDateOnly, addYearsToDateOnly } from "@/lib/dates";
 
 // Ongoing-contribution frequency values map to these plain-English labels wherever they're
 // displayed on an annuity's read-only card.
@@ -88,6 +88,7 @@ function toFieldValues(p: ClientProduct): ProductFields {
     // Fall back to the (now-hidden, for term policies) expiration_date if term_end_date hasn't
     // been filled in yet — see the 9/4 note in products.ts. Only relevant for term policies.
     term_end_date: p.term_end_date ?? (p.is_convertible ? p.expiration_date ?? "" : ""),
+    term_length_years: p.term_length_years != null ? String(p.term_length_years) : "",
     conversion_notes: p.conversion_notes ?? "",
     face_amount: p.face_amount != null ? String(p.face_amount) : "",
     premium: p.premium != null ? String(p.premium) : "",
@@ -124,6 +125,30 @@ export default function ProductRow({
 
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  // Term length (years) + issue date -> term_end_date — see the matching comment in
+  // ProductsSection.tsx (the Add form); identical logic, kept in sync here for the Edit form.
+  function computeTermEnd(issueDate: string, years: string): string | undefined {
+    const n = parseInt(years, 10);
+    if (!issueDate || !Number.isFinite(n) || n <= 0) return undefined;
+    return addYearsToDateOnly(issueDate, n);
+  }
+
+  function setIssueDate(value: string) {
+    setFields((f) => ({
+      ...f,
+      issue_date: value,
+      term_end_date: computeTermEnd(value, f.term_length_years ?? "") ?? f.term_end_date,
+    }));
+  }
+
+  function setTermLengthYears(value: string) {
+    setFields((f) => ({
+      ...f,
+      term_length_years: value,
+      term_end_date: computeTermEnd(f.issue_date ?? "", value) ?? f.term_end_date,
+    }));
   }
 
   const isConverted = !!product.converted_at;
@@ -224,7 +249,7 @@ export default function ProductRow({
             <input
               type="date"
               value={fields.issue_date}
-              onChange={(e) => set("issue_date", e.target.value)}
+              onChange={(e) => setIssueDate(e.target.value)}
               className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
             />
           </label>
@@ -288,15 +313,29 @@ export default function ProductRow({
         )}
         {fields.is_convertible && !isAnnuity && (
           <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
-            <label className="flex flex-col gap-1 text-xs text-[#666]">
-              Term expiration date
-              <input
-                type="date"
-                value={fields.term_end_date}
-                onChange={(e) => set("term_end_date", e.target.value)}
-                className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-              />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Term length (years)
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={fields.term_length_years ?? ""}
+                  onChange={(e) => setTermLengthYears(e.target.value)}
+                  placeholder="e.g. 20"
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                Term expiration date{fields.issue_date && fields.term_length_years ? " (calculated)" : ""}
+                <input
+                  type="date"
+                  value={fields.term_end_date}
+                  onChange={(e) => set("term_end_date", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
+            </div>
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               Convertible without medical exam until
               <input
@@ -640,10 +679,12 @@ export default function ProductRow({
         </p>
       )}
 
-      {(product.issue_date || displayExpiration) && (
+      {(product.issue_date || product.term_length_years || displayExpiration) && (
         <p className="text-xs text-[#707070]">
           {product.issue_date && `Issued ${formatDateOnly(product.issue_date)}`}
-          {product.issue_date && displayExpiration && " · "}
+          {product.issue_date && product.term_length_years && " · "}
+          {product.term_length_years && `${product.term_length_years}-year term`}
+          {(product.issue_date || product.term_length_years) && displayExpiration && " · "}
           {displayExpiration && `Expires ${formatDateOnly(displayExpiration)}`}
         </p>
       )}

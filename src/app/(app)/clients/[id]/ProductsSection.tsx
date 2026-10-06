@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB_PRODUCTS, KB_ESTATE_PLANNING_PRODUCTS } from "@/lib/kb-data";
+import { addYearsToDateOnly } from "@/lib/dates";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
 import DollarInput from "./DollarInput";
@@ -34,6 +35,7 @@ const EMPTY_FIELDS: ProductFields = {
   final_conversion_deadline: "",
   no_exam_declined_at: "",
   term_end_date: "",
+  term_length_years: "",
   conversion_notes: "",
   face_amount: "",
   premium: "",
@@ -74,6 +76,35 @@ export default function ProductsSection({
 
   function set<K extends keyof ProductFields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  // Term length (years) + issue date -> term_end_date, added 10/6 per Karina (see the comment on
+  // ProductFields.term_length_years in actions.ts). Fires from either field's onChange so it stays
+  // live as either one changes; still just a normal, editable value afterward — typing a different
+  // date into "Term expiration date" by hand works exactly as before. The trade-off: if the
+  // advisor manually adjusts the date and THEN changes issue date or term length again, this will
+  // recompute and overwrite that manual edit — acceptable since changing either of those after the
+  // fact is rare, and leaving term length blank keeps the date field fully manual either way.
+  function computeTermEnd(issueDate: string, years: string): string | undefined {
+    const n = parseInt(years, 10);
+    if (!issueDate || !Number.isFinite(n) || n <= 0) return undefined;
+    return addYearsToDateOnly(issueDate, n);
+  }
+
+  function setIssueDate(value: string) {
+    setFields((f) => ({
+      ...f,
+      issue_date: value,
+      term_end_date: computeTermEnd(value, f.term_length_years ?? "") ?? f.term_end_date,
+    }));
+  }
+
+  function setTermLengthYears(value: string) {
+    setFields((f) => ({
+      ...f,
+      term_length_years: value,
+      term_end_date: computeTermEnd(f.issue_date ?? "", value) ?? f.term_end_date,
+    }));
   }
 
   const productLookup = useMemo(() => {
@@ -211,7 +242,7 @@ export default function ProductsSection({
               <input
                 type="date"
                 value={fields.issue_date}
-                onChange={(e) => set("issue_date", e.target.value)}
+                onChange={(e) => setIssueDate(e.target.value)}
                 className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
               />
             </label>
@@ -291,15 +322,29 @@ export default function ProductsSection({
           )}
           {fields.is_convertible && !isAnnuity && (
             <div className="flex flex-col gap-2 rounded-md border border-dashed border-[#D9CFBA] p-2.5">
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Term expiration date
-                <input
-                  type="date"
-                  value={fields.term_end_date}
-                  onChange={(e) => set("term_end_date", e.target.value)}
-                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                />
-              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Term length (years)
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={fields.term_length_years ?? ""}
+                    onChange={(e) => setTermLengthYears(e.target.value)}
+                    placeholder="e.g. 20"
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Term expiration date{fields.issue_date && fields.term_length_years ? " (calculated)" : ""}
+                  <input
+                    type="date"
+                    value={fields.term_end_date}
+                    onChange={(e) => set("term_end_date", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+              </div>
               <label className="flex flex-col gap-1 text-xs text-[#666]">
                 Convertible without medical exam until
                 <input

@@ -25,3 +25,20 @@ export function formatDateOnly(
 ): string {
   return parseDateOnly(dateStr).toLocaleDateString(undefined, options);
 }
+
+// Added 10/6 for the Add/Edit Product form's "Term length (years)" field — Karina: "if it's a
+// term life one and I put the issue date in, can we say just put in how many year term it is and
+// it calculates the date on its own so that the agent doesn't have to do the year math." Builds
+// the result the same local-Y/M/D-safe way parseDateOnly does (never `new Date(dateStr)` directly,
+// per the UTC-off-by-one warning at the top of this file), then formats back to a storable
+// "YYYY-MM-DD" using local getters — NOT toISOString(), which would reintroduce the same UTC shift
+// this file exists to avoid. A Feb 29 issue date N years later normally lands in a non-leap year;
+// JS's own Date rollover (Feb 29 -> Mar 1) handles that the same way a human would.
+export function addYearsToDateOnly(dateStr: string, years: number): string {
+  const base = parseDateOnly(dateStr);
+  const result = new Date(base.getFullYear() + years, base.getMonth(), base.getDate());
+  const yyyy = String(result.getFullYear()).padStart(4, "0");
+  const mm = String(result.getMonth() + 1).padStart(2, "0");
+  const dd = String(result.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}

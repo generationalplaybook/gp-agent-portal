@@ -806,6 +806,11 @@ export interface ProductFields {
   no_exam_declined_at?: string;
   // Plain end-of-term date, for a term policy that does NOT have a conversion option.
   term_end_date?: string;
+  // How many years the term is — added 10/6, see ClientProduct in lib/types.ts. The Add/Edit
+  // Product form uses this plus issue_date to auto-calculate term_end_date (addYearsToDateOnly in
+  // lib/dates.ts) so the advisor doesn't have to do that math by hand; stored mainly so it's still
+  // there to show/edit next time, not read by anything downstream.
+  term_length_years?: string;
   conversion_notes?: string;
   face_amount?: string;
   premium?: string;
@@ -870,6 +875,7 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
       final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
       no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
       term_end_date: fields.term_end_date?.trim() || null,
+      term_length_years: parseIntOrNull(fields.term_length_years ?? null),
       conversion_notes: fields.conversion_notes?.trim() || null,
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),
@@ -943,6 +949,7 @@ export async function updateProduct(productId: string, clientId: string, fields:
       final_conversion_deadline: fields.final_conversion_deadline?.trim() || null,
       no_exam_declined_at: fields.no_exam_declined_at?.trim() || null,
       term_end_date: fields.term_end_date?.trim() || null,
+      term_length_years: parseIntOrNull(fields.term_length_years ?? null),
       conversion_notes: fields.conversion_notes?.trim() || null,
       face_amount: parseNumberOrNull(fields.face_amount),
       premium: parseNumberOrNull(fields.premium),
