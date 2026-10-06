@@ -301,7 +301,23 @@ export async function updateStage(clientId: string, stage: ClientStage) {
       patch = { ...patch, ...(await createStageBatch(clientId, current?.full_name ?? "client", stage)) };
     }
     if (Object.keys(patch).length > 0) {
-      await supabase.from("clients").update(patch).eq("id", clientId);
+      // Found live 10/6 — Karina: a client moved Quoted -> Approved kept BOTH the old Quoted
+      // check-ins and the new Approved ones, instead of the Quoted ones being deleted. This write
+      // had the exact same unchecked-error gap the 9/18 fix above (stageError) was written to
+      // close for the `stage` column itself — it just never got applied here too. If this update
+      // fails (e.g. a stage's reminder-id/entered-at columns don't exist yet on the live database
+      // because its migration hasn't been run — quoted_reminder_ids/stage_entered_quoted_at are
+      // the newest pair, added 9/26, and easy to miss running), clearStageBatches' DELETEs against
+      // the reminders table still already happened (separate statements, unaffected), but the
+      // reminder ids this write was about to clear/set on `clients` never actually change — so
+      // clients.quoted_reminder_ids stays however it was before. If it was already empty at that
+      // point (same root cause, compounding on itself every transition), clearStageBatches can
+      // never find those reminders to delete next time either, and they pile up as exactly the
+      // kind of orphaned duplicates Karina saw. Throwing here surfaces the failure in the UI
+      // (StageSelect.tsx already awaits/reverts/shows errors) instead of leaving stage data quietly
+      // out of sync with what's actually in the reminders list.
+      const { error: patchError } = await supabase.from("clients").update(patch).eq("id", clientId);
+      if (patchError) throw new Error(patchError.message);
     }
   }
 
