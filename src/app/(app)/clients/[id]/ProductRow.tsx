@@ -224,8 +224,13 @@ export default function ProductRow({
             onChange={(e) => {
               const value = e.target.value;
               // An annuity can't also be "this is a term policy" in this system's model — see
-              // ProductFields.is_convertible.
-              setFields((f) => ({ ...f, product_type: value, is_convertible: value === "Annuity" ? false : f.is_convertible }));
+              // ProductFields.is_convertible. Picking "Term Life" here turns it on automatically
+              // too (Karina, 10/6) so the term fields show without a separate checkbox click.
+              setFields((f) => ({
+                ...f,
+                product_type: value,
+                is_convertible: value === "Annuity" ? false : value === "Term Life" ? true : f.is_convertible,
+              }));
             }}
             className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
           >
@@ -395,7 +400,10 @@ export default function ProductRow({
             />
           </label>
         </div>
-        {!isAnnuity && (
+        {/* Karina, 10/6: "term also should not have minimum no lapse option" — a term policy has
+            a fixed level premium, so there's no flexible-premium underfunding/lapse risk to
+            track here the way there is on a UL/IUL. */}
+        {!isAnnuity && !fields.is_convertible && (
           <label className="flex flex-col gap-1 text-xs text-[#666]">
             Minimum to avoid lapse (monthly)
             <DollarInput
@@ -775,7 +783,7 @@ export default function ProductRow({
         </div>
       )}
 
-      {!isAnnuity && product.minimum_premium != null && (
+      {!isAnnuity && !product.is_convertible && product.minimum_premium != null && (
         <p className="text-xs font-semibold text-[#8b6a00]">
           Minimum to avoid lapse: ${product.minimum_premium.toLocaleString()}/mo
         </p>
