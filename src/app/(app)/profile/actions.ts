@@ -101,6 +101,15 @@ export async function requestEmailChange(
 // and the form just silently discarded what she typed with no indication anything went wrong.
 // Now a real Supabase error comes back to the UI instead of vanishing.
 
+// A portal link typed without a scheme ("www.connext.corebridgefinancial.com") used to save as-is and
+// then never render as a clickable link (found live 10/13). Fill in https:// on save; the display
+// side (toHref in CarrierLoginsTab.tsx) does the same so already-saved links work too.
+function normalizeLink(raw: FormDataEntryValue | null): string | null {
+  const v = String(raw || "").trim();
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+}
+
 export async function addCarrierLogin(
   formData: FormData
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -116,7 +125,8 @@ export async function addCarrierLogin(
     life_agent_number: String(formData.get("life_agent_number") || "").trim() || null,
     annuity_agent_number: String(formData.get("annuity_agent_number") || "").trim() || null,
     agency_number: String(formData.get("agency_number") || "").trim() || null,
-    link: String(formData.get("link") || "").trim() || null,
+    link: normalizeLink(formData.get("link")),
+    annuity_link: normalizeLink(formData.get("annuity_link")),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
@@ -140,7 +150,8 @@ export async function updateCarrierLogin(
       life_agent_number: String(formData.get("life_agent_number") || "").trim() || null,
       annuity_agent_number: String(formData.get("annuity_agent_number") || "").trim() || null,
       agency_number: String(formData.get("agency_number") || "").trim() || null,
-      link: String(formData.get("link") || "").trim() || null,
+      link: normalizeLink(formData.get("link")),
+      annuity_link: normalizeLink(formData.get("annuity_link")),
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };

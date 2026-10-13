@@ -15,11 +15,35 @@ const inputClass =
 // Link, the last column (added 9/3). Also: grid cells had no `min-w-0`/`truncate`, so a long value
 // (e.g. a full email as Username) could overflow its cell and visually collide with the next
 // column instead of ellipsizing (added 9/3).
-const ROW_GRID_CLASS = "grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-7";
-const ACTIONS_SPACER_CLASS = "flex shrink-0 items-center justify-end gap-2 sm:min-w-11";
+// Widened/made fully fluid 10/13 (Karina: "make this page wider so more info can be shown across
+// and make it adjustable if someone increases or decreases their screen size"): the full 7-column
+// table now only kicks in at lg (1024px+) where there's room for it; below that each row wraps into
+// 2 columns (phones) or 4 columns (tablets/narrow windows) with a small label above each value —
+// the header row is hidden there, so the labels (LabeledCell, `lg:hidden`) carry the meaning
+// instead of unlabeled numbers.
+const ROW_GRID_CLASS = "grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-7 lg:gap-y-1";
+const ACTIONS_SPACER_CLASS = "flex shrink-0 items-center justify-end gap-2 lg:min-w-11";
 
-function isUrl(s: string | null): s is string {
-  return !!s && /^https?:\/\//i.test(s);
+// Found live 10/13 — Karina saved "www.connext.corebridgefinancial.com" as a portal link and the Link
+// column showed "—" instead of Open: the old isUrl() only accepted values already starting with
+// http(s)://, so anything typed the way people normally type a web address was silently treated as
+// "no link." Now a missing scheme is filled in with https:// at display time (so links already
+// saved this way start working without being re-entered) and at save time (see normalizeLink in
+// actions.ts).
+function toHref(s: string | null): string | null {
+  const v = (s ?? "").trim();
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+}
+
+// Label shown above a value below the lg breakpoint, where the column header row is hidden.
+function LabeledCell({ label, className = "", children }: { label: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#707070] lg:hidden">{label}</div>
+      {children}
+    </div>
+  );
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -85,6 +109,7 @@ type Draft = {
   annuity_agent_number: string;
   agency_number: string;
   link: string;
+  annuity_link: string;
 };
 
 function draftFrom(login: CarrierLogin): Draft {
@@ -96,6 +121,7 @@ function draftFrom(login: CarrierLogin): Draft {
     annuity_agent_number: login.annuity_agent_number ?? "",
     agency_number: login.agency_number ?? "",
     link: login.link ?? "",
+    annuity_link: login.annuity_link ?? "",
   };
 }
 
@@ -142,7 +168,13 @@ function EditFields({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
       <input
         value={draft.link}
         onChange={(e) => setDraft({ ...draft, link: e.target.value })}
-        placeholder="Portal login link"
+        placeholder="Life portal login link"
+        className={`${inputClass} col-span-2`}
+      />
+      <input
+        value={draft.annuity_link}
+        onChange={(e) => setDraft({ ...draft, annuity_link: e.target.value })}
+        placeholder="Annuity portal login link (if different)"
         className={`${inputClass} col-span-2`}
       />
     </div>
@@ -172,6 +204,9 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
     }
     setEditing(false);
   }
+
+  const lifeHref = toHref(login.link);
+  const annuityHref = toHref(login.annuity_link);
 
   async function handleDelete() {
     setBusy(true);
@@ -216,53 +251,64 @@ function CarrierLoginRow({ login }: { login: CarrierLogin }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8DF] py-2.5 text-xs last:border-0">
       <div className={ROW_GRID_CLASS}>
-        <div className="col-span-2 min-w-0 truncate font-semibold text-[#1C1C1C] sm:col-span-1" title={login.company}>
+        <div className="col-span-2 min-w-0 truncate font-semibold text-[#1C1C1C] sm:col-span-4 lg:col-span-1" title={login.company}>
           {login.company}
         </div>
-        <div className="min-w-0 text-[#666]">
+        <LabeledCell label="Username" className="text-[#666]">
           <CopyableCell value={login.username} />
-        </div>
-        <div className="group/cell flex min-w-0 items-center gap-1.5 text-[#666]">
-          {login.password ? (
-            <>
-              <span className="truncate tracking-wider" title={revealed ? login.password : undefined}>
-                {revealed ? login.password : "••••••••"}
-              </span>
-              <button
-                type="button"
-                onClick={() => setRevealed((v) => !v)}
-                className="shrink-0 text-[#707070] hover:text-[#1C1C1C]"
-                title={revealed ? "Hide password" : "Show password"}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </button>
-              <CopyButton value={login.password} />
-            </>
-          ) : (
-            <span className="text-[#C9C0AE]">—</span>
-          )}
-        </div>
-        <div className="min-w-0 text-[#666]">
+        </LabeledCell>
+        <LabeledCell label="Password" className="text-[#666]">
+          <div className="group/cell flex min-w-0 items-center gap-1.5">
+            {login.password ? (
+              <>
+                <span className="truncate tracking-wider" title={revealed ? login.password : undefined}>
+                  {revealed ? login.password : "••••••••"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRevealed((v) => !v)}
+                  className="shrink-0 text-[#707070] hover:text-[#1C1C1C]"
+                  title={revealed ? "Hide password" : "Show password"}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+                <CopyButton value={login.password} />
+              </>
+            ) : (
+              <span className="text-[#C9C0AE]">—</span>
+            )}
+          </div>
+        </LabeledCell>
+        <LabeledCell label="Life Agent #" className="text-[#666]">
           <CopyableCell value={login.life_agent_number} />
-        </div>
-        <div className="min-w-0 text-[#666]">
+        </LabeledCell>
+        <LabeledCell label="Annuity #" className="text-[#666]">
           <CopyableCell value={login.annuity_agent_number} />
-        </div>
-        <div className="min-w-0 text-[#666]">
+        </LabeledCell>
+        <LabeledCell label="Agency #" className="text-[#666]">
           <CopyableCell value={login.agency_number} />
-        </div>
-        <div className="min-w-0 truncate">
-          {isUrl(login.link) ? (
-            <a href={login.link} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
-              Open ↗
-            </a>
+        </LabeledCell>
+        <LabeledCell label="Link">
+          {lifeHref || annuityHref ? (
+            <div className="flex min-w-0 flex-col gap-0.5">
+              {lifeHref && (
+                <a href={lifeHref} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
+                  {annuityHref ? "Life ↗" : "Open ↗"}
+                </a>
+              )}
+              {annuityHref && (
+                <a href={annuityHref} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-[#1C1C1C] underline underline-offset-2 hover:text-[#2E2E2E]">
+                  {lifeHref ? "Annuity ↗" : "Open ↗"}
+                </a>
+              )}
+            </div>
           ) : (
             <span className="text-[#C9C0AE]">—</span>
           )}
-        </div>
+        </LabeledCell>
       </div>
       <div className={ACTIONS_SPACER_CLASS}>
         {!confirmingDelete ? (
@@ -305,6 +351,7 @@ const EMPTY_DRAFT: Draft = {
   annuity_agent_number: "",
   agency_number: "",
   link: "",
+  annuity_link: "",
 };
 
 export default function CarrierLoginsTab({ logins }: { logins: CarrierLogin[] }) {
@@ -364,7 +411,7 @@ export default function CarrierLoginsTab({ logins }: { logins: CarrierLogin[] })
 
       {logins.length > 0 && (
         <div>
-          <div className="hidden items-center gap-3 border-b border-[#D9CFBA] pb-1.5 sm:flex">
+          <div className="hidden items-center gap-3 border-b border-[#D9CFBA] pb-1.5 lg:flex">
             <div className={`${ROW_GRID_CLASS} text-[10px] font-semibold uppercase tracking-wide text-[#707070]`}>
               <div>Company</div>
               <div>Username</div>

@@ -52,9 +52,15 @@ export default async function ProfilePage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto w-full max-w-[1800px]">
+      {/* Widened 10/13 (Karina: "make this page wider so more info can be shown across and make it
+        adjustable if someone increases or decreases their screen size") — was a fixed max-w-4xl
+        (896px) column. Now fluid up to 1800px: the shorter setup cards sit two-across from lg
+        (1024px) up and stack on narrower screens, and the Carrier & Licensing table below spans the
+        full width and re-flows itself (see CarrierLoginsTab's lg breakpoint). */}
       <h1 className="mb-5 font-serif text-2xl text-[#1C1C1C]">My Profile</h1>
 
+      <div className="grid items-start gap-x-5 lg:grid-cols-2">
       <div className="mb-5 rounded-lg border border-[#D9CFBA] bg-white p-6" data-tour="profile-fields">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Your Info</h2>
         {profileError ? (
@@ -82,8 +88,9 @@ export default async function ProfilePage() {
         <PreIntakeLinkCard siteUrl={siteUrl} advisorId={user.id} slug={profile?.intake_slug ?? null} />
       </div>
 
-      <div className="mb-5" data-tour="full-link">
+      <div className="mb-5 lg:col-span-2" data-tour="full-link">
         <IntakeLinkCard siteUrl={siteUrl} advisorId={user.id} initialSlug={profile?.intake_slug ?? null} />
+      </div>
       </div>
 
       <div data-tour="carrier-licensing">

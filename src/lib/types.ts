@@ -159,7 +159,8 @@ export interface CarrierLogin {
   life_agent_number: string | null;
   annuity_agent_number: string | null;
   agency_number: string | null;
-  link: string | null;
+  link: string | null; // life (or only) portal login URL
+  annuity_link: string | null; // separate annuity portal login URL, when a carrier splits them (added 10/13)
   created_at: string;
   updated_at: string;
 }

@@ -54,12 +54,14 @@ const EMPTY_FIELDS: ProductFields = {
 export default function ProductsSection({
   clientId,
   clientName,
+  clientBirthDate,
   products,
   ownerOptions,
   isMinor,
 }: {
   clientId: string;
   clientName: string;
+  clientBirthDate: string | null;
   products: ClientProduct[];
   ownerOptions: OwnerOption[];
   isMinor: boolean;
@@ -68,6 +70,13 @@ export default function ProductsSection({
   const [showConverted, setShowConverted] = useState(false);
   const [fields, setFields] = useState<ProductFields>(EMPTY_FIELDS);
   const [saving, setSaving] = useState(false);
+  // Karina, 10/6: "we need to make the math easier here where agents can put in the age or how
+  // many years and the system calculate the dates for the conversions" — these two are pure UI
+  // helpers for the conversion-deadline date fields below, never saved themselves (the computed
+  // date is what's authoritative and what's stored, same as Term length (years) feeding
+  // term_end_date). Reset alongside `fields` whenever the Add form is cleared.
+  const [noExamWindowYears, setNoExamWindowYears] = useState("");
+  const [finalDeadlineAge, setFinalDeadlineAge] = useState("");
   const [error, setError] = useState("");
 
   const pendingProducts = products.filter((p) => p.conversion_pending_at && !p.converted_at);
@@ -96,6 +105,7 @@ export default function ProductsSection({
       ...f,
       issue_date: value,
       term_end_date: computeTermEnd(value, f.term_length_years ?? "") ?? f.term_end_date,
+      conversion_deadline: addYearsIfValid(value, noExamWindowYears) ?? f.conversion_deadline,
     }));
   }
 
@@ -104,6 +114,35 @@ export default function ProductsSection({
       ...f,
       term_length_years: value,
       term_end_date: computeTermEnd(f.issue_date ?? "", value) ?? f.term_end_date,
+    }));
+  }
+
+  // Karina, 10/6: the no-exam conversion window is normally quoted by the carrier as "N years
+  // from issue" (e.g. convertible without exam for the first 5 years), and the final, exam-
+  // required conversion deadline is normally quoted as an age (e.g. "up to age 75") — the Final
+  // conversion deadline field's own placeholder text already says so. Same date-math shortcut as
+  // Term length (years) above: typing a number here fills in the date field, which stays a normal,
+  // editable date afterward. Age-based math needs this client's own birth date on file
+  // (Contact Info); with none on file the age input still shows but can't compute anything.
+  function addYearsIfValid(baseDate: string | null | undefined, years: string): string | undefined {
+    const n = parseInt(years, 10);
+    if (!baseDate || !Number.isFinite(n) || n <= 0) return undefined;
+    return addYearsToDateOnly(baseDate, n);
+  }
+
+  function setNoExamWindowYearsValue(value: string) {
+    setNoExamWindowYears(value);
+    setFields((f) => ({
+      ...f,
+      conversion_deadline: addYearsIfValid(f.issue_date, value) ?? f.conversion_deadline,
+    }));
+  }
+
+  function setFinalDeadlineAgeValue(value: string) {
+    setFinalDeadlineAge(value);
+    setFields((f) => ({
+      ...f,
+      final_conversion_deadline: addYearsIfValid(clientBirthDate, value) ?? f.final_conversion_deadline,
     }));
   }
 
@@ -150,6 +189,8 @@ export default function ProductsSection({
     try {
       await addProduct(clientId, fields);
       setFields(EMPTY_FIELDS);
+      setNoExamWindowYears("");
+      setFinalDeadlineAge("");
       setShowAdd(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add product.");
@@ -185,7 +226,7 @@ export default function ProductsSection({
           </p>
           <div className="flex flex-col gap-3">
             {pendingProducts.map((p) => (
-              <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
+              <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} clientBirthDate={clientBirthDate} ownerOptions={ownerOptions} />
             ))}
           </div>
         </div>
@@ -194,7 +235,7 @@ export default function ProductsSection({
       {activeProducts.length > 0 && (
         <div className="flex flex-col gap-3">
           {activeProducts.map((p) => (
-            <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
+            <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} clientBirthDate={clientBirthDate} ownerOptions={ownerOptions} />
           ))}
         </div>
       )}
@@ -357,18 +398,45 @@ export default function ProductsSection({
                   />
                 </label>
               </div>
-              <label className="flex flex-col gap-1 text-xs text-[#666]">
-                Convertible without medical exam until
-                <input
-                  type="date"
-                  value={fields.conversion_deadline}
-                  onChange={(e) => set("conversion_deadline", e.target.value)}
-                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                />
-              </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  Final conversion deadline (exam required, e.g. up to age 75)
+                  Years from issue (no-exam window)
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={noExamWindowYears}
+                    onChange={(e) => setNoExamWindowYearsValue(e.target.value)}
+                    placeholder="e.g. 5"
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Convertible without medical exam until{fields.issue_date && noExamWindowYears ? " (calculated)" : ""}
+                  <input
+                    type="date"
+                    value={fields.conversion_deadline}
+                    onChange={(e) => set("conversion_deadline", e.target.value)}
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Up to age{!clientBirthDate ? " (add client's birth date in Contact Info to use this)" : ""}
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    disabled={!clientBirthDate}
+                    value={finalDeadlineAge}
+                    onChange={(e) => setFinalDeadlineAgeValue(e.target.value)}
+                    placeholder="e.g. 75"
+                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C] disabled:bg-[#F5F0E8] disabled:text-[#999]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[#666]">
+                  Final conversion deadline (exam required){fields.final_conversion_deadline && finalDeadlineAge && clientBirthDate ? " (calculated)" : ""}
                   <input
                     type="date"
                     value={fields.final_conversion_deadline}
@@ -376,16 +444,16 @@ export default function ProductsSection({
                     className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-[#666]">
-                  No-exam window declined by client
-                  <input
-                    type="date"
-                    value={fields.no_exam_declined_at}
-                    onChange={(e) => set("no_exam_declined_at", e.target.value)}
-                    className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
-                  />
-                </label>
               </div>
+              <label className="flex flex-col gap-1 text-xs text-[#666]">
+                No-exam window declined by client
+                <input
+                  type="date"
+                  value={fields.no_exam_declined_at}
+                  onChange={(e) => set("no_exam_declined_at", e.target.value)}
+                  className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                />
+              </label>
               <input
                 value={fields.conversion_notes}
                 onChange={(e) => set("conversion_notes", e.target.value)}
@@ -515,6 +583,8 @@ export default function ProductsSection({
               type="button"
               onClick={() => {
                 setFields(EMPTY_FIELDS);
+                setNoExamWindowYears("");
+                setFinalDeadlineAge("");
                 setShowAdd(false);
                 setError("");
               }}
@@ -538,7 +608,7 @@ export default function ProductsSection({
           {showConverted && (
             <div className="flex flex-col gap-3">
               {convertedProducts.map((p) => (
-                <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} ownerOptions={ownerOptions} />
+                <ProductRow key={p.id} product={p} clientId={clientId} clientName={clientName} clientBirthDate={clientBirthDate} ownerOptions={ownerOptions} />
               ))}
             </div>
           )}

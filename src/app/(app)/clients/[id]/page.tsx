@@ -268,6 +268,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <ProductsSection
             clientId={client.id}
             clientName={client.full_name}
+            clientBirthDate={client.birth_date}
             products={products ?? []}
             ownerOptions={familyMembers.map((m) => ({ id: m.id, full_name: m.full_name }))}
             isMinor={clientIsMinor}
