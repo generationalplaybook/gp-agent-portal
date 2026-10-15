@@ -1,4 +1,4 @@
-export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "approved" | "not_taken" | "declined";
+export type ClientStage = "lead" | "quoted" | "applied" | "issued" | "pending" | "approved" | "withdrawn" | "declined";
 
 // 9/11 — Karina, after landing on the Client Report PDF's pie chart colors (mustard, brick red,
 // a deep blue, sage green — see fa-pdf.ts's palette comments for the full round-by-round history):
@@ -68,16 +68,16 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
   { value: "approved", label: "Approved", color: "#5D8269" },
   { value: "issued", label: "Issued", color: "#478c5c" },
   // 10/13 — Karina: "in the pipeline we need to add closed, meaning they were approved but didn't
-  // execute, or maybe another word." Labeled "Not Taken" — the standard industry term (a policy the
-  // carrier approved and offered that the client never accepted/paid for, often written "NTO," not
-  // taken out) — instead of "Closed," which in sales normally means a WON deal and would read as the
-  // opposite of what this stage is. Stored as `not_taken` so the label can be renamed later without
-  // touching the database. Sits after Issued, before Declined, so the main Lead -> Issued flow
-  // stays contiguous. Moving a client in from Approved clears their Approved check-in reminders the
-  // same way any other stage change does (see updateStage in clients/actions.ts); no reminders of
-  // its own. Color: a muted mauve, deliberately not another gray/green/red, so it reads as "ended
-  // without a policy" at a glance next to Declined's red.
-  { value: "not_taken", label: "Not Taken", color: "#8e6c8a" },
+  // execute, or maybe another word," then "I don't like the word Not Taken, we need one word" —
+  // she narrowed it to "Dropped or Withdrawn"; Withdrawn is the one in use (a standard insurance
+  // term for an application that ends without a policy because the client backed out, and it
+  // doesn't read as a won deal the way "Closed" would). Rename the label here any time — the stored
+  // value is `withdrawn`. Sits after Issued, before Declined, so the main Lead -> Issued flow stays
+  // contiguous. Moving a client in from Approved clears their Approved check-in reminders the same
+  // way any other stage change does (see updateStage in clients/actions.ts); no reminders of its
+  // own. Color: charcoal (#3d3d3d), picked by Karina from five options (an earlier mauve was
+  // rejected) — dark and neutral so it reads as "ended" next to Declined's red.
+  { value: "withdrawn", label: "Withdrawn", color: "#3d3d3d" },
   { value: "declined", label: "Declined", color: "#b12a29" },
 ];
 
