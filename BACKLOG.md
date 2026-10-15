@@ -185,6 +185,18 @@ Things Karina has asked to defer to a future build, so they don't get lost.
   page to their own sub-pages (Illustrations, Analyses, Meetings), or something else entirely.
   Ask Karina what she has in mind when this gets picked up.
 
+- **Knowledge Base "Ask for a suggestion" assistant — ON HOLD 10/15 (Karina: "lets hold off on that
+  for now").** A chat box at the top of the KB where an advisor describes a client (e.g. "63-year-old,
+  family lives into their 90s, wants longer-term protection") and gets 2-4 product suggestions drawn
+  from the KB, with buttons that filter the list to each named product. Fully built and build-verified
+  (streaming API route + chat panel), then pulled back out before deploying. The code is saved in
+  `Documents/gp-assistant-on-hold/` (route.ts -> `src/app/api/kb-assistant/route.ts`,
+  kb-assistant-context.ts -> `src/lib/`, AskAssistant.tsx -> `src/app/(app)/knowledge-base/`; it also
+  needs `<AskAssistant onPickProduct={...} />` added back at the top of KnowledgeBaseClient.tsx).
+  Needs before launch: an Anthropic API key (console.anthropic.com, billed separately, set a spend
+  limit) saved as `ANTHROPIC_API_KEY` in Vercel. Design choices already made: types-only input (no
+  client record data sent), KB is the source of truth, anything beyond it labeled "verify."
+
 ## Requested, not yet built — Compare with client-specific PDF
 
 - **Client-specific product comparison, downloadable as a PDF — discussed 9/1, NOT built yet.**

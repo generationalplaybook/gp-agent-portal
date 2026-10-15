@@ -1595,3 +1595,12 @@ alter table public.client_products add column if not exists term_length_years in
 -- separate annuity one. Run once in Supabase's SQL Editor.
 alter table public.carrier_logins add column if not exists annuity_link text;
 -- ─────────────────────────────────────────────────────────────
+
+-- ─────────────────────────────────────────────────────────────
+-- 59. Not Taken pipeline stage (added 10/13) — Karina: "in the pipeline we need to add closed,
+-- meaning they were approved but didn't execute, or maybe another word." A client the carrier
+-- approved who never accepted/paid for the policy (industry shorthand: "not taken" / NTO). Placed
+-- between Issued and Declined in CLIENT_STAGES (src/lib/types.ts). Moving a client here from
+-- Approved clears their Approved check-in reminders via the existing updateStage logic.
+-- ─────────────────────────────────────────────────────────────
+alter type client_stage add value if not exists 'not_taken';

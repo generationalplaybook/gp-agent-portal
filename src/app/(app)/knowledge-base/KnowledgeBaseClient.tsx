@@ -38,11 +38,19 @@ function KBCard({ item }: { item: KBItem }) {
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Badge item={item} />
-          <div>
+          <div className="min-w-0">
             <div className="text-sm font-semibold text-[#1C1C1C]">{item.name}</div>
             <div className="text-xs text-[#666]">{item.type}</div>
+            {/* Added 10/15 — Karina: "nationwide has a lot of products, how can I quickly see what
+                each one is." Collapsed cards only showed a name + type label, so the only way to
+                learn what a product was meant opening every card one by one. The "what it is"
+                summary now shows as a two-line preview right on the collapsed card (hidden once
+                it's open, since the full text is right below). */}
+            {!open && item.what && (
+              <div className="mt-1 line-clamp-2 text-xs leading-snug text-[#555]">{item.what}</div>
+            )}
           </div>
         </div>
         <svg
@@ -111,6 +119,23 @@ export default function KnowledgeBaseClient() {
   const [tab, setTab] = useState("all");
   const [subtab, setSubtab] = useState("all-life");
   const [query, setQuery] = useState("");
+  // Carrier quick-filter (added 10/15, same request) — e.g. tap "Nationwide" to see only its
+  // products instead of scrolling past every other carrier's. "all" = no carrier filter.
+  const [carrier, setCarrier] = useState("all");
+
+  // Carriers available under the current tab/sub-tab, in the order they first appear. Concepts and
+  // tax topics have no carrier (their label is just "Concept"/"Tax"), so they're left out.
+  const carriers = useMemo(() => {
+    const seen: string[] = [];
+    for (const item of KB) {
+      if (item.group !== "life" && item.group !== "annuity") continue;
+      if (tab !== "all" && item.group !== tab) continue;
+      if (tab === "life" && subtab !== "all-life" && item.subgroup !== subtab) continue;
+      if (!seen.includes(item.label)) seen.push(item.label);
+    }
+    return seen.sort((a, b) => a.localeCompare(b));
+  }, [tab, subtab]);
+  const activeCarrier = carriers.includes(carrier) ? carrier : "all";
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -119,6 +144,7 @@ export default function KnowledgeBaseClient() {
     return KB.filter((item) => {
       if (tab !== "all" && item.group !== tab) return false;
       if (tab === "life" && subtab !== "all-life" && item.subgroup !== subtab) return false;
+      if (activeCarrier !== "all" && item.label !== activeCarrier) return false;
       if (!words.length) return true;
       const searchable = [
         item.name,
@@ -134,7 +160,7 @@ export default function KnowledgeBaseClient() {
         .toLowerCase();
       return words.every((w) => searchable.includes(w));
     }).sort((a, b) => Number(a.group === "tax") - Number(b.group === "tax"));
-  }, [tab, subtab, query]);
+  }, [tab, subtab, query, activeCarrier]);
 
   return (
     <div>
@@ -178,6 +204,26 @@ export default function KnowledgeBaseClient() {
               }`}
             >
               {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {carriers.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#707070]">Carrier</span>
+          {["all", ...carriers].map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCarrier(c)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                activeCarrier === c
+                  ? "border-[#1C1C1C] bg-[#1C1C1C] text-[#FAF8F4]"
+                  : "border-[#D9CFBA] bg-white text-[#2E2E2E] hover:bg-[#F5F0E8]"
+              }`}
+            >
+              {c === "all" ? "All carriers" : c}
             </button>
           ))}
         </div>
