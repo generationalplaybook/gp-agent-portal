@@ -41,7 +41,11 @@ export default function StageSelect({
     setError("");
     startTransition(async () => {
       try {
-        await updateStage(clientId, next);
+        const result = await updateStage(clientId, next);
+        if (!result.ok) {
+          setCurrentStage(previous);
+          setError(result.error);
+        }
       } catch (e) {
         setCurrentStage(previous);
         setError(e instanceof Error ? e.message : "Could not update stage.");

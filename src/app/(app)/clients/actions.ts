@@ -250,7 +250,26 @@ export async function extendPendingCheckin(clientId: string): Promise<void> {
   revalidatePath("/");
 }
 
-export async function updateStage(clientId: string, stage: ClientStage) {
+// Turns the one stage-change failure that has actually happened in practice — a new pipeline stage
+// whose database change hasn't been run yet — into a plain instruction instead of raw Postgres text.
+function friendlyStageError(message: string, stage: ClientStage): string {
+  if (/invalid input value for enum/i.test(message)) {
+    return `The database doesn't know the "${stage}" stage yet. Run the matching SQL step in Supabase (see the newest file in the supabase folder), then try again.`;
+  }
+  return message;
+}
+
+// Returns { ok, error } instead of throwing (added 10/13). Found live 10/13 — Karina, moving a
+// client to the new Withdrawn stage before its database change had been run: the screen showed
+// "Minified React error #441" instead of the real problem. In a production build Next/React
+// deliberately replace the message of anything a Server Action THROWS with a generic placeholder
+// (to avoid leaking server details), so every "surface the real error in the UI" fix made here
+// before (9/18, 10/6) only worked when the message happened to survive. A returned value is sent
+// to the browser as ordinary data, so the real database message always arrives intact.
+export async function updateStage(
+  clientId: string,
+  stage: ClientStage
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { supabase } = await requireUser();
 
   const { data: current } = await supabase
@@ -290,7 +309,7 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   // is loud (surfaces in the UI, see StageSelect.tsx) instead of quietly leaving orphaned
   // reminders behind with nothing to show for them.
   const { error: stageError } = await supabase.from("clients").update({ stage }).eq("id", clientId);
-  if (stageError) throw new Error(stageError.message);
+  if (stageError) return { ok: false, error: friendlyStageError(stageError.message, stage) };
 
   if (!alreadyInStageWithBatch) {
     let patch: Record<string, unknown> = {};
@@ -317,7 +336,7 @@ export async function updateStage(clientId: string, stage: ClientStage) {
       // (StageSelect.tsx already awaits/reverts/shows errors) instead of leaving stage data quietly
       // out of sync with what's actually in the reminders list.
       const { error: patchError } = await supabase.from("clients").update(patch).eq("id", clientId);
-      if (patchError) throw new Error(patchError.message);
+      if (patchError) return { ok: false, error: patchError.message };
     }
   }
 
@@ -334,6 +353,7 @@ export async function updateStage(clientId: string, stage: ClientStage) {
   // file (markPendingApproval, markOutreachOutcome) already revalidates "/" — this one just never
   // did.
   revalidatePath("/");
+  return { ok: true };
 }
 
 // Moves a client to Issued once the advisor has said which tracked quote actually won —
