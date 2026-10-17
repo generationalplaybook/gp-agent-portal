@@ -33,6 +33,7 @@ export async function createClientRecord(formData: FormData) {
   const first_name = String(formData.get("first_name") || "").trim();
   const middle_name = String(formData.get("middle_name") || "").trim() || null;
   const last_name = String(formData.get("last_name") || "").trim();
+  const suffix = String(formData.get("suffix") || "").trim() || null;
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
@@ -54,7 +55,7 @@ export async function createClientRecord(formData: FormData) {
     redirect("/clients/new?error=" + encodeURIComponent("First and last name are required."));
   if (!gender) redirect("/clients/new?error=" + encodeURIComponent("Gender is required."));
 
-  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  // full_name is computed by a DB trigger from first/middle/last/suffix — don't set it here.
   const { data, error } = await supabase
     .from("clients")
     .insert({
@@ -62,6 +63,7 @@ export async function createClientRecord(formData: FormData) {
       first_name,
       middle_name,
       last_name,
+      suffix,
       phone,
       email,
       birth_date,
@@ -413,6 +415,7 @@ export async function updateContactInfo(formData: FormData) {
   const first_name = String(formData.get("first_name") || "").trim();
   const middle_name = String(formData.get("middle_name") || "").trim() || null;
   const last_name = String(formData.get("last_name") || "").trim();
+  const suffix = String(formData.get("suffix") || "").trim() || null;
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const birth_date = String(formData.get("birth_date") || "").trim() || null;
@@ -424,7 +427,7 @@ export async function updateContactInfo(formData: FormData) {
   const state = String(formData.get("state") || "").trim() || null;
   const timezone = String(formData.get("timezone") || "").trim() || null;
 
-  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  // full_name is computed by a DB trigger from first/middle/last/suffix — don't set it here.
   // Note: `source` (lead source) is intentionally NOT handled here — it's edited separately via
   // updateLeadSource below, from its own field in the sidebar, so this save-on-blur form can't
   // clobber it with a stale value.
@@ -434,6 +437,7 @@ export async function updateContactInfo(formData: FormData) {
       first_name,
       middle_name,
       last_name,
+      suffix,
       phone,
       email,
       birth_date,
@@ -736,6 +740,7 @@ export async function addNewFamilyMember(
     first_name: string;
     middle_name?: string;
     last_name: string;
+    suffix?: string;
     relationship: string;
     reverseRelationship?: string;
     birth_date?: string;
@@ -758,12 +763,13 @@ export async function addNewFamilyMember(
 
   const familyId = await ensureFamilyId(supabase, clientId, current.family_id);
 
-  // full_name is computed by a DB trigger from first/middle/last — don't set it here.
+  // full_name is computed by a DB trigger from first/middle/last/suffix — don't set it here.
   const { error } = await supabase.from("clients").insert({
     owner_id: user.id,
     first_name,
     middle_name: fields.middle_name?.trim() || null,
     last_name,
+    suffix: fields.suffix?.trim() || null,
     phone: fields.phone?.trim() || null,
     email: fields.email?.trim() || null,
     birth_date: fields.birth_date?.trim() || null,

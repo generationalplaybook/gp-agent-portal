@@ -1604,3 +1604,31 @@ alter table public.carrier_logins add column if not exists annuity_link text;
 -- Approved check-in reminders via the existing updateStage logic.
 -- ─────────────────────────────────────────────────────────────
 alter type client_stage add value if not exists 'withdrawn';
+
+
+-- ─────────────────────────────────────────────────────────────
+-- 60. Name suffix on clients (added 10/17) — Karina: "i need a section for jr sr on name etc."
+-- clients.suffix holds Jr./Sr./II/III/IV/V; the full_name trigger now appends it. Standalone copy:
+-- supabase/migration_add_client_suffix.sql. Run once in Supabase's SQL Editor before deploying.
+-- ─────────────────────────────────────────────────────────────
+alter table public.clients add column if not exists suffix text;
+
+create or replace function public.sync_client_full_name()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.full_name := trim(both ' ' from
+    coalesce(new.first_name, '') ||
+    case when coalesce(trim(new.middle_name), '') <> '' then ' ' || trim(new.middle_name) else '' end ||
+    case when coalesce(trim(new.last_name), '') <> '' then ' ' || trim(new.last_name) else '' end ||
+    case when coalesce(trim(new.suffix), '') <> '' then ' ' || trim(new.suffix) else '' end
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_client_full_name on public.clients;
+create trigger sync_client_full_name
+  before insert or update of first_name, middle_name, last_name, suffix on public.clients
+  for each row execute function public.sync_client_full_name();

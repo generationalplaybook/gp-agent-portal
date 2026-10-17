@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CLIENT_STAGES, GENDER_OPTIONS, type ClientStage } from "@/lib/types";
+import { CLIENT_STAGES, GENDER_OPTIONS, NAME_SUFFIX_OPTIONS, type ClientStage } from "@/lib/types";
 import { calculateAge, daysUntilNextBirthday, inverseRelationship, FAMILY_RELATIONSHIP_OPTIONS } from "@/lib/family";
 import {
   searchFamilyCandidates,
@@ -50,6 +50,7 @@ export default function FamilySection({
   const [newFirstName, setNewFirstName] = useState("");
   const [newMiddleName, setNewMiddleName] = useState("");
   const [newLastName, setNewLastName] = useState("");
+  const [newSuffix, setNewSuffix] = useState("");
   const [newRelationship, setNewRelationship] = useState("");
   const [newReverseRelationship, setNewReverseRelationship] = useState("");
   const [newBirthDate, setNewBirthDate] = useState("");
@@ -84,6 +85,7 @@ export default function FamilySection({
     setNewFirstName("");
     setNewMiddleName("");
     setNewLastName("");
+    setNewSuffix("");
     setNewRelationship("");
     setNewReverseRelationship("");
     setNewBirthDate("");
@@ -122,6 +124,7 @@ export default function FamilySection({
         first_name: newFirstName,
         middle_name: newMiddleName,
         last_name: newLastName,
+        suffix: newSuffix,
         relationship: newRelationship,
         reverseRelationship: newReverseRelationship,
         birth_date: newBirthDate,
@@ -333,7 +336,7 @@ export default function FamilySection({
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_6rem] gap-2">
                 <input
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
@@ -352,6 +355,17 @@ export default function FamilySection({
                   placeholder="Last name *"
                   className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
                 />
+                <select
+                  value={newSuffix}
+                  onChange={(e) => setNewSuffix(e.target.value)}
+                  aria-label="Suffix"
+                  className="rounded-md border border-[#D9CFBA] bg-white px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+                >
+                  <option value="">Suffix</option>
+                  {NAME_SUFFIX_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
               </div>
               <input
                 value={newRelationship}

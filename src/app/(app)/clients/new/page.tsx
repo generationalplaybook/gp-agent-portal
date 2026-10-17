@@ -1,5 +1,5 @@
 import { createClientRecord } from "../actions";
-import { CLIENT_STAGES, GENDER_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
+import { CLIENT_STAGES, GENDER_OPTIONS, NAME_SUFFIX_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
 import PhoneInput from "../PhoneInput";
 
 export default async function NewClientPage({
@@ -18,7 +18,7 @@ export default async function NewClientPage({
       )}
 
       <form action={createClientRecord} className="flex flex-col gap-4 rounded-lg border border-[#D9CFBA] bg-white p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_7rem] gap-2">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             First name *
             <input
@@ -44,6 +44,19 @@ export default async function NewClientPage({
               required
               className="rounded-md border border-[#D9CFBA] px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
+            Suffix
+            <select
+              name="suffix"
+              defaultValue=""
+              className="rounded-md border border-[#D9CFBA] bg-white px-3 py-2 text-sm outline-none focus:border-[#1C1C1C]"
+            >
+              <option value="">None</option>
+              {NAME_SUFFIX_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
           </label>
         </div>
         <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">

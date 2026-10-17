@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import PhoneInput from "../PhoneInput";
 import { updateContactInfo } from "../actions";
-import { GENDER_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
+import { GENDER_OPTIONS, NAME_SUFFIX_OPTIONS, US_TIMEZONE_OPTIONS } from "@/lib/types";
 import { calculateAge } from "@/lib/family";
 
 interface Client {
@@ -12,6 +12,7 @@ interface Client {
   first_name: string | null;
   middle_name: string | null;
   last_name: string | null;
+  suffix: string | null;
   phone: string | null;
   email: string | null;
   birth_date: string | null;
@@ -31,6 +32,7 @@ export default function ContactInfoForm({ client }: { client: Client }) {
   const [firstName, setFirstName] = useState(client.first_name ?? "");
   const [middleName, setMiddleName] = useState(client.middle_name ?? "");
   const [lastName, setLastName] = useState(client.last_name ?? "");
+  const [suffix, setSuffix] = useState(client.suffix ?? "");
   const [phone, setPhone] = useState(client.phone ?? "");
   const [email, setEmail] = useState(client.email ?? "");
   const [birthDate, setBirthDate] = useState(client.birth_date ?? "");
@@ -44,13 +46,14 @@ export default function ContactInfoForm({ client }: { client: Client }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function save(overrides?: Partial<{ phone: string; gender: string; timezone: string }>) {
+  async function save(overrides?: Partial<{ phone: string; gender: string; timezone: string; suffix: string }>) {
     setStatus("saving");
     const formData = new FormData();
     formData.set("client_id", client.id);
     formData.set("first_name", firstName);
     formData.set("middle_name", middleName);
     formData.set("last_name", lastName);
+    formData.set("suffix", overrides?.suffix ?? suffix);
     formData.set("phone", overrides?.phone ?? phone);
     formData.set("email", email);
     formData.set("birth_date", birthDate);
@@ -95,6 +98,23 @@ export default function ContactInfoForm({ client }: { client: Client }) {
           onBlur={() => save()}
           className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
         />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-[#666]">
+        Suffix (Jr., Sr., III…)
+        <select
+          value={suffix}
+          onChange={(e) => {
+            setSuffix(e.target.value);
+            save({ suffix: e.target.value });
+          }}
+          className="rounded-md border border-[#D9CFBA] px-3 py-1.5 text-sm outline-none focus:border-[#1C1C1C]"
+        >
+          <option value="">None</option>
+          {NAME_SUFFIX_OPTIONS.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
+          {suffix && !NAME_SUFFIX_OPTIONS.includes(suffix) && <option value={suffix}>{suffix}</option>}
+        </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-[#666]">
         Phone

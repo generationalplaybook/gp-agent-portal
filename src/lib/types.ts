@@ -83,6 +83,10 @@ export const CLIENT_STAGES: { value: ClientStage; label: string; color: string }
 
 export const GENDER_OPTIONS = ["Male", "Female"];
 
+// Name suffix choices for the client name fields (added 10/17 — Karina: "i need a section for jr sr
+// on name etc"). Stored as clients.suffix exactly as shown; the DB trigger appends it to full_name.
+export const NAME_SUFFIX_OPTIONS = ["Jr.", "Sr.", "II", "III", "IV", "V"];
+
 // Offered as a plain dropdown rather than derived from state, since several states span more
 // than one zone (Texas, Florida, Tennessee, Kentucky, Indiana, Michigan, and others) and Arizona
 // doesn't observe daylight saving — city/state are just reference context, the timezone itself
@@ -213,6 +217,7 @@ export interface Client {
   first_name: string | null;
   middle_name: string | null;
   last_name: string | null;
+  suffix: string | null;
   phone: string | null;
   email: string | null;
   birth_date: string | null;
