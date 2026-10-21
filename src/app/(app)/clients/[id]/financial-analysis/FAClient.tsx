@@ -1020,7 +1020,7 @@ export default function FAClient({
             <div className="flex flex-col gap-2">
               {computed.actionPlan.map((item, i) => (
                 <div key={i} className="flex items-start gap-3 rounded-lg border border-[#D9CFBA] bg-white p-4">
-                  <span className="mt-0.5 shrink-0 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#707070]">
+                  <span className="mt-0.5 shrink-0 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                     {item.pillar}
                   </span>
                   <span className="text-sm text-[#2E2E2E]">{item.message}</span>

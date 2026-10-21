@@ -186,7 +186,7 @@ function StateLicenseRow({ license }: { license: StateLicense }) {
         <div className="min-w-0 truncate font-semibold text-[#1C1C1C]" title={license.state}>
           {license.state}
           {license.is_resident && (
-            <span className="ml-1.5 rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-normal text-[#666]">Resident</span>
+            <span className="ml-1.5 rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-normal text-[#2E2E2E]">Resident</span>
           )}
         </div>
         <div className="min-w-0 text-[#666]">

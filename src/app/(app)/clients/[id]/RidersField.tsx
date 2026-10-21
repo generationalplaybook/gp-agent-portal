@@ -59,7 +59,7 @@ export default function RidersField({
           {customRiders.map((rider) => (
             <span
               key={rider}
-              className="flex items-center gap-1.5 rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] text-[#555]"
+              className="flex items-center gap-1.5 rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] font-medium text-[#2E2E2E]"
             >
               {rider}
               <button

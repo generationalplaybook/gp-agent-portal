@@ -206,7 +206,7 @@ function DeathBenefitTargetsEditor({
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               <span className="flex flex-col gap-1">
                 <span className="text-[13px] font-semibold text-[#1C1C1C]">Age It&rsquo;s Reached</span>
-                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                   Level
                 </span>
               </span>
@@ -221,7 +221,7 @@ function DeathBenefitTargetsEditor({
             <label className="flex flex-col gap-1 text-xs text-[#666]">
               <span className="flex flex-col gap-1">
                 <span className="text-[13px] font-semibold text-[#1C1C1C]">Age It&rsquo;s Reached</span>
-                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                   Increasing
                 </span>
               </span>
@@ -294,7 +294,7 @@ function CashValueBudgetEditor({
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           <span className="flex flex-col gap-1">
             <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
               Level
             </span>
           </span>
@@ -307,7 +307,7 @@ function CashValueBudgetEditor({
         <label className="flex flex-col gap-1 text-xs text-[#666]">
           <span className="flex flex-col gap-1">
             <span className="text-[13px] font-semibold text-[#1C1C1C]">Face Value</span>
-            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+            <span className="self-start rounded-full bg-[#F0EDE8] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
               Increasing
             </span>
           </span>

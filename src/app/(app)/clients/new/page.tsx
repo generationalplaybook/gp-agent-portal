@@ -18,7 +18,7 @@ export default async function NewClientPage({
       )}
 
       <form action={createClientRecord} className="flex flex-col gap-4 rounded-lg border border-[#D9CFBA] bg-white p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_7rem] gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_6.5rem] gap-2">
           <label className="flex flex-col gap-1 text-sm text-[#2E2E2E]">
             First name *
             <input

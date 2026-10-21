@@ -91,7 +91,7 @@ function ConditionCard({ condition, clientId }: { condition: MedicalCondition; c
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-[#1C1C1C]">{condition.condition_name}</span>
             {condition.submitted_by_client && (
-              <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+              <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                 From client
               </span>
             )}

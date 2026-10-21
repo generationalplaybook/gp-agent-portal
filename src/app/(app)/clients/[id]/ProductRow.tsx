@@ -737,7 +737,7 @@ export default function ProductRow({
           </span>
         )}
         {owner && (
-          <span className="self-start rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#555]">
+          <span className="self-start rounded-full bg-[#EDE8DF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
             Owned by {owner.full_name}
           </span>
         )}
@@ -804,7 +804,7 @@ export default function ProductRow({
       {product.riders && product.riders.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {product.riders.map((rider) => (
-            <span key={rider} className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] text-[#666]">
+            <span key={rider} className="rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] font-medium text-[#2E2E2E]">
               {rider}
             </span>
           ))}

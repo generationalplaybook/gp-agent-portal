@@ -176,7 +176,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </span>
               ) : (
                 clientAge !== null && (
-                  <span className="rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#666]">
+                  <span className="rounded-full bg-[#F0EDE8] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                     Age {clientAge}
                   </span>
                 )

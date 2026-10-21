@@ -86,7 +86,7 @@ function Field({ label, optional, children }: { label: string; optional?: boolea
       <div className="mb-2 text-sm font-semibold text-[#1C1C1C]">
         {label}
         {optional && (
-          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#707070]">
+          <span className="ml-1.5 rounded-full bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-normal text-[#2E2E2E]">
             optional
           </span>
         )}

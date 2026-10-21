@@ -182,7 +182,7 @@ export default function FamilySection({
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {m.family_relationship && (
-                    <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                    <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                       {m.family_relationship}
                     </span>
                   )}
@@ -202,7 +202,7 @@ export default function FamilySection({
                     </span>
                   ) : (
                     age !== null && (
-                      <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#666]">
+                      <span className="rounded-full bg-[#F0EDE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2E2E2E]">
                         Age {age}
                       </span>
                     )
@@ -336,7 +336,7 @@ export default function FamilySection({
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_6rem] gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_6rem] gap-2">
                 <input
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
