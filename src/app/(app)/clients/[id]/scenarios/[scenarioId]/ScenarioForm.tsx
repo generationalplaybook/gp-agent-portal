@@ -1377,8 +1377,8 @@ export default function ScenarioForm({
           <p className="mb-2 text-xs text-[#175530]">
             ✓ {clientName.split(" ")[0] || "The client"} chose this option on{" "}
             {new Date(chosenAt).toLocaleDateString(undefined, { dateStyle: "medium" })}, on record in case this
-            ever needs revisiting. Add the real Product on their profile below with the details they actually went
-            with (nothing here copies over automatically).
+            ever needs revisiting. Next, use &ldquo;Add as Product&rdquo; in the Products section on their profile:
+            it pre-fills the quoted details, and you add the policy number, issue date and anything that changed.
           </p>
           <button
             type="button"
@@ -1397,8 +1397,9 @@ export default function ScenarioForm({
           <p className="mb-3 text-xs text-[#555]">
             Mark it when {clientName.split(" ")[0] || "the client"} actually goes with this option; this just puts
             a date on record for &ldquo;here&rsquo;s what we presented, here&rsquo;s what they chose,&rdquo; it does
-            not create anything. Add the real Product on their profile yourself with the details they actually went
-            with (issue date, policy number, actual premium).
+            not create anything by itself. Once marked, the Products section on their profile offers &ldquo;Add as
+            Product&rdquo; with the quoted details pre-filled, and you add the issue date, policy number and actual
+            premium.
           </p>
           {!confirmingChosen ? (
             <button

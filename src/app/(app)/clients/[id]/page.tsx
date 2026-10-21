@@ -72,7 +72,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .order("meeting_at", { ascending: true }),
     supabase
       .from("illustration_scenarios")
-      .select("id, product_name, product_type, carrier, converted_product_id, chosen_at")
+      .select("id, product_name, product_type, carrier, converted_product_id, chosen_at, data")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     supabase
@@ -259,7 +259,17 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             since this is the "let's see the numbers" step that precedes it. */}
         <div className="rounded-lg border border-[#D9CFBA] bg-white p-7">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#555]">Illustrations</h2>
-          <ScenariosSection clientId={client.id} scenarios={scenarios ?? []} />
+          <ScenariosSection
+            clientId={client.id}
+            scenarios={(scenarios ?? []).map((s) => ({
+              id: s.id,
+              product_name: s.product_name,
+              product_type: s.product_type,
+              carrier: s.carrier,
+              converted_product_id: s.converted_product_id,
+              chosen_at: s.chosen_at,
+            }))}
+          />
         </div>
 
         {/* Products — coverage this client already owns, with conversion windows at a glance */}
@@ -272,6 +282,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             products={products ?? []}
             ownerOptions={familyMembers.map((m) => ({ id: m.id, full_name: m.full_name }))}
             isMinor={clientIsMinor}
+            chosenScenarios={(scenarios ?? [])
+              .filter((s) => s.chosen_at && !s.converted_product_id)
+              .map((s) => ({
+                id: s.id,
+                product_name: s.product_name,
+                product_type: s.product_type,
+                carrier: s.carrier,
+                chosen_at: s.chosen_at as string,
+                data: s.data,
+              }))}
           />
         </div>
 

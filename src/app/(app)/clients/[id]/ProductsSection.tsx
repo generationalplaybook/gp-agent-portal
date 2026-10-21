@@ -5,6 +5,7 @@ import { addProduct, type ProductFields } from "../actions";
 import { PRODUCT_TYPE_OPTIONS, PERMANENT_PRODUCT_TYPES, ANNUITY_RIDER_OPTIONS, type ClientProduct } from "@/lib/types";
 import { KB_PRODUCTS, KB_ESTATE_PLANNING_PRODUCTS } from "@/lib/kb-data";
 import { addYearsToDateOnly } from "@/lib/dates";
+import { productPrefillOptionsFromScenario, type IllustrationData } from "@/lib/illustration";
 import ProductRow, { type OwnerOption } from "./ProductRow";
 import RidersField from "./RidersField";
 import DollarInput from "./DollarInput";
@@ -51,6 +52,17 @@ const EMPTY_FIELDS: ProductFields = {
   pending_approval: false,
 };
 
+// An Illustration Scenario the advisor marked "chosen" that hasn't become a Product yet — offered
+// as a one-click pre-filled Add Product (see productPrefillOptionsFromScenario).
+export interface ChosenScenario {
+  id: string;
+  product_name: string;
+  product_type: string | null;
+  carrier: string | null;
+  chosen_at: string;
+  data: unknown;
+}
+
 export default function ProductsSection({
   clientId,
   clientName,
@@ -58,6 +70,7 @@ export default function ProductsSection({
   products,
   ownerOptions,
   isMinor,
+  chosenScenarios = [],
 }: {
   clientId: string;
   clientName: string;
@@ -65,8 +78,13 @@ export default function ProductsSection({
   products: ClientProduct[];
   ownerOptions: OwnerOption[];
   isMinor: boolean;
+  chosenScenarios?: ChosenScenario[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  // Which chosen Illustration this Add form was pre-filled from (null for a normal blank add), and
+  // which of its side-by-side options the advisor picked when it has more than one.
+  const [fromScenario, setFromScenario] = useState<ChosenScenario | null>(null);
+  const [optionPick, setOptionPick] = useState<Record<string, number>>({});
   const [showConverted, setShowConverted] = useState(false);
   const [fields, setFields] = useState<ProductFields>(EMPTY_FIELDS);
   const [saving, setSaving] = useState(false);
@@ -179,6 +197,30 @@ export default function ProductsSection({
   const isAnnuity = fields.product_type === "Annuity";
   const isPermanent = PERMANENT_PRODUCT_TYPES.includes(fields.product_type ?? "");
 
+  function startFromScenario(sc: ChosenScenario) {
+    const options = productPrefillOptionsFromScenario(sc.data as IllustrationData);
+    const picked = options[optionPick[sc.id] ?? 0]?.fields ?? {};
+    const type = sc.product_type ?? "";
+    setFields({
+      ...EMPTY_FIELDS,
+      product_name: picked.product_name || sc.product_name,
+      product_type: type,
+      carrier: sc.carrier ?? "",
+      // Same rule as the Type select / product-name picker: Term Life turns on the term fields.
+      is_convertible: type === "Term Life",
+      face_amount: picked.face_amount ?? "",
+      premium: picked.premium ?? "",
+      minimum_premium: picked.minimum_premium ?? "",
+      term_length_years: picked.term_length_years ?? "",
+      riders: picked.riders ?? [],
+    });
+    setNoExamWindowYears("");
+    setFinalDeadlineAge("");
+    setError("");
+    setFromScenario(sc);
+    setShowAdd(true);
+  }
+
   async function handleAdd() {
     if (!fields.product_name.trim()) {
       setError("Product name is required.");
@@ -187,7 +229,8 @@ export default function ProductsSection({
     setSaving(true);
     setError("");
     try {
-      await addProduct(clientId, fields);
+      await addProduct(clientId, fields, fromScenario?.id);
+      setFromScenario(null);
       setFields(EMPTY_FIELDS);
       setNoExamWindowYears("");
       setFinalDeadlineAge("");
@@ -240,6 +283,47 @@ export default function ProductsSection({
         </div>
       )}
 
+      {!showAdd &&
+        chosenScenarios.map((sc) => {
+          const options = productPrefillOptionsFromScenario(sc.data as IllustrationData);
+          const pick = optionPick[sc.id] ?? 0;
+          return (
+            <div
+              key={sc.id}
+              className="flex flex-col gap-2 rounded-md border border-[#1E6B3C] bg-[#EEF6F0] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="text-sm text-[#175530]">
+                <span className="font-semibold">{sc.product_name}</span> was chosen on{" "}
+                {new Date(sc.chosen_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}. Add it as
+                a Product with the quoted details already filled in.
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {options.length > 1 && (
+                  <select
+                    value={pick}
+                    onChange={(e) => setOptionPick((m) => ({ ...m, [sc.id]: Number(e.target.value) }))}
+                    aria-label="Which option did the client choose?"
+                    className="rounded-md border border-[#1E6B3C] bg-white px-2 py-1.5 text-xs text-[#1C1C1C] outline-none"
+                  >
+                    {options.map((o, i) => (
+                      <option key={i} value={i}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  onClick={() => startFromScenario(sc)}
+                  className="rounded-md bg-[#1E6B3C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#175530]"
+                >
+                  Add as Product →
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
       {!showAdd && (
         <button
           type="button"
@@ -252,6 +336,12 @@ export default function ProductsSection({
 
       {showAdd && (
         <div className="flex flex-col gap-2 rounded-md border border-[#D9CFBA] p-3">
+          {fromScenario && (
+            <p className="rounded-md bg-[#EEF6F0] px-3 py-2 text-xs text-[#175530]">
+              Filled in from the {fromScenario.product_name} illustration. Check the numbers, then add what&rsquo;s
+              still needed: policy number, issue date, and anything that changed when it was issued.
+            </p>
+          )}
           <input
             value={fields.product_name}
             onChange={(e) => handleProductNameChange(e.target.value)}
@@ -583,6 +673,7 @@ export default function ProductsSection({
               type="button"
               onClick={() => {
                 setFields(EMPTY_FIELDS);
+                setFromScenario(null);
                 setNoExamWindowYears("");
                 setFinalDeadlineAge("");
                 setShowAdd(false);

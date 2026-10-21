@@ -400,3 +400,129 @@ export function formatPercent(str: string | undefined | null): string {
   if (!trimmed) return "";
   return trimmed.endsWith("%") ? trimmed : trimmed + "%";
 }
+
+// ─────────────────────────────────────────────────────────────
+// Pre-filling the Add Product form from a chosen Illustration Scenario (added 10/21) — Karina:
+// "when a client chooses, can some of the info pre-fill in the product section so advisors aren't
+// re-entering things, they just fill in the info that is needed still."
+//
+// This is deliberately NOT the old auto-convert (retired 9/5, see schema section 42): nothing is
+// created until the advisor reviews the pre-filled form and clicks Add Product themselves, and
+// only the stable, "what was quoted" facts are carried over — product name/type/carrier (handled
+// by the caller), face amount, premium, riders, term length. Everything that only exists once a
+// policy is actually issued (policy number, issue date, and every date derived from it) is left
+// blank on purpose, as are the conversion windows (a scenario only holds a free-typed deadline,
+// not the years/age the Add Product form calculates dates from).
+//
+// A scenario can hold several side-by-side options (Term/Final Expense: up to 3; IUL/Whole Life:
+// up to 3 budgets) and nothing records which one the client picked, so this returns one entry per
+// option and the UI asks only when there's more than one.
+// ─────────────────────────────────────────────────────────────
+export interface ScenarioProductPrefill {
+  product_name?: string;
+  face_amount?: string;
+  premium?: string;
+  minimum_premium?: string;
+  term_length_years?: string;
+  riders?: string[];
+}
+
+export interface ScenarioPrefillOption {
+  label: string;
+  fields: ScenarioProductPrefill;
+}
+
+function cleanNumberString(v: string | undefined | null): string {
+  return (v ?? "").replace(/[^0-9.]/g, "");
+}
+
+// Whole dollars for the option labels ("$1,000,000"), cents only when actually there.
+function shortMoney(v: string | undefined | null): string {
+  const n = Number(cleanNumberString(v));
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function optionLabel(parts: (string | undefined | false)[], fallback: string): string {
+  const joined = parts.filter(Boolean).join(" · ");
+  return joined || fallback;
+}
+
+export function productPrefillOptionsFromScenario(data: IllustrationData | null | undefined): ScenarioPrefillOption[] {
+  if (!data) return [];
+
+  if (data.kind === "term") {
+    // The Product form's Premium is a monthly figure; only carry the premium over when the
+    // scenario was quoted monthly (undefined counts as monthly, same as the PDF renderer).
+    const monthly = !data.premiumFrequency || data.premiumFrequency === "monthly";
+    const tiers = [
+      { face: data.deathBenefit, years: data.termLength, premium: data.levelPremium },
+      { face: data.deathBenefit2, years: data.termLength2 || data.termLength, premium: data.levelPremium2 },
+      { face: data.deathBenefit3, years: data.termLength3 || data.termLength, premium: data.levelPremium3 },
+    ];
+    const options = tiers
+      .map((t, i) => ({ t, i }))
+      .filter(({ t, i }) => (i === 0 ? true : cleanNumberString(t.face) !== ""))
+      .map(({ t, i }) => ({
+        label: optionLabel(
+          [
+            cleanNumberString(t.face) ? `$${shortMoney(t.face)} face` : undefined,
+            cleanNumberString(t.years) ? `${cleanNumberString(t.years)}-year` : undefined,
+          ],
+          `Option ${i + 1}`
+        ),
+        fields: {
+          face_amount: cleanNumberString(t.face),
+          term_length_years: cleanNumberString(t.years),
+          premium: monthly ? cleanNumberString(t.premium) : "",
+          riders: data.riders ?? [],
+        },
+      }));
+    return options;
+  }
+
+  if (data.kind === "final_expense") {
+    const tiers = [
+      { name: undefined, face: data.deathBenefit, premium: data.levelPremium },
+      { name: data.productName2, face: data.deathBenefit2, premium: data.levelPremium2 },
+      { name: data.productName3, face: data.deathBenefit3, premium: data.levelPremium3 },
+    ];
+    return tiers
+      .map((t, i) => ({ t, i }))
+      .filter(({ t, i }) => (i === 0 ? true : cleanNumberString(t.face) !== ""))
+      .map(({ t, i }) => ({
+        label: optionLabel(
+          [t.name?.trim() || undefined, cleanNumberString(t.face) ? `$${shortMoney(t.face)} face` : undefined],
+          `Option ${i + 1}`
+        ),
+        fields: {
+          product_name: t.name?.trim() || undefined,
+          face_amount: cleanNumberString(t.face),
+          premium: cleanNumberString(t.premium),
+          riders: data.riders ?? [],
+        },
+      }));
+  }
+
+  if (data.kind === "annuity") {
+    return [{ label: "Annuity", fields: { premium: cleanNumberString(data.initialPremium) } }];
+  }
+
+  // cash_value: IUL / Whole Life / Other — one entry per budget. "Level" numbers are used (the
+  // starting face and minimum premium for the Level election); the advisor can change either in
+  // the form if the client went with Increasing.
+  return getCashValueBudgets(data).map((b, i) => ({
+    label: optionLabel(
+      [
+        b.label?.trim() || `Budget ${i + 1}`,
+        cleanNumberString(b.monthlyPremium) ? `$${shortMoney(b.monthlyPremium)}/mo` : undefined,
+      ],
+      `Budget ${i + 1}`
+    ),
+    fields: {
+      face_amount: cleanNumberString(b.initialDeathBenefit),
+      premium: cleanNumberString(b.monthlyPremium),
+      minimum_premium: cleanNumberString(b.minimumPremium),
+    },
+  }));
+}

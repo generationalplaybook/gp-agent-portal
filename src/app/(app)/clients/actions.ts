@@ -891,7 +891,13 @@ function parseNumberOrNull(v?: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export async function addProduct(clientId: string, fields: ProductFields): Promise<void> {
+// `fromScenarioId` (added 10/21): set when the advisor started this product from a chosen
+// Illustration Scenario's "Add as Product" prefill (see productPrefillOptionsFromScenario in
+// lib/illustration.ts). Nothing is copied here beyond what the advisor reviewed and submitted in
+// the form — this only links the scenario to the new product (illustration_scenarios.
+// converted_product_id, the same column the pre-9/5 auto-convert used) so the scenario reads
+// "Converted" and the Products section stops offering to add it again.
+export async function addProduct(clientId: string, fields: ProductFields, fromScenarioId?: string): Promise<void> {
   const { supabase } = await requireUser();
   const product_name = fields.product_name.trim();
   if (!product_name) throw new Error("Product name is required.");
@@ -941,6 +947,15 @@ export async function addProduct(clientId: string, fields: ProductFields): Promi
   // reminder-creation logic as that action (see below) rather than duplicating it.
   if (fields.pending_approval && inserted) {
     await markPendingApproval(inserted.id, clientId, product_name);
+  }
+
+  if (fromScenarioId && inserted) {
+    await supabase
+      .from("illustration_scenarios")
+      .update({ converted_product_id: inserted.id })
+      .eq("id", fromScenarioId)
+      .eq("client_id", clientId);
+    revalidatePath(`/clients/${clientId}/scenarios/${fromScenarioId}`);
   }
 
   revalidatePath(`/clients/${clientId}`);
